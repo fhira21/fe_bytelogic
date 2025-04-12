@@ -1,70 +1,69 @@
-# Getting Started with Create React App
+# Employee Evaluation & Project Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 📌 Deskripsi Proyek
+Sistem ini adalah platform berbasis web untuk **evaluasi karyawan dan manajemen proyek** di perusahaan Bytelogic. Aplikasi ini membantu **manajer, karyawan, dan klien** dalam mengelola proyek serta melakukan evaluasi kinerja karyawan berdasarkan umpan balik dari klien dan manajer.
 
-## Available Scripts
+## 🎯 Fitur Utama
+- **🔐 Authentication & Authorization**
+  - Login berbasis peran: Manager, Karyawan, dan Klien
+  - Keamanan menggunakan **JWT Authentication**
+- **📊 Dashboard**
+  - Tampilan proyek yang sedang berjalan dan yang telah selesai
+  - Riwayat proyek sebelumnya
+- **📂 Manajemen Proyek**
+  - **Manager**: CRUD proyek, mengassign klien dan karyawan
+  - **Karyawan**: Update progres proyek
+  - **Klien**: Melihat progres proyek yang dipesan
+- **📑 Evaluasi Kinerja**
+  - **Klien & Manajer** dapat memberikan penilaian terhadap karyawan
+  - Penilaian menggunakan **Likert scale (1-5)**
+  - Hasil evaluasi dapat dilihat oleh **Manager & Karyawan yang dinilai**
 
-In the project directory, you can run:
 
-### `npm start`
+### **Backend**
+- **Node.js & Express.js**
+- **MongoDB** untuk database
+- JWT untuk autentikasi
+- Swagger untuk dokumentasi API
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🚀 Cara Menjalankan Proyek
+### **1. Clone Repository**
+```sh
+git clone https://github.com/fhira21/fe_bytelogic.git
+cd NAMA-REPO
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### **2. Install Dependencies**
+#### Backend:
+```sh
+cd be_penilaian
+npm install
+```
 
-### `npm test`
+### **3. Konfigurasi Environment**
+Buat file `.env` di folder backend dan isi dengan konfigurasi berikut:
+```
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### **4. Jalankan Server Backend**
+```sh
+cd be_penilaian
+npm start
+```
 
-### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 📖 Dokumentasi API (Swagger)
+Setelah backend berjalan, buka di browser:
+```
+http://localhost:5000/api-docs
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 📌 Kontributor
+- **Fhira Triana Maulani**
+- **Nur Wahyu Suci Rahayu**
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+💡 *Feel free to contribute and improve this project!* 🎉
