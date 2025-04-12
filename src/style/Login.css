@@ -1,0 +1,120 @@
+/* Login container agar full height dan center */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 89vh;
+  background-color: #f4f6f8;
+  padding-top: 1px; /* agar tidak nempel navbar */
+}
+
+/* Kotak utama login */
+.login-box {
+  display: flex;
+  flex-direction: row;
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 10px;
+  padding: 70px 200px;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+  gap: 150px;
+  align-items: center;
+}
+
+/* Gambar login */
+.login-image {
+  width: 700px;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Bungkus frame untuk form */
+.login-form-frame {
+  border: 0px solid #ddd;
+  border-radius: 10px;
+  padding: 80px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Form login */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 400px;
+}
+
+/* Judul */
+.login-form h2 {
+  margin-bottom: 30px;
+  font-size: 35px;
+  color: #333;
+}
+
+/* Input */
+.login-form input[type="text"],
+.login-form input[type="password"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Wrapper untuk input password + icon */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper input {
+  padding-right: 35px; /* ruang untuk icon mata */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Checkbox */
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+/* Tombol */
+.login-button {
+  padding: 10px;
+  background-color: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.login-button:hover {
+  background-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+  .login-box {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .login-image {
+    width: 180px;
+  }
+}
