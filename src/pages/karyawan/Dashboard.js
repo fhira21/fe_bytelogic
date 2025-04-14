@@ -1,11 +1,27 @@
 import React from 'react';
-// import '../style/manager/Dashboard.css'; // Import CSS untuk styling
-const DashboardKaryawan = () => (
-    <>
-      {/* Konten khusus untuk admin */}
-      <h1>Admin Dashboard</h1>
-    </>
- );
- 
- export default DashboardKaryawan;
- 
+import { useNavigate } from "react-router-dom";
+import "../../style/karyawan/Dashboard.css";
+
+const DashboardKlien = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Bersihkan data login dari localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
+    // Arahkan kembali ke halaman login
+    navigate("/login");
+  };
+
+  return (
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
+      <h1>Dashboard Karyawan</h1>
+      <button onClick={handleLogout} className="logout-button">
+        🚪 Logout
+      </button>
+    </div>
+  );
+};
+
+export default DashboardKlien;

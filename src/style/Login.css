@@ -3,7 +3,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 89vh;
+  height: 80vh;
   background-color: #f4f6f8;
   padding-top: 1px; /* agar tidak nempel navbar */
 }
@@ -15,7 +15,7 @@
   background: white;
   border: 2px solid #007bff;
   border-radius: 10px;
-  padding: 70px 200px;
+  padding: 40px 200px;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
   gap: 150px;
   align-items: center;
@@ -23,7 +23,7 @@
 
 /* Gambar login */
 .login-image {
-  width: 700px;
+  width: 500px;
   height: auto;
   object-fit: contain;
 }
@@ -41,8 +41,8 @@
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  width: 400px;
+  gap: 10px;
+  width: 250px;
 }
 
 /* Judul */
