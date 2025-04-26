@@ -1,0 +1,200 @@
+.project-container {
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.project-header h1 {
+  color: #2c3e50;
+}
+
+.btn-add {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-add:hover {
+  background-color: #2980b9;
+}
+
+/* Filter Section Styles */
+.filter-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.filter-group label {
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #495057;
+  font-size: 14px;
+}
+
+.filter-group select, 
+.filter-group input {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.search-group {
+  flex-grow: 1;
+}
+
+.search-group input {
+  width: 100%;
+}
+
+.project-count {
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.project-table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+}
+
+.project-table th, 
+.project-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.project-table th {
+  background-color: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+}
+
+.project-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.btn-edit, .btn-delete {
+  padding: 6px 12px;
+  margin-right: 5px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-edit {
+  background-color: #f39c12;
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: #e67e22;
+}
+
+.btn-delete {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #c0392b;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  font-size: 18px;
+  color: #7f8c8d;
+}
+
+.error-message {
+  color: #e74c3c;
+  padding: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.progress-container {
+  width: 100%;
+  background-color: #ecf0f1;
+  border-radius: 3px;
+  height: 24px;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  background-color: #2ecc71;
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s ease;
+}
+
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.waiting-list {
+  background-color: #bdc3c7;
+  color: #2c3e50;
+}
+
+.status-badge.on-progress {
+  background-color: #3498db;
+  color: white;
+}
+
+.status-badge.completed {
+  background-color: #2ecc71;
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filter-section {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .project-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

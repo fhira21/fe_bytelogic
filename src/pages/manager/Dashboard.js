@@ -1,53 +1,123 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import "../../style/manager/Dashboard.css";
-import ProfilePic from "../../assets/images/pp.png";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import '../../style/manager/Dashboard.css';
+import ProfilePic from '../../assets/images/pp.png';
+
 
 const DashboardManager = () => {
   const navigate = useNavigate();
+  const [projectData, setProjectData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [infoCounts, setInfoCounts] = useState({
+    totalEmployees: 0,
+    totalClients: 0,
+    waitingListProjects: 0,
+    onProgressProjects: 0,
+  });
 
-  const handleLogout = () => {
-    // Tambahkan logika logout jika diperlukan
-    navigate("/");
+  useEffect(() => {
+    const fetchInfoCountsAndProjects = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const [employeesResponse, clientsResponse, projectsResponse] = await Promise.all([
+          axios.get('http://localhost:5000/api/karyawan', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:5000/api/clients', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:5000/api/projects', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+        ]);
+
+        const totalEmployees = Array.isArray(employeesResponse.data) ? employeesResponse.data.length : 0;
+        const totalClients = Array.isArray(clientsResponse.data) ? clientsResponse.data.length : 0;
+
+        const projects = Array.isArray(projectsResponse.data) ? projectsResponse.data : [];
+
+        const waitingListProjects = projects.filter(p => (p.status || '').toLowerCase() === 'waiting list').length;
+        const onProgressProjects = projects.filter(p => (p.status || '').toLowerCase() === 'on progress').length;
+
+        setInfoCounts({
+          totalEmployees,
+          totalClients,
+          waitingListProjects,
+          onProgressProjects,
+        });
+
+        setProjectData(projects);
+
+      } catch (error) {
+        console.error('Error fetching info counts and projects:', error);
+        setError(error.message || 'Terjadi kesalahan');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInfoCountsAndProjects();
+  }, []);
+  
+
+  const calculateSDLCProgress = (progress = {}) => {
+    const total = Object.values(progress).reduce((acc, val) => acc + val, 0);
+    const count = Object.keys(progress).length || 1;
+    return Math.round((total / (count * 100)) * 100); // hasil persen
   };
 
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">Bytelogic</div>
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <div className="logo-circle">B</div>
+          <span className="logo-text">Bytelogic</span>
+        </div>
+        <h1 className="sidebar-menu-title">MENU</h1>
         <div className="sidebar-menu">
-          <button className="active">📊 Dashboard</button>
-          <button>📁 Data Karyawan</button>
-          <button>📁 Data Klien</button>
-          <button>📁 Data Admin</button>
-          <button>📂 Data Project</button>
-          <button>📈 Evaluasi Karyawan</button>
-          <button>⭐ Review</button>
+          <button onClick={() => navigate('/dashboard-manager')} className="sidebar-btn active">
+            <i className="fas fa-tachometer-alt"></i> Dashboard
+          </button>
+          <button onClick={() => navigate('/data-karyawan')} className="sidebar-btn">
+            <i className="fas fa-folder-open"></i> Data Karyawan
+          </button>
+          <button onClick={() => navigate('/data-admin')} className="sidebar-btn">
+            <i className="fas fa-users"></i> Data Admin
+          </button>
+          <button onClick={() => navigate('/data-klien')} className="sidebar-btn">
+            <i className="fas fa-briefcase"></i> Data Klien
+          </button>
+          <button onClick={() => navigate('/data-project')} className="sidebar-btn">
+            <i className="fas fa-briefcase"></i> Data Project
+          </button>
+          <button onClick={() => navigate('/evaluation')} className="sidebar-btn">
+            <i className="fas fa-chart-line"></i> Evaluasi Karyawan
+          </button>
+          <button onClick={() => navigate('/reviews')} className="sidebar-btn">
+            <i className="fas fa-star"></i> Review Pelanggan
+          </button>
         </div>
-
-        {/* Sidebar Footer dengan Tombol Keluar */}
-        <div className="sidebar-footer">
-          <button onClick={handleLogout} className="logout-button">🚪 Logout</button>
-        </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div className="main-content">
-        {/* Topbar */}
+      <main className="main-content">
         <div className="topbar">
           <div className="breadcrumbs">
-            <small>Pages / Dashboard</small>
-            <h2>Main Dashboard</h2>
+            <h2>Dashboard</h2>
           </div>
-          <div className="search-container">
-            <i className="fas fa-search"></i>
-            <input type="text" placeholder="Cari" />
-          </div>
+
+          {/* Topbar */}
           <div className="topbar-right">
-            <i className="fas fa-bell notification-icon"></i>
+            <div className="search-container">
+              <input type="text" placeholder="Search..." />
+            </div>
+            <button className="notification-icon">🔔</button>
             <div className="profile">
-              <img src={ProfilePic} alt="Aloy" />
+              <img src={ProfilePic} alt="Profil" className="profile-pic" />
               <div className="profile-info">
                 <span className="name">Aloy</span>
                 <span className="role">Manajer</span>
@@ -56,101 +126,112 @@ const DashboardManager = () => {
           </div>
         </div>
 
-        {/* Informational Cards */}
+        {/* Info Cards */}
         <div className="info-cards">
-          <div className="card active">Manajemen Karyawan<br /><strong>20 Karyawan</strong></div>
-          <div className="card">Data Klien<br /><strong>100 Klien</strong></div>
-          <div className="card">Data Project<br /><strong>20 Project</strong></div>
-          <div className="card">Evaluasi Karyawan<br /><strong>20 Karyawan</strong></div>
+          {error ? (
+            <p style={{ color: 'red' }}>Error: {error}</p>
+          ) : (
+            <>
+              <div className="info-card">
+                <p>Data Karyawan</p>
+                <h3>{infoCounts.totalEmployees} Karyawan</h3>
+              </div>
+              <div className="info-card">
+                <p>Data Pelanggan</p>
+                <h3>{infoCounts.totalClients} Pelanggan</h3>
+              </div>
+              <div className="info-card">
+                <p>Waiting List</p>
+                <h3>{infoCounts.waitingListProjects} Project</h3>
+              </div>
+              <div className="info-card">
+                <p>On Progress</p>
+                <h3>{infoCounts.onProgressProjects} Project</h3>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Status Project Table */}
-        <div className="card-box">
-          <h3>Status Project</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Nama Project</th>
-                <th>Status</th>
-                <th>Tanggal</th>
-                <th>Progres</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Website Manajemen Karyawan</td>
-                <td>Berjalan</td>
-                <td>28 Agustus 2025</td>
-                <td><progress value="25" max="100"></progress></td>
-                <td>Tahap Analisis</td>
-              </tr>
-              <tr>
-                <td>Website Penjualan Gitar</td>
-                <td>Berjalan</td>
-                <td>12 Maret 2025</td>
-                <td><progress value="40" max="100"></progress></td>
-                <td>Tahap Desain</td>
-              </tr>
-              <tr>
-                <td>Website Penilaian Karyawan</td>
-                <td>Selesai</td>
-                <td>20 April 2025</td>
-                <td><progress value="100" max="100"></progress></td>
-                <td>Tahap Front end</td>
-              </tr>
-            </tbody>
-          </table>
+        {/* Charts Section */}
+        <div className="charts-section">
+          <div className="chart-box">
+            <h3>Status Karyawan</h3>
+            <div className="chart-placeholder">[Pie Chart Placeholder]</div>
+          </div>
+          <div className="chart-box">
+            <h3>Rating Company</h3>
+            <div className="rating-value">4.83</div>
+            <p className="rating-desc">156 Review</p>
+          </div>
         </div>
 
-        {/* Status Karyawan Table */}
-        <div className="card-box">
-          <h3>Status Karyawan</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Status Karyawan</th>
-                <th>Department</th>
-                <th>Age</th>
-                <th>Disipline</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <img src={ProfilePic} alt="Asep" className="avatar" />
-                  Asep
-                </td>
-                <td>Design</td>
-                <td>22</td>
-                <td>+100%</td>
-                <td>Permanent</td>
-              </tr>
-              <tr>
-                <td>
-                  <img src={ProfilePic} alt="Simus" className="avatar" />
-                  Simus
-                </td>
-                <td>Front end</td>
-                <td>24</td>
-                <td>+95%</td>
-                <td>Magang</td>
-              </tr>
-              <tr>
-                <td>
-                  <img src={ProfilePic} alt="Loren" className="avatar" />
-                  Loren
-                </td>
-                <td>Back end</td>
-                <td>28</td>
-                <td>+89%</td>
-                <td>Permanent</td>
-              </tr>
-            </tbody>
-          </table>
+        {/* Progress Table & Top 5 Karyawan */}
+        <div className="table-section">
+          <div>
+            <h3>Progres Project</h3>
+
+            {loading ? (
+              <p>Loading...</p>
+            ) : error ? (
+              <p style={{ color: 'red' }}>Error: {error}</p>
+            ) : projectData.length === 0 ? (
+              <p>Tidak ada project ditemukan.</p>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Nama Project</th>
+                    <th>Klien</th>
+                    <th>Deadline</th>
+                    <th>Progress</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projectData.map((project) => (
+                    <tr key={project._id}>
+                      <td>{project.title || '-'}</td>
+                      <td>{project.client?.nama_lengkap || '-'}</td>
+                      <td>{project.deadline ? new Date(project.deadline).toLocaleDateString('id-ID') : '-'}</td>
+                      <td>
+                        <div className="progress-bar">
+                          <div
+                            className="progress"
+                            style={{
+                              width: `${calculateSDLCProgress(project.sdlc_progress)}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div>
+            <h3>Top 5 Karyawan</h3>
+            <table className="data-table">
+              {/* Dummy data sementara */}
+              <thead>
+                <tr>
+                  <th>Ranking</th>
+                  <th>Nama</th>
+                  <th>Point</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Isi Top 5 manual/dari API nanti */}
+                <tr><td>1</td><td>Zoe el kazam</td><td>5000</td></tr>
+                <tr><td>2</td><td>Jane Doe</td><td>4500</td></tr>
+                <tr><td>3</td><td>John Smith</td><td>4300</td></tr>
+                <tr><td>4</td><td>Mike Ross</td><td>4100</td></tr>
+                <tr><td>5</td><td>Harvey Specter</td><td>4000</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
