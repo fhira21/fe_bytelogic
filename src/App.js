@@ -9,6 +9,7 @@ import {
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 import Login from "./pages/Login";
+<<<<<<< HEAD
 import DashboardManager from "./pages/manager/Dashboard";
 import EmployeeList from "./pages/manager/EmployeeList";
 import ClientData from "./pages/manager/ClientList";
@@ -18,13 +19,28 @@ import EmployeeEvaluation from "./pages/manager/EmployeeEvaluation";
 import DataProject from "./pages/manager/DataProject";
 import DashboardKlien from "./pages/klien/Dashboard";
 import DashboardKaryawan from "./pages/karyawan/Dashboard";
+=======
+>>>>>>> 54a31aa0c33e948f2c33744caf385d67b0186396
 import Home from "./pages/Home";
 import Navbar from "./components/Navbar";
 import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
+<<<<<<< HEAD
 import ProjectDetail from "./pages/ProjectDetail";
 import UserProfile from "./pages/manager/UserProfile";
 import ViewProfile from "./pages/manager/ViewProfile";
+=======
+import DashboardManager from "./pages/manager/Dashboard";
+import ProjectDataPage from "./pages/manager/DataProject";
+import DashboardKlien from "./pages/klien/Dashboard";
+import DashboardKaryawan from "./pages/karyawan/Dashboard";
+import EmployeeList from "./pages/manager/DataKaryawan";
+import AdminList from "./pages/manager/DataAdmin";
+import ClientList from "./pages/manager/DataKlien";
+
+
+
+>>>>>>> 54a31aa0c33e948f2c33744caf385d67b0186396
 
 function App() {
   return (
@@ -55,6 +71,41 @@ function MainLayout() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/data-project"
+          element={
+            <ProtectedRoute allowedRoles={["manager/admin"]}>
+              <ProjectDataPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/data-karyawan"
+          element={
+            <ProtectedRoute allowedRoles={["manager/admin"]}>
+              <EmployeeList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/data-admin"
+          element={
+            <ProtectedRoute allowedRoles={["manager/admin"]}>
+              <AdminList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/data-klien"
+          element={
+            <ProtectedRoute allowedRoles={["manager/admin"]}>
+              <ClientList />
+            </ProtectedRoute>
+          }
+        />
+
+
+
         <Route
           path="/dashboard-klien"
           element={
