@@ -1,49 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../../style/manager/EmployeeList.css';
+import axios from 'axios';
 import ProfilePic from '../../assets/images/pp.png';
 
-const EmployeeList = () => {
+const EmployeeEvaluation = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
 
-  const [employees, setEmployees] = useState([
-    { id: 1, name: 'Andi Rahman', position: 'Frontend Developer', rating: 4, projects: 5, startPeriod: '2023-01-01', endPeriod: '2023-12-31' },
-    { id: 2, name: 'Sinta Putri', position: 'Backend Developer', rating: 5, projects: 7, startPeriod: '2022-05-01', endPeriod: '2023-05-01' },
-  ]);
-
-  const [newEmployee, setNewEmployee] = useState({ name: '', position: '', rating: '', projects: '', startPeriod: '', endPeriod: '' });
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const openAddModal = () => {
-    setNewEmployee({ name: '', position: '', rating: '', projects: '', startPeriod: '', endPeriod: '' });
-    setShowAddModal(true);
-  };
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('http://localhost:5000/api/evaluations/karyawan', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        console.log('API Response:', response.data);
+        
+        // Pastikan response.data.data ada dan berupa array
+        const employeesData = response.data?.data || [];
+        if (Array.isArray(employeesData)) {
+          setEmployees(employeesData);
+        } else {
+          setEmployees([]);
+          console.warn('Employees data is not an array!');
+        }
+      } catch (error) {
+        console.error('Error fetching employee evaluations:', {
+          message: error.message,
+          response: error.response,
+          config: error.config
+        });
+        setError(error.response?.data?.message || 'Gagal memuat data evaluasi karyawan');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const closeAddModal = () => {
-    setShowAddModal(false);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewEmployee(prev => ({ ...prev, [name]: value }));
-  };
-
-  const addEmployee = (e) => {
-    e.preventDefault();
-    const newId = employees.length ? Math.max(...employees.map(emp => emp.id)) + 1 : 1;
-    setEmployees([...employees, { id: newId, ...newEmployee }]);
-    closeAddModal();
-  };
-
-  const deleteEmployee = (id) => {
-    setEmployees(employees.filter(emp => emp.id !== id));
-  };
+    fetchEmployees();
+  }, [token]);
 
   const handleViewEmployeeDetail = (employeeId) => {
-    // Navigasi ke halaman detail karyawan
-    navigate(`/employee-detail/${employeeId}`);
+    const employeeDetail = employees.find(emp => emp._id === employeeId);
+    navigate(`/employee-detail/${employeeId}`, { 
+      state: { 
+        employee: employeeDetail 
+      } 
+    });
   };
+
+  // Format data untuk tabel
+  const formattedEmployees = employees.map(emp => ({
+    id: emp._id,
+    name: emp.nama_karyawan,
+    projects: emp.total_project_dinilai || 0,
+    rating: emp.rata_rata_point_evaluasi ? parseFloat(emp.rata_rata_point_evaluasi) : 0,
+    detail: emp.evaluasi_projects || []
+  }));
+
+  // Filter dan sorting
+  const filteredEmployees = formattedEmployees
+    .filter(emp => 
+      emp.name && 
+      typeof emp.name === 'string' &&
+      emp.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .map(emp => ({
+      ...emp,
+      totalPoint: (emp.rating * emp.projects).toFixed(2)
+    }))
+    .sort((a, b) => b.totalPoint - a.totalPoint);
 
   return (
     <div className="dashboard-container">
@@ -58,23 +91,23 @@ const EmployeeList = () => {
           <button onClick={() => navigate('/dashboard-manager')} className="sidebar-btn">
             <i className="fas fa-tachometer-alt"></i> Dashboard
           </button>
+          <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
+            <i className="fas fa-folder-open"></i> Admin Data
+          </button>
           <button onClick={() => navigate('/employee-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Karyawan
+            <i className="fas fa-folder-open"></i> Employee Data
           </button>
           <button onClick={() => navigate('/client-data')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Klien
-          </button>
-          <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Admin
+            <i className="fas fa-folder-open"></i> Client Data
           </button>
           <button onClick={() => navigate('/data-project')} className="sidebar-btn">
-            <i className="fas fa-briefcase"></i> Data Project
+            <i className="fas fa-briefcase"></i> Project Data
           </button>
           <button onClick={() => navigate('/employee-evaluation')} className="sidebar-btn active">
-            <i className="fas fa-chart-line"></i> Evaluasi Karyawan
+            <i className="fas fa-chart-line"></i> Employee Evaluation
           </button>
           <button onClick={() => navigate('/customer-reviews')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Review Pelanggan
+            <i className="fas fa-folder-open"></i> Client Review
           </button>
         </div>
       </aside>
@@ -84,91 +117,84 @@ const EmployeeList = () => {
         <div className="topbar">
           <div className="topbar-right">
             <div className="search-container">
-              <input type="text" placeholder="Search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              <input
+                type="text"
+                placeholder="Search employee..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
               <i className="fas fa-search search-icon"></i>
             </div>
             <div className="profile">
-              <img src={ProfilePic} alt="Profil" className="profile-pic" />
-              <span className="profile-name">Deni el mares</span>
+              <img src={ProfilePic} alt="Profile" className="profile-pic" />
+              <span className="profile-name">Manager</span>
             </div>
           </div>
         </div>
 
-        {/* Info Cards */}
-        <h1 className="dashboard-title">Penilaian Karyawan</h1>
+        <h1 className="dashboard-title">Employee Evaluation</h1>
 
-        <button className="add-employee-button" onClick={openAddModal}>
-          Tambah Karyawan
-        </button>
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="loading-message">
+            <i className="fas fa-spinner fa-spin"></i> Loading employee data...
+          </div>
+        )}
+        {error && (
+          <div className="error-message">
+            <i className="fas fa-exclamation-circle"></i> {error}
+          </div>
+        )}
 
         {/* Table Section */}
         <div className="table-section">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Ranking</th>
-                <th>Nama</th>
-                <th>Total Project</th>
-                <th>Total Point</th>
-                <th>Aksi</th>
+                <th>Rank</th>
+                <th>Employee Name</th>
+                <th>Projects</th>
+                <th>Avg Rating</th>
+                <th>Total Score</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {employees.length > 0 ? (
-                employees
-                  .map(emp => ({
-                    ...emp,
-                    totalPoint: emp.rating * emp.projects
-                  }))
-                  .sort((a, b) => b.totalPoint - a.totalPoint)
-                  .map((emp, index) => (
-                    <tr key={emp.id}>
-                      <td>{index + 1}</td>
-                      <td className="font-semibold">{emp.name}</td>
-                      <td>{emp.projects}</td>
-                      <td>{emp.totalPoint}</td>
-                      <td>
-                        <button
-                          onClick={() => handleViewEmployeeDetail(emp.id)}
-                          className="btn-view-detail"
-                        >
-                          Lihat Detail
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+              {!loading && filteredEmployees.length > 0 ? (
+                filteredEmployees.map((emp, index) => (
+                  <tr key={emp.id}>
+                    <td>{index + 1}</td>
+                    <td className="font-semibold">{emp.name}</td>
+                    <td>{emp.projects}</td>
+                    <td>{emp.rating.toFixed(2)}</td>
+                    <td>{emp.totalPoint}</td>
+                    <td>
+                      <button
+                        onClick={() => handleViewEmployeeDetail(emp.id)}
+                        className="btn-view-detail"
+                      >
+                        <i className="fas fa-eye"></i> View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))
               ) : (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '1rem', color: '#9ca3af' }}>
-                    Tidak ada data karyawan
-                  </td>
-                </tr>
+                !loading && (
+                  <tr>
+                    <td colSpan="6" className="no-data-message">
+                      {employees.length === 0 
+                        ? 'No employee evaluation data available' 
+                        : 'No employees match your search'}
+                    </td>
+                  </tr>
+                )
               )}
             </tbody>
           </table>
         </div>
-
-        {/* Add Employee Modal */}
-        {showAddModal && (
-          <div className="modal-overlay">
-            <form className="modal" onSubmit={addEmployee}>
-              <h2>Tambah Karyawan</h2>
-              <label>Nama</label>
-              <input name="name" value={newEmployee.name} onChange={handleInputChange} required />
-              <label>Total Project</label>
-              <input type="number" name="projects" value={newEmployee.projects} onChange={handleInputChange} required />
-              <label>Total Point</label>
-              <input type="number" name="point" value={newEmployee.point} onChange={handleInputChange} required />
-              <div className="modal-buttons">
-                <button type="button" className="btn-cancel" onClick={closeAddModal}>Batal</button>
-                <button type="submit" className="btn-save">Tambah</button>
-              </div>
-            </form>
-          </div>
-        )}
       </main>
     </div>
   );
 };
 
-export default EmployeeList;
+export default EmployeeEvaluation;

@@ -42,7 +42,7 @@ const CustomerReviews = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
+       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-circle">B</div>
@@ -53,23 +53,23 @@ const CustomerReviews = () => {
           <button onClick={() => navigate('/dashboard-manager')} className="sidebar-btn">
             <i className="fas fa-tachometer-alt"></i> Dashboard
           </button>
+          <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
+            <i className="fas fa-folder-open"></i> Admin Data
+          </button>
           <button onClick={() => navigate('/employee-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Karyawan
+            <i className="fas fa-folder-open"></i> Employee Data
           </button>
           <button onClick={() => navigate('/client-data')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Klien
-          </button>
-          <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Admin
+            <i className="fas fa-folder-open"></i> Client Data
           </button>
           <button onClick={() => navigate('/data-project')} className="sidebar-btn">
-            <i className="fas fa-briefcase"></i> Data Project
+            <i className="fas fa-briefcase"></i> Project Data
           </button>
           <button onClick={() => navigate('/employee-evaluation')} className="sidebar-btn">
-            <i className="fas fa-chart-line"></i> Evaluasi Karyawan
+            <i className="fas fa-chart-line"></i> Client Evaluation
           </button>
           <button onClick={() => navigate('/customer-reviews')} className="sidebar-btn active">
-            <i className="fas fa-folder-open"></i> Review Pelanggan
+            <i className="fas fa-folder-open"></i> Client Review 
           </button>
         </div>
       </aside>

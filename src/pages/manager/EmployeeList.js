@@ -18,11 +18,13 @@ const EmployeeList = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.data || !Array.isArray(response.data)) {
+      const karyawanData = response.data.data;
+
+      if (!Array.isArray(karyawanData)) {
         throw new Error("Format data tidak valid");
       }
 
-      const validatedData = response.data.map(item => ({
+      const validatedData = karyawanData.map(item => ({
         _id: item._id || '',
         nama_lengkap: item.nama_lengkap || '',
         email: item.email || '',
@@ -31,6 +33,17 @@ const EmployeeList = () => {
         status_Karyawan: item.status_Karyawan || 'Tidak Diketahui',
         createdAt: item.createdAt || new Date().toISOString()
       }));
+
+
+      // const validatedData = response.data.map(item => ({
+      //   _id: item._id || '',
+      //   nama_lengkap: item.nama_lengkap || '',
+      //   email: item.email || '',
+      //   alamat: item.alamat || '',
+      //   nomor_telepon: item.nomor_telepon || '',
+      //   status_Karyawan: item.status_Karyawan || 'Tidak Diketahui',
+      //   createdAt: item.createdAt || new Date().toISOString()
+      // }));
 
       setEmployees(validatedData);
       setError(null);
@@ -106,7 +119,7 @@ const EmployeeList = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
+       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-circle">B</div>
@@ -118,22 +131,22 @@ const EmployeeList = () => {
             <i className="fas fa-tachometer-alt"></i> Dashboard
           </button>
           <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Admin
+            <i className="fas fa-folder-open"></i> Admin Data
           </button>
           <button onClick={() => navigate('/employee-list')} className="sidebar-btn active">
-            <i className="fas fa-folder-open"></i> Data Karyawan
+            <i className="fas fa-folder-open"></i> Employee Data
           </button>
           <button onClick={() => navigate('/client-data')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Klien
+            <i className="fas fa-folder-open"></i> Client Data
           </button>
           <button onClick={() => navigate('/data-project')} className="sidebar-btn">
-            <i className="fas fa-briefcase"></i> Data Project
+            <i className="fas fa-briefcase"></i> Project Data
           </button>
           <button onClick={() => navigate('/employee-evaluation')} className="sidebar-btn">
-            <i className="fas fa-chart-line"></i> Evaluasi Karyawan
+            <i className="fas fa-chart-line"></i> Client Evaluation
           </button>
           <button onClick={() => navigate('/customer-reviews')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Review Pelanggan
+            <i className="fas fa-folder-open"></i> Client Review 
           </button>
         </div>
       </aside>

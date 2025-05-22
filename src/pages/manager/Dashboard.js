@@ -17,6 +17,7 @@ const DashboardManager = () => {
   const [topEmployees, setTopEmployees] = useState([]);
   const [projects, setProjects] = useState([]);
   const [rating, setRating] = useState({ score: 0, total: 0 });
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,17 +31,17 @@ const DashboardManager = () => {
           projectRes,
           ratingRes,
         ] = await Promise.all([
-          axios.get('http://localhost:5000/api/karyawan/{id}'), // pastikan {id} diganti
-          axios.get('http://localhost:5000/api/clients/count'),
-          axios.get('http://localhost:5000/api/projects/waiting/count'),
-          axios.get('http://localhost:5000/api/projects/onprogress/count'),
-          axios.get('http://localhost:5000/api/karyawan'),
-          axios.get('http://localhost:5000/api/projects/progress'),
-          axios.get('http://localhost:5000/api/company/rating'),
+          axios.get(`http://localhost:5000/api/Karyawan`), 
+          axios.get(`http://localhost:5000/api/clients/count`),
+          axios.get(`http://localhost:5000/api/projects/waiting/count`),
+          axios.get(`http://localhost:5000/api/projects/onprogress/count`),
+          axios.get(`http://localhost:5000/api/karyawan`),
+          axios.get(`http://localhost:5000/api/projects/{projectId}/progress`),
+          axios.get(`http://localhost:5000/api/company/rating`),
         ]);
 
         setStats({
-          employees: empRes.data.count,
+          employees: empRes.data.data.length,
           clients: clientRes.data.count,
           waitingProjects: waitRes.data.count,
           progressProjects: progRes.data.count,
@@ -94,14 +95,37 @@ const DashboardManager = () => {
       {/* Main Content */}
       <main className="flex-1 p-8">
         {/* Topbar */}
-        <div className="flex justify-end items-center mb-8 gap-6">
+        <div className="flex justify-end items-center mb-8 gap-6 relative">
           <div className="relative">
             <input type="text" placeholder="Search" className="bg-gray-100 rounded-md pl-10 pr-4 py-2 text-sm text-gray-500 outline-none w-48" />
             <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
           </div>
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/user-profile')}>
+          <div
+            className="flex items-center gap-2 cursor-pointer relative"
+            onClick={() => setShowDropdown(!showDropdown)}
+          >
             <img src={ProfilePic} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
             <span className="text-sm text-gray-700">Deni el mares</span>
+
+            {showDropdown && (
+              <div className="absolute right-0 top-full mt-2 bg-white border rounded shadow w-40 z-10">
+                <button
+                  onClick={() => navigate('/user-profile')}
+                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={() => {
+                    // Logout logic here
+                    navigate('/login');
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-500"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -110,8 +134,8 @@ const DashboardManager = () => {
         {/* Info Cards */}
         <div className="flex gap-4 flex-wrap mb-10">
           {[
-            { icon: 'fas fa-user', label: 'Data Karyawan', value: `${stats.employees} Karyawan` },
-            { icon: 'fas fa-users', label: 'Data Pelanggan', value: `${stats.clients} Pelanggan` },
+            { icon: 'fas fa-user', label: 'Employee Data', value: `${stats.employees} Karyawan` },
+            { icon: 'fas fa-users', label: 'Clients Data', value: `${stats.clients} Pelanggan` },
             { icon: 'fas fa-list-alt', label: 'Waiting List', value: `${stats.waitingProjects} Project` },
             { icon: 'fas fa-tasks', label: 'On Progress', value: `${stats.progressProjects} Project` },
           ].map((card, index) => (
@@ -128,7 +152,7 @@ const DashboardManager = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           <div className="bg-white p-6 rounded-md shadow">
-            <h3 className="text-lg font-semibold mb-2">Status Karyawan</h3>
+            <h3 className="text-lg font-semibold mb-2">Employee Status</h3>
             <div className="h-40 flex items-center justify-center text-gray-400">[Pie Chart Placeholder]</div>
           </div>
           <div className="bg-white p-6 rounded-md shadow text-center">
@@ -171,7 +195,7 @@ const DashboardManager = () => {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-3">Top 5 Karyawan</h3>
+            <h3 className="text-lg font-semibold mb-3">Top 5 Employees</h3>
             <div className="overflow-auto bg-white rounded-md shadow">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-100">

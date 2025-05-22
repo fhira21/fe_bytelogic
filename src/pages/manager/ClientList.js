@@ -1,28 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../../style/manager/EmployeeList.css';
+// import '../../style/manager/EmployeeList.css';
 import ProfilePic from '../../assets/images/pp.png';
+import axios from 'axios';
 
 const ClientList = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
 
-  const [clients, setClients] = useState([
-    { id: 1, name: 'Andi Wijaya', email: 'andi.client@gmail.com', address: 'Jakarta', phone: '0811112233' },
-    { id: 2, name: 'Siti Lestari', email: 'siti.client@gmail.com', address: 'Yogyakarta', phone: '0822333444' },
-  ]);
-
+  const [clients, setClients] = useState([]);
   const [editingClient, setEditingClient] = useState(null);
-  const [formData, setFormData] = useState({ name: '', email: '', address: '', phone: '' });
   const [deletingClient, setDeletingClient] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    gender: '',
+    address: ''
+  })
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.phone.includes(searchTerm)
-  );
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/clients', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => {
+        console.log('Response from API:', response.data);
+        // Jika response.data adalah objek dengan properti data yang berupa array
+        const clientsData = Array.isArray(response.data) ? response.data : response.data.data;
+        if (Array.isArray(clientsData)) {
+          setClients(clientsData);
+        } else {
+          setClients([]); // Set kosong kalau bukan array
+          console.warn('Clients data is not an array!');
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching admin data:', error);
+      });
+  }, [token]);
+
+  console.log(clients);
+
+  const filteredClients = Array.isArray(clients)
+    ? clients.filter(client =>
+      client.nama_lengkap &&
+      typeof client.nama_lengkap === 'string' &&
+      client.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    : [];
 
   const openEditModal = (client) => {
     setEditingClient(client);
@@ -31,7 +60,13 @@ const ClientList = () => {
 
   const closeEditModal = () => {
     setEditingClient(null);
-    setFormData({ name: '', email: '', address: '', phone: '' });
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      gender: '',
+      address: '',
+    });
   };
 
   const handleEditChange = (e) => {
@@ -41,48 +76,81 @@ const ClientList = () => {
 
   const saveEdit = (e) => {
     e.preventDefault();
-    setClients(prev =>
-      prev.map(client => (client.id === editingClient.id ? { ...editingClient, ...formData } : client))
-    );
-    closeEditModal();
+    axios.put(`http://localhost:5000/api/clients/${editingClient.id}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((response) => {
+        setClients(prev =>
+          prev.map(client => (client.id === editingClient.id ? response.data : client))
+        );
+        closeEditModal();
+      })
+      .catch((error) => {
+        console.error('Error updating client:', error);
+      });
   };
 
-  const openDeleteModal = (client) => {
-    setDeletingClient(client);
-  };
-
-  const closeDeleteModal = () => {
-    setDeletingClient(null);
-  };
+  const openDeleteModal = (client) => setDeletingClient(client);
+  const closeDeleteModal = () => setDeletingClient(null);
 
   const confirmDelete = () => {
-    setClients(prev => prev.filter(client => client.id !== deletingClient.id));
-    closeDeleteModal();
+    axios.delete(`http://localhost:5000/api/clients/${deletingClient.id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(() => {
+        setClients(prev => prev.filter(client => client.id !== deletingClient.id));
+        closeDeleteModal();
+      })
+      .catch((error) => {
+        console.error('Error deleting client:', error);
+      });
   };
 
   const openAddModal = () => {
     setShowAddModal(true);
-    setFormData({ name: '', email: '', address: '', phone: '' });
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      gender: '',
+      address: '',
+    });
   };
 
   const closeAddModal = () => {
     setShowAddModal(false);
-    setFormData({ name: '', email: '', address: '', phone: '' });
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      gender: '',
+      address: '',
+    });
   };
 
   const saveAdd = (e) => {
     e.preventDefault();
-    const newClient = {
-      id: clients.length ? Math.max(...clients.map(c => c.id)) + 1 : 1,
-      ...formData,
-    };
-    setClients(prev => [...prev, newClient]);
-    closeAddModal();
+    axios.post('http://localhost:5000/api/clients', formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => {
+        setClients(prev => [...prev, response.data]);
+        closeAddModal();
+      })
+      .catch(error => {
+        console.error('Error adding new client:', error);
+      });
   };
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
+       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-circle">B</div>
@@ -94,22 +162,22 @@ const ClientList = () => {
             <i className="fas fa-tachometer-alt"></i> Dashboard
           </button>
           <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Admin
+            <i className="fas fa-folder-open"></i> Admin Data
           </button>
           <button onClick={() => navigate('/employee-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Data Karyawan
+            <i className="fas fa-folder-open"></i> Employee Data
           </button>
           <button onClick={() => navigate('/client-data')} className="sidebar-btn active">
-            <i className="fas fa-folder-open"></i> Data Klien
+            <i className="fas fa-folder-open"></i> Client Data
           </button>
           <button onClick={() => navigate('/data-project')} className="sidebar-btn">
-            <i className="fas fa-briefcase"></i> Data Project
+            <i className="fas fa-briefcase"></i> Project Data
           </button>
-          <button onClick={() => navigate('/manager/employee-evaluation')} className="sidebar-btn">
-            <i className="fas fa-chart-line"></i> Evaluasi Karyawan
+          <button onClick={() => navigate('/employee-evaluation')} className="sidebar-btn">
+            <i className="fas fa-chart-line"></i> Client Evaluation
           </button>
           <button onClick={() => navigate('/customer-reviews')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Review Pelanggan
+            <i className="fas fa-folder-open"></i> Client Review 
           </button>
         </div>
       </aside>
@@ -140,10 +208,11 @@ const ClientList = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Nama</th>
+                <th>Full Nama</th>
                 <th>Email</th>
-                <th>Alamat</th>
-                <th>No Hp</th>
+                <th>Phone Number</th>
+                <th>Gender</th>
+                <th>Address</th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -151,10 +220,11 @@ const ClientList = () => {
               {filteredClients.length > 0 ? (
                 filteredClients.map(client => (
                   <tr key={client.id}>
-                    <td className="font-semibold">{client.name}</td>
+                    <td>{client.nama_lengkap}</td>
                     <td>{client.email}</td>
-                    <td>{client.address}</td>
-                    <td>{client.phone}</td>
+                    <td>{client.nomor_telepon}</td>
+                    <td>{client.jenis_kelamin}</td>
+                    <td>{client.alamat}</td>
                     <td className="actions-cell">
                       <button className="edit-button" onClick={() => openEditModal(client)}>Edit</button>
                       <button className="delete-button" onClick={() => openDeleteModal(client)}>Hapus</button>
@@ -163,7 +233,7 @@ const ClientList = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '1rem', color: '#9ca3af' }}>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '1rem', color: '#9ca3af' }}>
                     Tidak ada data ditemukan
                   </td>
                 </tr>
