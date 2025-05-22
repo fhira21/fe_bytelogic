@@ -1,156 +1,200 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import "../../style/manager/Dashboard.css";
-import ProfilePic from "../../assets/images/pp.png";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import ProfilePic from '../../assets/images/pp.png';
+import { LayoutDashboard, FolderOpen, Briefcase, ChartLine, MessageSquare, Users } from 'lucide-react';
 
 const DashboardManager = () => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    // Tambahkan logika logout jika diperlukan
-    navigate("/");
-  };
+  const [stats, setStats] = useState({
+    employees: 0,
+    clients: 0,
+    waitingProjects: 0,
+    progressProjects: 0,
+  });
+
+  const [topEmployees, setTopEmployees] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [rating, setRating] = useState({ score: 0, total: 0 });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [
+          empRes,
+          clientRes,
+          waitRes,
+          progRes,
+          topEmpRes,
+          projectRes,
+          ratingRes,
+        ] = await Promise.all([
+          axios.get('http://localhost:5000/api/karyawan/{id}'), // pastikan {id} diganti
+          axios.get('http://localhost:5000/api/clients/count'),
+          axios.get('http://localhost:5000/api/projects/waiting/count'),
+          axios.get('http://localhost:5000/api/projects/onprogress/count'),
+          axios.get('http://localhost:5000/api/karyawan'),
+          axios.get('http://localhost:5000/api/projects/progress'),
+          axios.get('http://localhost:5000/api/company/rating'),
+        ]);
+
+        setStats({
+          employees: empRes.data.count,
+          clients: clientRes.data.count,
+          waitingProjects: waitRes.data.count,
+          progressProjects: progRes.data.count,
+        });
+
+        setTopEmployees(topEmpRes.data);
+        setProjects(projectRes.data);
+        setRating(ratingRes.data);
+      } catch (error) {
+        console.error('Gagal memuat data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
-    <div className="dashboard-container">
+    <div className="flex min-h-screen bg-gray-50 text-gray-900 font-sans">
       {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">Bytelogic</div>
-        <div className="sidebar-menu">
-          <button className="active">📊 Dashboard</button>
-          <button>📁 Data Karyawan</button>
-          <button>📁 Data Klien</button>
-          <button>📁 Data Admin</button>
-          <button>📂 Data Project</button>
-          <button>📈 Evaluasi Karyawan</button>
-          <button>⭐ Review</button>
+      <aside className="w-56 bg-blue-500 p-6 flex flex-col text-white select-none">
+        <div className="flex items-center gap-2 mb-8">
+          <div className="w-8 h-8 bg-blue-700 rounded-full font-semibold text-sm flex items-center justify-center">B</div>
+          <span className="font-semibold text-sm">Bytelogic</span>
         </div>
-
-        {/* Sidebar Footer dengan Tombol Keluar */}
-        <div className="sidebar-footer">
-          <button onClick={handleLogout} className="logout-button">🚪 Logout</button>
+        <h1 className="text-xs font-semibold mb-6">MENU</h1>
+        <div className="flex flex-col gap-3">
+          <button onClick={() => navigate('/dashboard-manager')} className="flex items-center gap-2 p-2 rounded-md bg-white/20">
+            <LayoutDashboard size={18} /> Dashboard
+          </button>
+          <button onClick={() => navigate('/admin-list')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
+            <Users size={18} /> Data Admin
+          </button>
+          <button onClick={() => navigate('/employee-list')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
+            <Users size={18} /> Data Karyawan
+          </button>
+          <button onClick={() => navigate('/client-data')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
+            <Users size={18} /> Data Klien
+          </button>
+          <button onClick={() => navigate('/data-project')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
+            <Briefcase size={18} /> Data Project
+          </button>
+          <button onClick={() => navigate('/employee-evaluation')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
+            <ChartLine size={18} /> Evaluasi Karyawan
+          </button>
+          <button onClick={() => navigate('/customer-reviews')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
+            <MessageSquare size={18} /> Review Pelanggan
+          </button>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div className="main-content">
+      <main className="flex-1 p-8">
         {/* Topbar */}
-        <div className="topbar">
-          <div className="breadcrumbs">
-            <small>Pages / Dashboard</small>
-            <h2>Main Dashboard</h2>
+        <div className="flex justify-end items-center mb-8 gap-6">
+          <div className="relative">
+            <input type="text" placeholder="Search" className="bg-gray-100 rounded-md pl-10 pr-4 py-2 text-sm text-gray-500 outline-none w-48" />
+            <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
           </div>
-          <div className="search-container">
-            <i className="fas fa-search"></i>
-            <input type="text" placeholder="Cari" />
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/user-profile')}>
+            <img src={ProfilePic} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
+            <span className="text-sm text-gray-700">Deni el mares</span>
           </div>
-          <div className="topbar-right">
-            <i className="fas fa-bell notification-icon"></i>
-            <div className="profile">
-              <img src={ProfilePic} alt="Aloy" />
-              <div className="profile-info">
-                <span className="name">Aloy</span>
-                <span className="role">Manajer</span>
+        </div>
+
+        <h1 className="text-xl font-semibold mb-6">Dashboard</h1>
+
+        {/* Info Cards */}
+        <div className="flex gap-4 flex-wrap mb-10">
+          {[
+            { icon: 'fas fa-user', label: 'Data Karyawan', value: `${stats.employees} Karyawan` },
+            { icon: 'fas fa-users', label: 'Data Pelanggan', value: `${stats.clients} Pelanggan` },
+            { icon: 'fas fa-list-alt', label: 'Waiting List', value: `${stats.waitingProjects} Project` },
+            { icon: 'fas fa-tasks', label: 'On Progress', value: `${stats.progressProjects} Project` },
+          ].map((card, index) => (
+            <div key={index} className="bg-white p-4 rounded-md shadow flex items-center gap-4 min-w-[12rem] flex-1">
+              <i className={`${card.icon} text-black-500 text-lg`}></i>
+              <div>
+                <p className="text-sm text-gray-500">{card.label}</p>
+                <h3 className="text-base font-semibold">{card.value}</h3>
               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <div className="bg-white p-6 rounded-md shadow">
+            <h3 className="text-lg font-semibold mb-2">Status Karyawan</h3>
+            <div className="h-40 flex items-center justify-center text-gray-400">[Pie Chart Placeholder]</div>
+          </div>
+          <div className="bg-white p-6 rounded-md shadow text-center">
+            <h3 className="text-lg font-semibold mb-2">Rating Company</h3>
+            <div className="text-3xl font-bold text-yellow-500">{rating.score.toFixed(2)}</div>
+            <p className="text-gray-500 text-sm mt-1">{rating.total} Review</p>
+          </div>
+        </div>
+
+        {/* Project Progress & Top Employees */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Progres Project</h3>
+            <div className="overflow-auto bg-white rounded-md shadow">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Nama Project</th>
+                    <th className="px-4 py-2 text-left">Klien</th>
+                    <th className="px-4 py-2 text-left">Deadline</th>
+                    <th className="px-4 py-2 text-left">Progress</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((project, idx) => (
+                    <tr key={idx} className="border-t">
+                      <td className="px-4 py-2">{project.name}</td>
+                      <td className="px-4 py-2">{project.client}</td>
+                      <td className="px-4 py-2">{project.deadline}</td>
+                      <td className="px-4 py-2">
+                        <div className="w-full bg-gray-200 h-2 rounded">
+                          <div className="bg-blue-500 h-2 rounded" style={{ width: `${project.progress}%` }}></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Top 5 Karyawan</h3>
+            <div className="overflow-auto bg-white rounded-md shadow">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Ranking</th>
+                    <th className="px-4 py-2 text-left">Nama</th>
+                    <th className="px-4 py-2 text-left">Point</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topEmployees.map((emp, idx) => (
+                    <tr key={idx} className="border-t">
+                      <td className="px-4 py-2">{idx + 1}</td>
+                      <td className="px-4 py-2">{emp.name}</td>
+                      <td className="px-4 py-2">{emp.point}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-
-        {/* Informational Cards */}
-        <div className="info-cards">
-          <div className="card active">Manajemen Karyawan<br /><strong>20 Karyawan</strong></div>
-          <div className="card">Data Klien<br /><strong>100 Klien</strong></div>
-          <div className="card">Data Project<br /><strong>20 Project</strong></div>
-          <div className="card">Evaluasi Karyawan<br /><strong>20 Karyawan</strong></div>
-        </div>
-
-        {/* Status Project Table */}
-        <div className="card-box">
-          <h3>Status Project</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Nama Project</th>
-                <th>Status</th>
-                <th>Tanggal</th>
-                <th>Progres</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Website Manajemen Karyawan</td>
-                <td>Berjalan</td>
-                <td>28 Agustus 2025</td>
-                <td><progress value="25" max="100"></progress></td>
-                <td>Tahap Analisis</td>
-              </tr>
-              <tr>
-                <td>Website Penjualan Gitar</td>
-                <td>Berjalan</td>
-                <td>12 Maret 2025</td>
-                <td><progress value="40" max="100"></progress></td>
-                <td>Tahap Desain</td>
-              </tr>
-              <tr>
-                <td>Website Penilaian Karyawan</td>
-                <td>Selesai</td>
-                <td>20 April 2025</td>
-                <td><progress value="100" max="100"></progress></td>
-                <td>Tahap Front end</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Status Karyawan Table */}
-        <div className="card-box">
-          <h3>Status Karyawan</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Status Karyawan</th>
-                <th>Department</th>
-                <th>Age</th>
-                <th>Disipline</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <img src={ProfilePic} alt="Asep" className="avatar" />
-                  Asep
-                </td>
-                <td>Design</td>
-                <td>22</td>
-                <td>+100%</td>
-                <td>Permanent</td>
-              </tr>
-              <tr>
-                <td>
-                  <img src={ProfilePic} alt="Simus" className="avatar" />
-                  Simus
-                </td>
-                <td>Front end</td>
-                <td>24</td>
-                <td>+95%</td>
-                <td>Magang</td>
-              </tr>
-              <tr>
-                <td>
-                  <img src={ProfilePic} alt="Loren" className="avatar" />
-                  Loren
-                </td>
-                <td>Back end</td>
-                <td>28</td>
-                <td>+89%</td>
-                <td>Permanent</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

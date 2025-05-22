@@ -1,24 +1,59 @@
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 50px;
-    background-color: white;
-    box-shadow: 0 5px 4px rgba(0, 0, 0, 0.1);
-    margin-top: 20px; /* Tambah space dari atas */
-  }  
-  
-  .logo {
-    height: 70px;
-  }
-  
-  .home-button {
-  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 50px;
+  background-color: white;
+  box-shadow: 0 5px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px; /* Tambah space dari atas */
+}
+
+.logo {
+  height: 70px;
+}
+
+/* Menu tengah */
+.navbar-menu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 25px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1; /* supaya ada ruang di tengah */
+}
+
+.navbar-menu li a {
+  text-decoration: none;
+  color: black;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 8px 10px;
+  transition: color 0.3s ease, border-bottom 0.3s ease;
+}
+
+.navbar-menu li a:hover {
+  color: #007BFF;
+  border-bottom: 2px solid #007BFF;
+}
+
+/* Button kanan */
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.home-button {
+  padding: 10px 16px;
   background-color: #ffffff;
   color: rgb(0, 0, 0);
-  border: none;
-  font-size: 20px;
+  border-radius: 6px;
+  font-size: 16px;
   cursor: pointer;
   transition: background 0.3s ease;
 }
-  
+
+.home-button:hover {
+  background-color: #f0f0f0;
+}
