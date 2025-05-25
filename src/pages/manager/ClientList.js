@@ -3,6 +3,18 @@ import { useNavigate } from 'react-router-dom';
 // import '../../style/manager/EmployeeList.css';
 import ProfilePic from '../../assets/images/pp.png';
 import axios from 'axios';
+import {
+  Home,
+  Folder,
+  Briefcase,
+  ChartBar,
+  FileText,
+  Search,
+  Edit2,
+  Trash2,
+  Plus,
+  X
+} from 'lucide-react';
 
 const ClientList = () => {
   const navigate = useNavigate();
@@ -149,60 +161,73 @@ const ClientList = () => {
   };
 
   return (
-    <div className="dashboard-container">
-       {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div className="logo-circle">B</div>
-          <span className="logo-text">Bytelogic</span>
-        </div>
-        <h1 className="sidebar-menu-title">MENU</h1>
-        <div className="sidebar-menu">
-          <button onClick={() => navigate('/dashboard-manager')} className="sidebar-btn">
-            <i className="fas fa-tachometer-alt"></i> Dashboard
-          </button>
-          <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Admin Data
-          </button>
-          <button onClick={() => navigate('/employee-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Employee Data
-          </button>
-          <button onClick={() => navigate('/client-data')} className="sidebar-btn active">
-            <i className="fas fa-folder-open"></i> Client Data
-          </button>
-          <button onClick={() => navigate('/data-project')} className="sidebar-btn">
-            <i className="fas fa-briefcase"></i> Project Data
-          </button>
-          <button onClick={() => navigate('/employee-evaluation')} className="sidebar-btn">
-            <i className="fas fa-chart-line"></i> Client Evaluation
-          </button>
-          <button onClick={() => navigate('/customer-reviews')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Client Review 
-          </button>
-        </div>
-      </aside>
+    <div className="flex h-screen">
+          {/* Sidebar */}
+          <aside className="w-56 bg-blue-500 p-6 flex flex-col text-white select-none">
+            <div className="flex items-center gap-2 mb-8">
+              <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
+              <span className="font-semibold text-sm">Bytelogic</span>
+            </div>
+            <h1 className="text-xs font-semibold mb-6">MENU</h1>
+            <button onClick={() => navigate('/dashboard-manager')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
+              <Home size={18} /> Dashboard
+            </button>
+            <button onClick={() => navigate('/admin-list')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
+              <Folder size={18} /> Admin Data
+            </button>
+            <button onClick={() => navigate('/employee-list')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
+              <Folder size={18} /> Employee Data
+            </button>
+            <button onClick={() => navigate('/client-data')} className="flex items-center gap-2 bg-gray-300 p-2 rounded mb-2">
+              <Folder size={18} /> Client Data
+            </button>
+            <button onClick={() => navigate('/data-project')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
+              <Briefcase size={18} /> Project Data
+            </button>
+            <button onClick={() => navigate('/employee-evaluation')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
+              <ChartBar size={18} /> Client Evaluation
+            </button>
+            <button onClick={() => navigate('/customer-reviews')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
+              <FileText size={18} /> Client Review
+            </button>
+          </aside>
 
       {/* Main Content */}
-      <main className="main-content">
-        <div className="topbar">
-          <div className="topbar-right">
-            <div className="search-container">
-              <input type="text" placeholder="Search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-              <i className="fas fa-search search-icon"></i>
-            </div>
-            <div className="profile">
-              <img src={ProfilePic} alt="Profil" className="profile-pic" />
-              <span className="profile-name">Deni el mares</span>
-            </div>
+      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+        {/* Profile Section - Top Right */}
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-2">
+            <img src={ProfilePic} alt="Profile" className="w-10 h-10 rounded-full" />
+            <span className="font-medium">Deni el mares</span>
           </div>
         </div>
 
-        {/* Info Cards */}
-        <h1 className="dashboard-title">Data Klien</h1>
-
-        <button className="add-employee-button" onClick={openAddModal}>
-          Tambah Karyawan
-        </button>
+         {/* Judul Section */}
+                <h1 className="text-2xl font-bold mb-6">Data Admin</h1>
+        
+                {/* Search and Action Section */}
+                <div className="flex justify-end items-center mb-6">
+                  <div className="flex items-center gap-4 mr-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{ width: '200px' }}
+                      />
+                      <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
+                    </div>
+                    
+                    <button 
+                      onClick={openAddModal} 
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus size={16} /> Add Admin
+                    </button>
+                  </div>
+                </div>
 
         <div className="table-section">
           <table className="data-table">

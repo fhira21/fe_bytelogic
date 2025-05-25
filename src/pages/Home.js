@@ -1,101 +1,103 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../style/Home.css";
+import axios from "axios";
+import "../style/Login.css";
+import loginImg from "../assets/images/register.jpg";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-const HomePage = () => {
-  const navigate = useNavigate(); // <-- Tambahan
+function Login() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  // const CLIENT_ROLE = "client";
+  // const EMPLOYEE_ROLE = "karyawan";
+  // const ADMIN_ROLE = "manager/admin";
 
-  const handleDetailClick = (projectId) => {
-    navigate(`/project/${projectId}`); // <-- Navigasi ke halaman detail
+  const togglePassword = () => {
+    setShowPassword((prev) => !prev);
   };
 
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post("http://localhost:5000/api/users/login", formData);
+      console.log("RESPON DARI BACKEND:", res.data); // 
+  
+      const { token, role } = res.data;
+      console.log("ROLE YANG DITERIMA:", role); // 
+  
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
+  
+      const roleLower = role.toLowerCase();
+      if (roleLower === "manager/admin") {
+        navigate("/dashboard-manager");
+      } else if (roleLower === "karyawan") {
+        navigate("/dashboard-karyawan");
+      } else if (roleLower === "client") {
+        navigate("/dashboard-klien");
+      } else {
+        setError("Role tidak dikenali.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Login gagal. Periksa username dan password.");
+    }
+  };  
+
   return (
-    <div className="homepage">
-      {/* Hero Section */}
-      <header className="header-section">
-        <h1>
-          WELOCOME TO <span className="highlight">BYTELOGIC</span>
-        </h1>
-        <p>Your Trusted Partner in Website Development — Building Digital Success, Together.</p>
+    <div className="login-container">
+      <div className="login-box">
+        <img src={loginImg} alt="Login Illustration" className="login-image" />
 
-        {/* Tambahkan tombol Get Started di sini */}
-        <button className="get-started-btn" onClick={() => navigate("/get-started")}>
-          Get Started
-        </button>
-      </header>
+        <div className="login-form-frame">
+          <form className="login-form" onSubmit={handleSubmit}>
+            <h2>Selamat Datang!</h2>
 
+            {error && <p className="error-message">{error}</p>}
 
-      {/* Riwayat Project */}
-      <section className="project-history">
-        <h2>
-          Riwayat <span className="highlight">Project</span>
-        </h2>
-        <div className="project-cards">
-          <div className="project-card">
-            <img src="/project.png" alt="Landing Page Design" />
-            <h3>Project A</h3>
-            <p>Aplikasi Manajemen Karyawan dan Evaluasi Kinerja Karyawan</p>
-            <button className="detail-btn" onClick={() => handleDetailClick("project-a")}>
-              Lihat Detail
-            </button>
-          </div>
-          <div className="project-card">
-            <img src="/project.png" alt="Landing Page Design" />
-            <h3>Project B</h3>
-            <p>Aplikasi Manajemen Karyawan dan Evaluasi Kinerja Karyawan</p>
-            <button className="detail-btn" onClick={() => handleDetailClick("project-b")}>
-              Lihat Detail
-            </button>
-          </div>
-          <div className="project-card">
-            <img src="/project.png" alt="Landing Page Design" />
-            <h3>Project C</h3>
-            <p>Aplikasi Manajemen Karyawan dan Evaluasi Kinerja Karyawan</p>
-            <button className="detail-btn" onClick={() => handleDetailClick("project-c")}>
-              Lihat Detail
-            </button>
-          </div>
+            <input
+              type="text"
+              placeholder="Username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+
+            <div className="password-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              <span onClick={togglePassword} className="toggle-password">
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
+
+            <div className="remember-me">
+              <input type="checkbox" id="remember" />
+              <label htmlFor="remember">Ingat Saya</label>
+            </div>
+
+            <button className="login-button" type="submit">Masuk</button>
+          </form>
         </div>
-      </section>
-
-      {/* Progres Project */}
-      <section className="project-progress">
-        <h2>
-          Progres <span className="highlight">Project</span>
-        </h2>
-        <ul className="progress-list">
-          <li>
-            <strong>Project A</strong>
-            <p>Aplikasi Manajemen Karyawan dan Evaluasi Kinerja Karyawan</p>
-          </li>
-          <li>
-            <strong>Project B</strong>
-            <p>Aplikasi Manajemen Karyawan dan Evaluasi Kinerja Karyawan</p>
-          </li>
-          <li>
-            <strong>Project C</strong>
-            <p>Aplikasi Manajemen Karyawan dan Evaluasi Kinerja Karyawan</p>
-          </li>
-        </ul>
-      </section>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-left">
-          <h3>Jangan lewatkan kabar terbaru dari kami</h3>
-          <div className="subscription-form">
-            <input type="email" placeholder="Masukkan email Anda" />
-            <button>Kirim via Whatsapp</button>
-          </div>
-        </div>
-        <div className="footer-right">
-          <h4>Contact Person Admin</h4>
-          <p>📞 WhatsApp</p>
-          <p>📧 Email</p>
-        </div>
-      </footer>
+      </div>
     </div>
   );
-};
+}
 
-export default HomePage;
+export default Login;

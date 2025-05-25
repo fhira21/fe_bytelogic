@@ -38,7 +38,11 @@ function Login() {
       localStorage.setItem("role", role);
   
       const roleLower = role.toLowerCase();
+
+      console.log("ROLE YANG DITERIMA:", roleLower); //
+
       if (roleLower === "manager/admin") {
+        console.log("Navigating to dashboard-manager");
         navigate("/dashboard-manager");
       } else if (roleLower === "karyawan") {
         navigate("/dashboard-karyawan");

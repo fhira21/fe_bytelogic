@@ -8,39 +8,32 @@ import {
 
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
+// Pages
 import Login from "./pages/Login";
-<<<<<<< HEAD
+import Home from "./pages/Home";
+import Unauthorized from "./pages/Unauthorized";
+
+// Manager/Admin Pages
 import DashboardManager from "./pages/manager/Dashboard";
 import EmployeeList from "./pages/manager/EmployeeList";
-import ClientData from "./pages/manager/ClientList";
+import ClientList from "./pages/manager/ClientList";
 import AdminList from "./pages/manager/AdminList";
 import CustomerReviews from "./pages/manager/CustomerReviews";
 import EmployeeEvaluation from "./pages/manager/EmployeeEvaluation";
-import DataProject from "./pages/manager/DataProject";
-import DashboardKlien from "./pages/klien/Dashboard";
-import DashboardKaryawan from "./pages/karyawan/Dashboard";
-=======
->>>>>>> 54a31aa0c33e948f2c33744caf385d67b0186396
-import Home from "./pages/Home";
-import Navbar from "./components/Navbar";
-import Unauthorized from "./pages/Unauthorized";
-import ProtectedRoute from "./components/ProtectedRoute";
-<<<<<<< HEAD
-import ProjectDetail from "./pages/ProjectDetail";
+import ProjectDataPage from "./pages/manager/DataProject";
 import UserProfile from "./pages/manager/UserProfile";
 import ViewProfile from "./pages/manager/ViewProfile";
-=======
-import DashboardManager from "./pages/manager/Dashboard";
-import ProjectDataPage from "./pages/manager/DataProject";
+
+import DataProject from "./pages/manager/DataProject";
+
+// Klien & Karyawan Pages
 import DashboardKlien from "./pages/klien/Dashboard";
 import DashboardKaryawan from "./pages/karyawan/Dashboard";
-import EmployeeList from "./pages/manager/DataKaryawan";
-import AdminList from "./pages/manager/DataAdmin";
-import ClientList from "./pages/manager/DataKlien";
 
-
-
->>>>>>> 54a31aa0c33e948f2c33744caf385d67b0186396
+// Global Components
+import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import ProjectDetail from "./pages/ProjectDetail";
 
 function App() {
   return (
@@ -55,7 +48,7 @@ function MainLayout() {
 
   const showNavbar = ["/login", "/"].includes(location.pathname);
 
-  return (
+   return (
     <>
       {showNavbar && <Navbar />}
       <Routes>
@@ -156,7 +149,7 @@ function MainLayout() {
           path="/client-data"
           element={
             <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <ClientData />
+              <ClientList />
             </ProtectedRoute>
           }
         />

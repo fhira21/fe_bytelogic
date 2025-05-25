@@ -16,16 +16,16 @@ const EmployeeEvaluation = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/evaluations/karyawan', {
+        const response = await axios.get('http://localhost:5000/api/evaluations/karyawan/evaluasi-detailed', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        
+
         console.log('API Response:', response.data);
-        
-        // Pastikan response.data.data ada dan berupa array
-        const employeesData = response.data?.data || [];
+
+        // Format data sesuai dengan struktur yang diinginkan
+        const employeesData = response.data?.success ? response.data.data : [];
         if (Array.isArray(employeesData)) {
           setEmployees(employeesData);
         } else {
@@ -49,34 +49,34 @@ const EmployeeEvaluation = () => {
 
   const handleViewEmployeeDetail = (employeeId) => {
     const employeeDetail = employees.find(emp => emp._id === employeeId);
-    navigate(`/employee-detail/${employeeId}`, { 
-      state: { 
-        employee: employeeDetail 
-      } 
+    navigate(`/employee-detail/${employeeId}`, {
+      state: {
+        employee: employeeDetail
+      }
     });
   };
 
-  // Format data untuk tabel
+  // Format data untuk tabel sesuai dengan kebutuhan
   const formattedEmployees = employees.map(emp => ({
-    id: emp._id,
+    id: emp._id, // meskipun emp._id tidak ada di response backend, ini bisa dibiarkan
     name: emp.nama_karyawan,
     projects: emp.total_project_dinilai || 0,
     rating: emp.rata_rata_point_evaluasi ? parseFloat(emp.rata_rata_point_evaluasi) : 0,
     detail: emp.evaluasi_projects || []
   }));
 
-  // Filter dan sorting
+  // Filter, calculate total score, dan sorting
   const filteredEmployees = formattedEmployees
-    .filter(emp => 
-      emp.name && 
+    .filter(emp =>
+      emp.name &&
       typeof emp.name === 'string' &&
       emp.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .map(emp => ({
       ...emp,
-      totalPoint: (emp.rating * emp.projects).toFixed(2)
+      totalScore: (emp.rating * emp.projects).toFixed(2)
     }))
-    .sort((a, b) => b.totalPoint - a.totalPoint);
+    .sort((a, b) => b.totalScore - a.totalScore);
 
   return (
     <div className="dashboard-container">
@@ -151,14 +151,15 @@ const EmployeeEvaluation = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Rank</th>
+                <th>Ranking</th>
                 <th>Employee Name</th>
-                <th>Projects</th>
-                <th>Avg Rating</th>
+                <th>Total Project</th>
+                <th>Total Point</th>
                 <th>Total Score</th>
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody>
               {!loading && filteredEmployees.length > 0 ? (
                 filteredEmployees.map((emp, index) => (
@@ -167,7 +168,7 @@ const EmployeeEvaluation = () => {
                     <td className="font-semibold">{emp.name}</td>
                     <td>{emp.projects}</td>
                     <td>{emp.rating.toFixed(2)}</td>
-                    <td>{emp.totalPoint}</td>
+                    <td>{emp.totalScore}</td>
                     <td>
                       <button
                         onClick={() => handleViewEmployeeDetail(emp.id)}
@@ -182,8 +183,8 @@ const EmployeeEvaluation = () => {
                 !loading && (
                   <tr>
                     <td colSpan="6" className="no-data-message">
-                      {employees.length === 0 
-                        ? 'No employee evaluation data available' 
+                      {employees.length === 0
+                        ? 'No employee evaluation data available'
                         : 'No employees match your search'}
                     </td>
                   </tr>
