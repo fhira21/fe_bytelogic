@@ -118,8 +118,8 @@ This project is licensed under the MIT License.
 
 ## 📧 Contact
 For questions or support, please contact:
-- Fhira Triana Maulani - fhira@example.com
-- Nur Wahyu Suci Rahayu - wahyu@example.com
+- Fhira Triana Maulani - fhira21
+- Nur Wahyu Suci Rahayu - nurwhyusuci
 
 ---
 
