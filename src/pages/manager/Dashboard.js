@@ -2,96 +2,370 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ProfilePic from '../../assets/images/pp.png';
-import { LayoutDashboard, FolderOpen, Briefcase, ChartLine, MessageSquare, Users } from 'lucide-react';
-// import '../../style/manager/Dashboard.css';
+import {
+  Home,
+  Folder,
+  Briefcase,
+  ChartBar,
+  FileText,
+  Users,
+  Clock,
+  CheckCircle,
+  User,
+  Users as ClientsIcon,
+  List,
+  TrendingUp
+} from 'lucide-react';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const DashboardManager = () => {
   const navigate = useNavigate();
-  const [projectData, setProjectData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [infoCounts, setInfoCounts] = useState({
-    totalEmployees: 0,
-    totalClients: 0,
-    waitingListProjects: 0,
-    onProgressProjects: 0,
+  
+  // State for manager profile
+  const [managerProfile, setManagerProfile] = useState({
+    loading: true,
+    error: null,
+    data: null
   });
 
-  const [stats, setStats] = useState({
-    employees: 0,
-    clients: 0,
-    waitingProjects: 0,
-    progressProjects: 0,
+  // State for employee data
+  const [employeeData, setEmployeeData] = useState({
+    loading: true,
+    error: null,
+    totalKaryawan: 0,
+    status: {
+      "Karyawan Aktif": 0,
+      "Karyawan Tidak Aktif": 0,
+      "Magang Aktif": 0,
+      "Magang Tidak Aktif": 0
+    }
   });
 
-  const [topEmployees, setTopEmployees] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [rating, setRating] = useState({ score: 0, total: 0 });
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [managerData, setManagerData] = useState(null);
+  // State for clients data
+  const [clientData, setClientData] = useState({
+    loading: true,
+    error: null,
+    totalClients: 0
+  });
 
+  // State for projects
+  const [projects, setProjects] = useState({
+    loading: true,
+    error: null,
+    stats: {
+      total: 0,
+      waiting: 0,
+      progress: 0,
+      completed: 0
+    },
+    lists: []
+  });
+
+  // State for evaluations
+  const [evaluations, setEvaluations] = useState({
+    loading: true,
+    error: null,
+    topEmployees: []
+  });
+
+  // State for reviews
+  const [reviews, setReviews] = useState({
+    loading: true,
+    error: null,
+    averageRating: "0.00",
+    totalReviews: 0,
+    ratings: {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0
+    }
+  });
+
+  // Fetch manager profile
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchManagerProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        
-        const [
-          empRes,
-          clientRes,
-          waitRes,
-          progRes,
-          topEmpRes,
-          projectRes,
-          ratingRes,
-          managerRes
-        ] = await Promise.all([
-          axios.get('http://localhost:5000/api/karyawan', {
-            headers: { Authorization: `Bearer ${token}` }
-          }), 
-          axios.get('http://localhost:5000/api/clients/count', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/projects/waiting/count', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/projects/onprogress/count', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/karyawan/top-employees', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/projects', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/company/rating', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/managers/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
-
-        setStats({
-          employees: empRes.data.length,
-          clients: clientRes.data.count,
-          waitingProjects: waitRes.data.count,
-          progressProjects: progRes.data.count,
+        const response = await axios.get('http://localhost:5000/api/managers/me', {
+          headers: { Authorization: `Bearer ${token}` }
         });
-
-        setTopEmployees(topEmpRes.data);
-        setProjects(projectRes.data);
-        setRating(ratingRes.data);
-        setManagerData(managerRes.data);
+        
+        setManagerProfile({
+          loading: false,
+          error: null,
+          data: response.data
+        });
       } catch (error) {
-        console.error('Failed to load data:', error);
-        setError(error.message || 'An error occurred');
-      } finally {
-        setLoading(false);
+        console.error('Error fetching manager profile:', error);
+        setManagerProfile({
+          loading: false,
+          error: error.response?.data?.message || 'Failed to load profile',
+          data: null
+        });
       }
     };
 
-    fetchData();
+    fetchManagerProfile();
   }, []);
+
+  // Fetch employee status data
+  useEffect(() => {
+    const fetchEmployeeStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get('http://localhost:5000/api/karyawan/statuskaryawan', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        setEmployeeData({
+          loading: false,
+          error: null,
+          totalKaryawan: response.data.totalKaryawan,
+          status: response.data.data
+        });
+      } catch (error) {
+        console.error('Error fetching employee status:', error);
+        setEmployeeData({
+          loading: false,
+          error: error.response?.data?.message || 'Failed to load employee data',
+          totalKaryawan: 0,
+          status: {
+            "Karyawan Aktif": 0,
+            "Karyawan Tidak Aktif": 0,
+            "Magang Aktif": 0,
+            "Magang Tidak Aktif": 0
+          }
+        });
+      }
+    };
+
+    fetchEmployeeStatus();
+  }, []);
+
+  // Fetch clients data
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get('http://localhost:5000/api/clients', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        setClientData({
+          loading: false,
+          error: null,
+          totalClients: response.data.totalClients
+        });
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+        setClientData({
+          loading: false,
+          error: error.response?.data?.message || 'Failed to load clients data',
+          totalClients: 0
+        });
+      }
+    };
+
+    fetchClients();
+  }, []);
+
+  // Fetch projects data
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get('http://localhost:5000/api/projects/status-summary', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const data = response.data.data;
+        
+        setProjects({
+          loading: false,
+          error: null,
+          stats: {
+            total: data.totalProjects || 0,
+            waiting: data.statusSummary?.count?.["Waiting List"] || 0,
+            progress: data.statusSummary?.count?.["On Progress"] || 0,
+            completed: data.statusSummary?.count?.["Completed"] || 0
+          },
+          lists: data.projects || []
+        });
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        setProjects({
+          loading: false,
+          error: error.response?.data?.message || 'Failed to load projects',
+          stats: {
+            total: 0,
+            waiting: 0,
+            progress: 0,
+            completed: 0
+          },
+          lists: []
+        });
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  // Fetch evaluations data
+  useEffect(() => {
+    const fetchEvaluations = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get('http://localhost:5000/api/evaluations/karyawan/evaluasi-detailed', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Sort and get top 5 employees
+        const sorted = response.data.data.sort((a, b) => b.total_final_score - a.total_final_score).slice(0, 5);
+        
+        setEvaluations({
+          loading: false,
+          error: null,
+          topEmployees: sorted
+        });
+      } catch (error) {
+        console.error('Error fetching evaluations:', error);
+        setEvaluations({
+          loading: false,
+          error: error.response?.data?.message || 'Failed to load evaluations',
+          topEmployees: []
+        });
+      }
+    };
+
+    fetchEvaluations();
+  }, []);
+
+  // Fetch reviews data
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get('http://localhost:5000/api/reviews/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        setReviews({
+          loading: false,
+          error: null,
+          averageRating: response.data.averageRating || "0.00",
+          totalReviews: response.data.totalReviews || 0,
+          ratings: response.data.ratings || {
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        setReviews({
+          loading: false,
+          error: error.response?.data?.message || 'Failed to load reviews',
+          averageRating: "0.00",
+          totalReviews: 0,
+          ratings: {
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0
+          }
+        });
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
+  // Component for project lists
+  const ProjectList = ({ title, items, loading, error, icon: Icon }) => {
+    if (loading) return <div className="p-4 text-center">Loading {title}...</div>;
+    if (error) return <div className="p-4 text-red-500">{error}</div>;
+    if (items.length === 0) return <div className="p-4 text-gray-500">No {title} projects</div>;
+
+    return (
+      <div className="divide-y divide-gray-200">
+        {items.map((project) => (
+          <div key={project._id} className="px-6 py-4">
+            <p className="font-medium text-gray-800">{project.title}</p>
+            <p className="text-sm text-gray-500">{project.client?.name || project.client?.nama_lengkap || 'No client'}</p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Component for evaluation chart
+  const EvaluationChart = () => {
+    if (evaluations.loading) return <div className="p-4 text-center">Loading evaluations...</div>;
+    if (evaluations.error) return <div className="p-4 text-red-500">{evaluations.error}</div>;
+    if (evaluations.topEmployees.length === 0) {
+      return <div className="p-4 text-gray-500">No evaluation data available</div>;
+    }
+
+    const chartData = {
+      labels: evaluations.topEmployees.map(emp => emp.nama_karyawan || emp.nama_lengkap || emp.name),
+      datasets: [
+        {
+          label: 'Performance Score',
+          data: evaluations.topEmployees.map(emp => emp.total_final_score),
+          backgroundColor: '#3B82F6',
+          borderColor: '#1D4ED8',
+          borderWidth: 1
+        }
+      ]
+    };
+
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Top Performing Employees',
+          font: {
+            size: 16
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Score'
+          }
+        }
+      }
+    };
+
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <Bar data={chartData} options={options} />
+      </div>
+    );
+  };
 
   const calculateSDLCProgress = (progress = {}) => {
     const total = Object.values(progress).reduce((acc, val) => acc + val, 0);
@@ -100,238 +374,263 @@ const DashboardManager = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-900 font-sans">
+    <div className="flex h-screen">
       {/* Sidebar */}
       <aside className="w-56 bg-blue-500 p-6 flex flex-col text-white select-none">
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-blue-700 rounded-full font-semibold text-sm flex items-center justify-center">B</div>
+          <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
           <span className="font-semibold text-sm">Bytelogic</span>
         </div>
         <h1 className="text-xs font-semibold mb-6">MENU</h1>
-        <div className="flex flex-col gap-3">
-          <button onClick={() => navigate('/dashboard-manager')} className="flex items-center gap-2 p-2 rounded-md bg-white/20">
-            <LayoutDashboard size={18} /> Dashboard
-          </button>
-          <button onClick={() => navigate('/admin-list')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
-            <Users size={18} /> Admin Data
-          </button>
-          <button onClick={() => navigate('/employee-list')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
-            <Users size={18} /> Employee Data
-          </button>
-          <button onClick={() => navigate('/client-data')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
-            <Users size={18} /> Client Data
-          </button>
-          <button onClick={() => navigate('/data-project')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
-            <Briefcase size={18} /> Project Data
-          </button>
-          <button onClick={() => navigate('/employee-evaluation')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
-            <ChartLine size={18} /> Employee Evaluation
-          </button>
-          <button onClick={() => navigate('/customer-reviews')} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/20">
-            <MessageSquare size={18} /> Client Reviews
-          </button>
-        </div>
+        <button 
+          onClick={() => navigate('/dashboard-manager')} 
+          className="flex items-center gap-2 bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <Home size={18} /> Dashboard
+        </button>
+        <button 
+          onClick={() => navigate('/admin-list')} 
+          className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2"
+        >
+          <Folder size={18} /> Admin Data
+        </button>
+        <button 
+          onClick={() => navigate('/employee-list')} 
+          className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2"
+        >
+          <Folder size={18} /> Employee Data
+        </button>
+        <button 
+          onClick={() => navigate('/client-data')} 
+          className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2"
+        >
+          <Folder size={18} /> Client Data
+        </button>
+        <button 
+          onClick={() => navigate('/data-project')} 
+          className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2"
+        >
+          <Briefcase size={18} /> Project Data
+        </button>
+        <button 
+          onClick={() => navigate('/employee-evaluation')} 
+          className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2"
+        >
+          <ChartBar size={18} /> Evaluation
+        </button>
+        <button 
+          onClick={() => navigate('/customer-reviews')} 
+          className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2"
+        >
+          <FileText size={18} /> Review
+        </button>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-6 overflow-auto bg-gray-50">
         {/* Topbar */}
-        <div className="flex justify-end items-center mb-8 gap-6 relative">
-          <div className="relative">
-            <input type="text" placeholder="Search" className="bg-gray-100 rounded-md pl-10 pr-4 py-2 text-sm text-gray-500 outline-none w-48" />
-            <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
-          </div>
-          <div
-            className="flex items-center gap-2 cursor-pointer relative"
-            onClick={() => setShowDropdown(!showDropdown)}
-          >
-            <img src={ProfilePic} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
-            <span className="text-sm text-gray-700">
-              {managerData ? managerData.name : 'Loading...'}
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-2">
+            <img 
+              src={managerProfile.data?.profile_pic || ProfilePic} 
+              alt="Profile" 
+              className="w-10 h-10 rounded-full" 
+            />
+            <span className="font-medium">
+              {managerProfile.data?.name || 'Loading...'}
             </span>
-
-            {showDropdown && (
-              <div className="absolute right-0 top-full mt-2 bg-white border rounded shadow w-40 z-10">
-                <button
-                  onClick={() => navigate('/user-profile')}
-                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                >
-                  Profile
-                </button>
-                <button
-                  onClick={() => {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("role");
-                    navigate('/login');
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-500"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
-        <h1 className="text-xl font-semibold mb-6">Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-6">Dashboard Manager</h1>
 
         {/* Manager Info Section */}
-        {managerData && (
-          <div className="bg-white p-4 rounded-md shadow mb-6">
+        {managerProfile.data && (
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
             <h3 className="text-lg font-semibold mb-2">Manager Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Name</p>
-                <p className="font-medium">{managerData.name}</p>
+                <p className="font-medium">{managerProfile.data.name}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium">{managerData.email}</p>
+                <p className="font-medium">{managerProfile.data.email}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Position</p>
-                <p className="font-medium">{managerData.position || '-'}</p>
+                <p className="font-medium">{managerProfile.data.position || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Join Date</p>
                 <p className="font-medium">
-                  {new Date(managerData.joinDate).toLocaleDateString('en-US')}
+                  {new Date(managerProfile.data.joinDate).toLocaleDateString('en-US')}
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Info Cards */}
-        {error ? (
-          <p className="text-red-500 mb-6">Error: {error}</p>
-        ) : (
-          <div className="flex gap-4 flex-wrap mb-10">
-            {[
-              { icon: 'fas fa-user', label: 'Employees', value: `${stats.employees} Employees` },
-              { icon: 'fas fa-users', label: 'Clients', value: `${stats.clients} Clients` },
-              { icon: 'fas fa-list-alt', label: 'Waiting List', value: `${stats.waitingProjects} Projects` },
-              { icon: 'fas fa-tasks', label: 'In Progress', value: `${stats.progressProjects} Projects` },
-            ].map((card, index) => (
-              <div key={index} className="bg-white p-4 rounded-md shadow flex items-center gap-4 min-w-[12rem] flex-1">
-                <i className={`${card.icon} text-black-500 text-lg`}></i>
-                <div>
-                  <p className="text-sm text-gray-500">{card.label}</p>
-                  <h3 className="text-base font-semibold">{card.value}</h3>
-                </div>
-              </div>
-            ))}
+        {/* Updated Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Employee Data Card */}
+          <div 
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => navigate('/employee-list')}
+          >
+            <div className="p-3 bg-blue-100 rounded-full">
+              <User className="text-blue-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Employee Data</h3>
+              <p className="text-2xl font-bold">
+                {employeeData.loading ? '...' : employeeData.totalKaryawan}
+              </p>
+            </div>
           </div>
-        )}
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <div className="bg-white p-6 rounded-md shadow">
-            <h3 className="text-lg font-semibold mb-2">Employee Status</h3>
-            <div className="h-40 flex items-center justify-center text-gray-400">[Pie Chart Placeholder]</div>
+          {/* Client Data Card */}
+          <div 
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => navigate('/client-data')}
+          >
+            <div className="p-3 bg-green-100 rounded-full">
+              <ClientsIcon className="text-green-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Client Data</h3>
+              <p className="text-2xl font-bold">
+                {clientData.loading ? '...' : clientData.totalClients}
+              </p>
+            </div>
           </div>
-          <div className="bg-white p-6 rounded-md shadow text-center">
-            <h3 className="text-lg font-semibold mb-2">Company Rating</h3>
-            <div className="text-3xl font-bold text-yellow-500">{rating.score.toFixed(2)}</div>
-            <p className="text-gray-500 text-sm mt-1">{rating.total} Reviews</p>
+
+          {/* Waiting List Card */}
+          <div 
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => navigate('/data-project?status=waiting')}
+          >
+            <div className="p-3 bg-purple-100 rounded-full">
+              <List className="text-purple-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Waiting List</h3>
+              <p className="text-2xl font-bold">
+                {projects.loading ? '...' : projects.stats.waiting}
+              </p>
+            </div>
+          </div>
+
+          {/* On Progress Card */}
+          <div 
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => navigate('/data-project?status=progress')}
+          >
+            <div className="p-3 bg-yellow-100 rounded-full">
+              <TrendingUp className="text-yellow-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">On Progress</h3>
+              <p className="text-2xl font-bold">
+                {projects.loading ? '...' : projects.stats.progress}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Project Progress & Top Employees */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Project Progress</h3>
-            {loading ? (
-              <p>Loading...</p>
-            ) : error ? (
-              <p className="text-red-500">Error: {error}</p>
-            ) : projects.length === 0 ? (
-              <p>No projects found.</p>
+        {/* Employee Performance and Rating Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Evaluation Chart */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Employee Performance</h2>
+            <EvaluationChart />
+          </div>
+
+          {/* Rating Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Rating Company</h2>
+            {reviews.loading ? (
+              <div className="p-4 text-center">Loading reviews...</div>
+            ) : reviews.error ? (
+              <div className="p-4 text-red-500">{reviews.error}</div>
             ) : (
-              <div className="overflow-auto bg-white rounded-md shadow">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Project Name</th>
-                      <th className="px-4 py-2 text-left">Client</th>
-                      <th className="px-4 py-2 text-left">Deadline</th>
-                      <th className="px-4 py-2 text-left">Progress</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projects.map((project, idx) => (
-                      <tr key={idx} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-2">{project.title || '-'}</td>
-                        <td className="px-4 py-2">{project.client?.nama_lengkap || project.client?.name || '-'}</td>
-                        <td className="px-4 py-2">{project.deadline ? new Date(project.deadline).toLocaleDateString('en-US') : '-'}</td>
-                        <td className="px-4 py-2">
-                          <div className="w-full bg-gray-200 h-2 rounded">
-                            <div 
-                              className="bg-blue-500 h-2 rounded" 
-                              style={{ width: `${calculateSDLCProgress(project.sdlc_progress)}%` }}
-                            ></div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div>
+                <div className="flex items-start gap-8 mb-4">
+                  <div>
+                    <div className="text-3xl font-bold">{reviews.averageRating}</div>
+                    <div className="text-sm text-gray-500">{reviews.totalReviews} Reviews</div>
+                  </div>
+                  <div className="flex-1">
+                    <table className="w-full">
+                      <tbody>
+                        {[5, 4, 3, 2, 1].map((rating) => (
+                          <tr key={rating}>
+                            <td className="py-1">{rating} ★</td>
+                            <td className="py-1 text-right">
+                              {reviews.ratings[rating]} ({Math.round((reviews.ratings[rating] / reviews.totalReviews) * 100)}%)
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
           </div>
+        </div>
 
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Top 5 Employees</h3>
-            {loading ? (
-              <p>Loading...</p>
-            ) : error ? (
-              <p className="text-red-500">Error: {error}</p>
-            ) : topEmployees.length === 0 ? (
-              <p>No employee data available</p>
-            ) : (
-              <div className="overflow-auto bg-white rounded-md shadow">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Ranking</th>
-                      <th className="px-4 py-2 text-left">Employee Name</th>
-                      <th className="px-4 py-2 text-left">Total Projects</th>
-                      <th className="px-4 py-2 text-left">Total Points</th>
-                      <th className="px-4 py-2 text-left">Action</th>
+        {/* Project Status Sections */}
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-lg font-semibold text-gray-800">Project Progress</h3>
+          </div>
+          <div className="overflow-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-left">Project Name</th>
+                  <th className="px-6 py-3 text-left">Client</th>
+                  <th className="px-6 py-3 text-left">Deadline</th>
+                  <th className="px-6 py-3 text-left">Status</th>
+                  <th className="px-6 py-3 text-left">Progress</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.loading ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center">Loading projects...</td>
+                  </tr>
+                ) : projects.error ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-red-500">{projects.error}</td>
+                  </tr>
+                ) : projects.lists.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-gray-500 text-center">No projects found</td>
+                  </tr>
+                ) : (
+                  projects.lists.map((project) => (
+                    <tr key={project._id} className="border-t hover:bg-gray-50">
+                      <td className="px-6 py-4">{project.title || '-'}</td>
+                      <td className="px-6 py-4">{project.client?.nama_lengkap || project.client?.name || '-'}</td>
+                      <td className="px-6 py-4">
+                        {project.deadline ? new Date(project.deadline).toLocaleDateString('en-US') : '-'}
+                      </td>
+                      <td className="px-6 py-4 capitalize">{project.status || '-'}</td>
+                      <td className="px-6 py-4">
+                        <div className="w-full bg-gray-200 h-2 rounded">
+                          <div 
+                            className="bg-blue-500 h-2 rounded" 
+                            style={{ width: `${calculateSDLCProgress(project.sdlc_progress)}%` }}
+                          ></div>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {topEmployees.slice(0, 5).map((emp, idx) => (
-                      <tr key={emp._id || idx} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium">{idx + 1}</td>
-                        <td className="px-4 py-2">
-                          <div className="flex items-center gap-2">
-                            <img 
-                              src={emp.profile_pic || ProfilePic} 
-                              alt={emp.nama_lengkap || emp.name} 
-                              className="w-6 h-6 rounded-full object-cover"
-                            />
-                            {emp.nama_lengkap || emp.name || 'Unknown'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2">{emp.total_projects || emp.projects_count || 0}</td>
-                        <td className="px-4 py-2 font-semibold text-blue-600">
-                          {emp.total_point || emp.point || 0}
-                        </td>
-                        <td className="px-4 py-2">
-                          <button
-                            onClick={() => navigate(`/employee-detail/${emp._id || emp.id}`)}
-                            className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 transition"
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </main>

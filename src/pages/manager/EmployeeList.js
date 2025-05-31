@@ -129,14 +129,14 @@ const EmployeeList = () => {
           <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
           <span className="font-semibold text-sm">Bytelogic</span>
         </div>
-        <h1 className="text-xs font-semibold mb-6">MENU</h1>
+        <h1 className="text-xs font mb-6">MENU</h1>
         <button onClick={() => navigate('/dashboard-manager')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
           <Home size={18} /> Dashboard
         </button>
         <button onClick={() => navigate('/admin-list')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
           <Folder size={18} /> Admin Data
         </button>
-        <button onClick={() => navigate('/employee-list')} className="flex items-center gap-2 bg-gray-300 p-2 rounded mb-2">
+        <button onClick={() => navigate('/employee-list')} className="flex items-center gap-2 bg-blue-600 p-2 rounded mb-2 text-left">
           <Folder size={18} /> Employee Data
         </button>
         <button onClick={() => navigate('/client-data')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
@@ -146,10 +146,10 @@ const EmployeeList = () => {
           <Briefcase size={18} /> Project Data
         </button>
         <button onClick={() => navigate('/employee-evaluation')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <ChartBar size={18} /> Client Evaluation
+          <ChartBar size={18} /> Evaluation
         </button>
         <button onClick={() => navigate('/customer-reviews')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <FileText size={18} /> Client Review
+          <FileText size={18} /> Review
         </button>
       </aside>
 

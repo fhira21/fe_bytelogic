@@ -1,7 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "../../style/manager/DataProject.css";
+import {
+  Home,
+  Folder,
+  Briefcase,
+  ChartBar,
+  FileText,
+} from 'lucide-react';
 
 export default function ProjectDataPage() {
   const [projects, setProjects] = useState([]);
@@ -139,156 +145,209 @@ export default function ProjectDataPage() {
     }
   };
 
-  if (loading) return <div className="loading">Memuat data proyek...</div>;
-  if (error) return <div className="error-message">{error}</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="text-lg">Memuat data proyek...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="text-red-500 text-lg">{error}</div>
+    </div>
+  );
 
   return (
-    <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div className="logo-circle">B</div>
-          <span className="logo-text">Bytelogic</span>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="w-56 bg-blue-500 p-6 flex flex-col text-white select-none">
+        <div className="flex items-center gap-2 mb-8">
+          <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
+          <span className="font-semibold text-sm">Bytelogic</span>
         </div>
-        <h1 className="sidebar-menu-title">MENU</h1>
-        <div className="sidebar-menu">
-          <button onClick={() => navigate('/dashboard-manager')} className="sidebar-btn">
-            <i className="fas fa-tachometer-alt"></i> Dashboard
-          </button>
-          <button onClick={() => navigate('/admin-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Admin Data
-          </button>
-          <button onClick={() => navigate('/employee-list')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Employee Data
-          </button>
-          <button onClick={() => navigate('/client-data')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Client Data
-          </button>
-          <button onClick={() => navigate('/data-project')} className="sidebar-btn active">
-            <i className="fas fa-briefcase"></i> Project Data
-          </button>
-          <button onClick={() => navigate('/employee-evaluation')} className="sidebar-btn">
-            <i className="fas fa-chart-line"></i> Employee Evaluation
-          </button>
-          <button onClick={() => navigate('/customer-reviews')} className="sidebar-btn">
-            <i className="fas fa-folder-open"></i> Client Review
-          </button>
-        </div>
+        <h1 className="text-xs font mb-6">MENU</h1>
+        <button 
+          onClick={() => navigate('/dashboard-manager')} 
+          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <Home size={18} /> Dashboard
+        </button>
+        <button 
+          onClick={() => navigate('/admin-list')} 
+          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <Folder size={18} /> Admin Data
+        </button>
+        <button 
+          onClick={() => navigate('/employee-list')} 
+          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <Folder size={18} /> Employee Data
+        </button>
+        <button 
+          onClick={() => navigate('/client-data')} 
+          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <Folder size={18} /> Client Data
+        </button>
+        <button 
+          onClick={() => navigate('/data-project')} 
+          className="flex items-center gap-2 bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <Briefcase size={18} /> Project Data
+        </button>
+        <button 
+          onClick={() => navigate('/employee-evaluation')} 
+          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <ChartBar size={18} /> Evaluation
+        </button>
+        <button 
+          onClick={() => navigate('/customer-reviews')} 
+          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
+        >
+          <FileText size={18} /> Review
+        </button>
       </aside>
 
-      <div className="project-container">
-        <div className="project-header">
-          <h1>Data Projek</h1>
-          <button onClick={handleAddProject} className="btn-add">
-            Tambah Projek
-          </button>
-        </div>
-
-        {/* Filter Section */}
-        <div className="filter-section">
-          <div className="filter-group">
-            <label htmlFor="status-filter">Filter Status:</label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Data Projek</h1>
+            <button 
+              onClick={handleAddProject}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              <option value="all">Semua Status</option>
-              <option value="Waiting List">Waiting List</option>
-              <option value="On Progress">On Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
+              Tambah Projek
+            </button>
           </div>
 
-          <div className="filter-group">
-            <label htmlFor="sort-by">Urutkan Berdasarkan:</label>
-            <select
-              id="sort-by"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="newest">Terbaru</option>
-              <option value="oldest">Terlama</option>
-              <option value="deadline-asc">Deadline Terdekat</option>
-              <option value="deadline-desc">Deadline Terjauh</option>
-              <option value="progress-asc">Progress Terendah</option>
-              <option value="progress-desc">Progress Tertinggi</option>
-            </select>
+          {/* Filter Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-white p-4 rounded-lg shadow">
+            <div className="flex flex-col">
+              <label htmlFor="status-filter" className="text-sm font-medium text-gray-700 mb-1">Filter Status:</label>
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Semua Status</option>
+                <option value="Waiting List">Waiting List</option>
+                <option value="On Progress">On Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label htmlFor="sort-by" className="text-sm font-medium text-gray-700 mb-1">Urutkan Berdasarkan:</label>
+              <select
+                id="sort-by"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="newest">Terbaru</option>
+                <option value="oldest">Terlama</option>
+                <option value="deadline-asc">Deadline Terdekat</option>
+                <option value="deadline-desc">Deadline Terjauh</option>
+                <option value="progress-asc">Progress Terendah</option>
+                <option value="progress-desc">Progress Tertinggi</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label htmlFor="search" className="text-sm font-medium text-gray-700 mb-1">Cari:</label>
+              <input
+                type="text"
+                id="search"
+                placeholder="Cari proyek..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
-          <div className="filter-group search-group">
-            <label htmlFor="search">Cari:</label>
-            <input
-              type="text"
-              id="search"
-              placeholder="Cari proyek..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="text-sm text-gray-500 mb-4">
+            Menampilkan {filteredProjects.length} dari {projects.length} proyek
+          </div>
+
+          {/* Projects Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Proyek</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Klien</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Karyawan</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progres (%)</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredProjects.length > 0 ? (
+                  filteredProjects.map((project) => (
+                    <tr key={project._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{project.title}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.client?.nama_lengkap || 'Tidak diketahui'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.employees?.nama_lengkap || 'Tidak diketahui'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {project.deadline
+                          ? new Date(project.deadline).toLocaleDateString("id-ID")
+                          : "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div 
+                            className="bg-blue-600 h-2.5 rounded-full text-xs text-white flex items-center justify-center"
+                            style={{ width: `${calculateProgress(project.sdlc_progress)}%` }}
+                          >
+                            {calculateProgress(project.sdlc_progress)}%
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          project.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                          project.status === 'On Progress' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {project.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEditProject(project._id)}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProject(project._id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
+                      Tidak ada data proyek yang ditemukan
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-
-        <div className="project-count">
-          Menampilkan {filteredProjects.length} dari {projects.length} proyek
-        </div>
-
-        <table className="project-table">
-          <thead>
-            <tr>
-              <th>Judul Proyek</th>
-              <th>Klien</th>
-              <th>Karyawan</th>
-              <th>Deadline</th>
-              <th>Progres (%)</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProjects.map((project) => (
-              <tr key={project._id}>
-                <td>{project.title}</td>
-                <td>{project.client?.nama_lengkap || 'Tidak diketahui'}</td>
-                <td>{project.employees?.nama_lengkap || 'Tidak diketahui'}</td>
-                <td>
-                  {project.deadline
-                    ? new Date(project.deadline).toLocaleDateString("id-ID")
-                    : "-"}
-                </td>
-                <td>
-                  <div className="progress-container">
-                    <div
-                      className="progress-bar"
-                      style={{ width: `${calculateProgress(project.sdlc_progress)}%` }}
-                    >
-                      {calculateProgress(project.sdlc_progress)}%
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span className={`status-badge ${project.status.toLowerCase().replace(" ", "-")}`}>
-                    {project.status}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleEditProject(project._id)}
-                    className="btn-edit"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteProject(project._id)}
-                    className="btn-delete"
-                  >
-                    Hapus
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
-
   );
 }
