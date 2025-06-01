@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import ProfilePic from '../../assets/images/pp.png';
+import ProfilePic from '../../assets/images/profile.jpg';
 import { Home, Folder, Briefcase, ChartBar, FileText } from 'lucide-react';
 
 const EmployeeEvaluation = () => {

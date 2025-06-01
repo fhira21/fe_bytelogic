@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import "../style/Login.css";
 import loginImg from "../assets/images/register.jpg";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
@@ -10,9 +9,6 @@ function Login() {
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  // const CLIENT_ROLE = "client";
-  // const EMPLOYEE_ROLE = "karyawan";
-  // const ADMIN_ROLE = "manager/admin";
 
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
@@ -58,26 +54,37 @@ function Login() {
   };  
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <img src={loginImg} alt="Login Illustration" className="login-image" />
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
+        <img 
+          src={loginImg} 
+          alt="Login Illustration" 
+          className="w-1/2 object-cover hidden md:block" 
+        />
 
-        <div className="login-form-frame">
-          <form className="login-form" onSubmit={handleSubmit}>
-            <h2>Selamat Datang!</h2>
+        <div className="w-full md:w-1/2 p-8">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <h2 className="text-2xl font-bold text-center text-gray-800">Selamat Datang!</h2>
 
-            {error && <p className="error-message">{error}</p>}
+            {error && (
+              <p className="text-red-500 text-sm text-center py-2 px-4 bg-red-50 rounded">
+                {error}
+              </p>
+            )}
 
-            <input
-              type="text"
-              placeholder="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
+            <div>
+              <input
+                type="text"
+                placeholder="Username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-            <div className="password-wrapper">
+            <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
@@ -85,18 +92,33 @@ function Login() {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
               />
-              <span onClick={togglePassword} className="toggle-password">
+              <span 
+                onClick={togglePassword} 
+                className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer text-gray-500 hover:text-gray-700"
+              >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </span>
             </div>
 
-            <div className="remember-me">
-              <input type="checkbox" id="remember" />
-              <label htmlFor="remember">Ingat Saya</label>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                id="remember" 
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
+                Ingat Saya
+              </label>
             </div>
 
-            <button className="login-button" type="submit">Masuk</button>
+            <button 
+              type="submit" 
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              Masuk
+            </button>
           </form>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
+import ProfilePic from '../../assets/images/profile.jpg';
 import { useNavigate } from "react-router-dom";
 import {
   Home,

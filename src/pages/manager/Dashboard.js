@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import ProfilePic from '../../assets/images/pp.png';
+import ProfilePic from '../../assets/images/profile.jpg';
 import {
   Home,
   Folder,
@@ -191,6 +191,8 @@ const DashboardManager = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
 
+        console.log('Projects API Response:', response.data); // Debug log
+
         const data = response.data.data;
         
         setProjects({
@@ -368,6 +370,7 @@ const DashboardManager = () => {
   };
 
   const calculateSDLCProgress = (progress = {}) => {
+    console.log('SDLC Progress Data:', progress); // Debug log
     const total = Object.values(progress).reduce((acc, val) => acc + val, 0);
     const count = Object.keys(progress).length || 1;
     return Math.round((total / (count * 100)) * 100);

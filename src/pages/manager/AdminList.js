@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ProfilePic from '../../assets/images/pp.png';
+import ProfilePic from '../../assets/images/profile.jpg';
 import axios from 'axios';
 import {
   Home,

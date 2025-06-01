@@ -1,6 +1,5 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import logo from "../assets/images/logo.png";
 // import "../style/Navbar.css";
 
 const Navbar = () => {
@@ -11,25 +10,55 @@ const Navbar = () => {
   const isHomePage = pathname === "/";
 
   return (
-    <nav className="navbar">
-      <div className="navbar-left">
-        <img src={logo} alt="ByteLogic Logo" className="w-1/2" />
-      </div>
+    <nav className="flex justify-between items-center p-4 bg-white shadow-md">
+      {/* Empty div to maintain space balance (replaces logo space) */}
+      <div className="w-1/4"></div>
 
-      {/* Menu navigasi tengah */}
-      <ul className="flex justify-center content-center text-xl space-x-4">
-        <li><Link to="/">Beranda</Link></li>
-        <li><Link to="/project">Project</Link></li>
-        <li><Link to="/evaluasi">Evaluasi</Link></li>
+      {/* Center navigation menu */}
+      <ul className="flex justify-center space-x-8 text-lg">
+        <li>
+          <Link 
+            to="/" 
+            className={`px-3 py-2 rounded-md ${pathname === "/" ? "font-bold text-blue-600" : "text-gray-700 hover:text-blue-500"}`}
+          >
+            Beranda
+          </Link>
+        </li>
+        <li>
+          <Link 
+            to="/project" 
+            className={`px-3 py-2 rounded-md ${pathname === "/project" ? "font-bold text-blue-600" : "text-gray-700 hover:text-blue-500"}`}
+          >
+            Project
+          </Link>
+        </li>
+        <li>
+          <Link 
+            to="/evaluasi" 
+            className={`px-3 py-2 rounded-md ${pathname === "/evaluasi" ? "font-bold text-blue-600" : "text-gray-700 hover:text-blue-500"}`}
+          >
+            Evaluasi
+          </Link>
+        </li>
       </ul>
 
-      {/* Tombol kanan hanya untuk login/home */}
+      {/* Right side buttons (only for login/home) */}
       {(isLoginPage || isHomePage) && (
-        <div className="navbar-right">
+        <div className="w-1/4 flex justify-end">
           {isLoginPage ? (
-            <Link to="/" className="home-button">Home</Link>
+            <Link 
+              to="/" 
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Home
+            </Link>
           ) : (
-            <Link to="/login" className="home-button">Login</Link>
+            <Link 
+              to="/login" 
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Login
+            </Link>
           )}
         </div>
       )}
