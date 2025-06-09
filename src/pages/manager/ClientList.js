@@ -9,7 +9,6 @@ import {
   ChartBar,
   FileText,
   Search,
-  Plus,
   Eye,
   Trash2,
   Edit2,
@@ -50,7 +49,7 @@ const ClientList = () => {
         }
       })
       .catch(error => {
-        console.error('Error fetching admin data:', error);
+        console.error('Error fetching client data:', error);
       });
   }, [token]);
 
@@ -176,7 +175,7 @@ const ClientList = () => {
           onClick={() => navigate('/admin-list')} 
           className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
         >
-          <Folder size={18} /> Admin Data
+          <Folder size={18} /> Client Data
         </button>
         <button 
           onClick={() => navigate('/employee-list')} 
@@ -210,35 +209,38 @@ const ClientList = () => {
         </button>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          {/* Top Bar */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Data Admin</h1>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-                />
-                <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
-              </div>
-              <button 
-                onClick={openAddModal}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <Plus size={16} /> Add Admin
-              </button>
-              <div className="flex items-center gap-2">
-                <img src={ProfilePic} alt="Profile" className="w-10 h-10 rounded-full" />
-                <span className="font-medium">Deni el mares</span>
-              </div>
-            </div>
-          </div>
+     {/* Main Content - Responsif */}
+           <main className="flex-1 p-2 md:p-6 overflow-auto bg-gray-50">
+             {/* Profile Section - Responsif - Diubah untuk berada di pojok kanan */}
+             <div className="flex justify-end items-center mb-4">
+               <div className="flex items-center gap-2">
+                 <img src={ProfilePic} alt="Profile" className="w-8 h-8 md:w-10 md:h-10 rounded-full" />
+                 <span className="hidden md:inline font-medium">Deni el mares</span>
+               </div>
+             </div>
+     
+             {/* Judul Section */}
+             <h1 className="text-2xl font-bold mb-6">Client Data</h1>
+     
+             {/* Search and Action Section - Responsif */}
+             <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
+               <div className="relative w-full md:w-auto">
+                 <input
+                   type="text"
+                   placeholder="Search"
+                   value={searchTerm}
+                   onChange={e => setSearchTerm(e.target.value)}
+                   className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                 />
+                 <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
+               </div>
+               <button
+                 onClick={openAddModal}
+                 className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-700 transition-colors w-full md:w-auto"
+               >
+                 <span className="text-sm md:text-base">Add Client</span>
+               </button>
+             </div>
 
           {/* Table */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -452,7 +454,6 @@ const ClientList = () => {
               </form>
             </div>
           )}
-        </div>
       </main>
     </div>
   );

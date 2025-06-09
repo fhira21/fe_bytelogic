@@ -9,9 +9,6 @@ import {
   ChartBar,
   FileText,
   Search,
-  Edit2,
-  Trash2,
-  Plus,
   X
 } from 'lucide-react';
 
@@ -22,18 +19,23 @@ const AdminList = () => {
   const [editingManager, setEditingManager] = useState(null);
   const [deletingManager, setDeletingManager] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', 
-    email: '', 
-    address: '', 
-    phone: '', 
-    dob: '', 
-    gender: '', 
-    education: '', 
-    maritalStatus: '', 
-    nik: ''
+    name: '',
+    email: '',
+    address: '',
+    phone: '',
+    dob: '',
+    gender: '',
+    education: '',
+    maritalStatus: '',
+    nik: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+    role: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // 1 for login info, 2 for personal info
 
   useEffect(() => {
     axios.get('http://localhost:5000/api/managers', {
@@ -57,16 +59,20 @@ const AdminList = () => {
 
   const closeEditModal = () => {
     setEditingManager(null);
-    setFormData({ 
-      name: '', 
-      email: '', 
-      address: '', 
-      phone: '', 
-      dob: '', 
-      gender: '', 
-      education: '', 
-      maritalStatus: '', 
-      nik: '' 
+    setFormData({
+      name: '',
+      email: '',
+      address: '',
+      phone: '',
+      dob: '',
+      gender: '',
+      education: '',
+      maritalStatus: '',
+      nik: '',
+      username: '',
+      password: '',
+      confirmPassword: '',
+      role: ''
     });
   };
 
@@ -89,24 +95,55 @@ const AdminList = () => {
 
   const openAddModal = () => {
     setShowAddModal(true);
-    setFormData({ 
-      name: '', 
-      email: '', 
-      address: '', 
-      phone: '', 
-      dob: '', 
-      gender: '', 
-      education: '', 
-      maritalStatus: '', 
-      nik: '' 
+    setCurrentStep(1);
+    setFormData({
+      name: '',
+      email: '',
+      address: '',
+      phone: '',
+      dob: '',
+      gender: '',
+      education: '',
+      maritalStatus: '',
+      nik: '',
+      username: '',
+      password: '',
+      confirmPassword: '',
+      role: ''
     });
   };
 
-  const closeAddModal = () => setShowAddModal(false);
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setCurrentStep(1);
+  };
 
   const saveAdd = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:5000/api/managers', formData, {
+
+    if (currentStep === 1) {
+      // Validate login information
+      if (!formData.username || !formData.role || !formData.password || !formData.confirmPassword) {
+        alert('Please fill all required fields');
+        return;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        alert('Password and confirmation password do not match');
+        return;
+      }
+
+      setCurrentStep(2);
+      return;
+    }
+
+    // Prepare data to send
+    const dataToSend = {
+      ...formData,
+      confirmPassword: undefined
+    };
+
+    axios.post('http://localhost:5000/api/managers', dataToSend, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
@@ -119,20 +156,33 @@ const AdminList = () => {
       });
   };
 
+  const [viewingManager, setViewingManager] = useState(null);
+
+  const openViewModal = (manager) => {
+    setViewingManager(manager);
+  };
+
+  const closeViewModal = () => {
+    setViewingManager(null);
+  };
+
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <aside className="w-56 bg-blue-500 p-6 flex flex-col text-white select-none">
-        <div className="flex items-center gap-2 mb-8">
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar - Responsif */}
+      <aside className="w-16 md:w-56 bg-blue-500 p-2 md:p-6 flex flex-col text-white select-none transition-all duration-300">
+        <div className="hidden md:flex items-center gap-2 mb-8">
           <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
           <span className="font-semibold text-sm">Bytelogic</span>
         </div>
-        <h1 className="text-xs font mb-6">MENU</h1>
-        <button onClick={() => navigate('/dashboard-manager')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <Home size={18} /> Dashboard
+        <h1 className="hidden md:block text-xs font mb-6">MENU</h1>
+        <button onClick={() => navigate('/dashboard-manager')}
+          className="flex items-center justify-center md:justify-start gap-2 hover:bg-gray-700 p-2 rounded mb-2">
+          <Home size={18} />
+          <span className="hidden md:inline">Dashboard</span>
         </button>
-        <button onClick={() => navigate('/admin-list')} className="flex items-center gap-2 bg-blue-600 p-2 rounded mb-2 text-left">
-          <Folder size={18} /> Admin Data
+        <button onClick={() => navigate('/admin-list')} className="flex items-center justify-center md:justify-start gap-2 bg-blue-600 p-2 rounded mb-2">
+          <Folder size={18} />
+          <span className="hidden md:inline">Admin Data</span>
         </button>
         <button onClick={() => navigate('/employee-list')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
           <Folder size={18} /> Employee Data
@@ -151,420 +201,396 @@ const AdminList = () => {
         </button>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-gray-50">
-        {/* Profile Section - Top Right */}
-        <div className="flex justify-end mb-4">
+      {/* Main Content - Responsif */}
+      <main className="flex-1 p-2 md:p-6 overflow-auto bg-gray-50">
+        {/* Profile Section - Responsif - Diubah untuk berada di pojok kanan */}
+        <div className="flex justify-end items-center mb-4">
           <div className="flex items-center gap-2">
-            <img src={ProfilePic} alt="Profile" className="w-10 h-10 rounded-full" />
-            <span className="font-medium">Deni el mares</span>
+            <img src={ProfilePic} alt="Profile" className="w-8 h-8 md:w-10 md:h-10 rounded-full" />
+            <span className="hidden md:inline font-medium">Deni el mares</span>
           </div>
         </div>
 
         {/* Judul Section */}
-        <h1 className="text-2xl font-bold mb-6">Data Admin</h1>
+        <h1 className="text-2xl font-bold mb-6">Admin Data</h1>
 
-        {/* Search and Action Section */}
-        <div className="flex justify-end items-center mb-6">
-          <div className="flex items-center gap-4 mr-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ width: '200px' }}
-              />
-              <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
-            </div>
-            
-            <button 
-              onClick={openAddModal} 
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={16} /> Add Admin
-            </button>
+        {/* Search and Action Section - Responsif */}
+        <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
+          <div className="relative w-full md:w-auto">
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+            />
+            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
           </div>
+          <button
+            onClick={openAddModal}
+            className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-700 transition-colors w-full md:w-auto"
+          >
+            <span className="text-sm md:text-base">Add Admin</span>
+          </button>
         </div>
 
-        {/* Table Section */}
+        {/* Table Section - Responsif */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Full Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Phone Number</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Address</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Date of Birth</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Gender</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">NIK</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Educational Background</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Marital status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredManagers.length > 0 ? filteredManagers.map(manager => (
-                <tr key={manager.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{manager.nama_lengkap}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.nomor_telepon}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.alamat}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.tanggal_lahir}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.jenis_kelamin}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.nik}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {manager.riwayat_pendidikan?.map(item => `${item.jenjang} - ${item.institusi} - ${item.tahun_lulus}`).join(", ") || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.status_pernikahan}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => openEditModal(manager)} 
-                        className="flex items-center gap-2 bg-yellow-500 text-white px-3 py-1.5 rounded-lg hover:bg-yellow-600 transition-colors"
-                      >
-                        <Edit2 size={16} />
-                        <span>Edit</span>
-                      </button>
-                      <button 
-                        onClick={() => setDeletingManager(manager)} 
-                        className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                        <span>Hapus</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan="10" className="px-6 py-4 text-center text-sm text-gray-500">
-                    Tidak ada data ditemukan
-                  </td>
+                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Full Name</th>
+                  <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Email</th>
+                  <th className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Phone</th>
+                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Address</th>
+                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">DOB</th>
+                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Gender</th>
+                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">NIK</th>
+                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Education</th>
+                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Status</th>
+                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredManagers.length > 0 ? (
+                  filteredManagers.map(manager => (
+                    <tr key={manager.id || manager.email}>
+                      <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-900">
+                        {manager.nama_lengkap || '-'}
+                      </td>
+                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.email || '-'}
+                      </td>
+                      <td className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.nomor_telepon || '-'}
+                      </td>
+                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.alamat || '-'}
+                      </td>
+                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.tanggal_lahir || '-'}
+                      </td>
+                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.jenis_kelamin || '-'}
+                      </td>
+                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.nik || '-'}
+                      </td>
+                      <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-500">
+                        {manager.riwayat_pendidikan?.map(item =>
+                          `${item.jenjang || ''} - ${item.institusi || ''} - ${item.tahun_lulus || ''}`
+                        ).join(", ") || '-'}
+                      </td>
+                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.status_pernikahan || '-'}
+                      </td>
+                      <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex gap-1 md:gap-2">
+                          <button
+                            onClick={() => openEditModal(manager)}
+                            className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-yellow-600 transition-colors"
+                          >
+                            <span className="text-sm">Edit</span>
+                          </button>
+                          <button
+                            onClick={() => setDeletingManager(manager)}
+                            className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            <span className="text-sm">Delete</span>
+                          </button>
+                          <button
+                            onClick={() => openViewModal(manager)}
+                            className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            <span className="text-sm">View</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={10} className="px-6 py-4 text-center text-sm text-gray-500">
+                      Tidak ada data ditemukan
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Add Admin Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Tambah Admin Baru</h3>
-                <button 
-                  onClick={closeAddModal} 
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
+            <div className={`bg-white rounded-lg p-6 w-full ${currentStep === 1 ? 'max-w-md' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto`}>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">
+                  {currentStep === 1 ? 'Personal Information' : 'Admin Data'}
+                </h3>
+                <button
+                  onClick={closeAddModal}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <X size={20} />
+                  <X size={24} />
                 </button>
               </div>
-              
-              <form onSubmit={saveAdd}>
-                <div className="space-y-4">
-                  {/* Nama Lengkap */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
 
-                  {/* Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Alamat</label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+              {currentStep === 1 ? (
+                <div className="mb-6">
+                  <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Login Information</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Username</label>
+                      <input
+                        type="text"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        required
+                        placeholder="Create Username"
+                      />
+                    </div>
 
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nomor Telepon</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Password</label>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        required
+                        placeholder="Create Password"
+                      />
+                    </div>
 
-                  {/* Date of Birth */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
-                    <input
-                      type="date"
-                      name="dob"
-                      value={formData.dob}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  {/* Gender */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">Pilih Jenis Kelamin</option>
-                      <option value="Male">Laki-laki</option>
-                      <option value="Female">Perempuan</option>
-                    </select>
-                  </div>
-
-                  {/* Education */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Pendidikan Terakhir</label>
-                    <input
-                      type="text"
-                      name="education"
-                      value={formData.education}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  {/* Marital Status */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Status Pernikahan</label>
-                    <select
-                      name="maritalStatus"
-                      value={formData.maritalStatus}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">Pilih Status</option>
-                      <option value="Single">Belum Menikah</option>
-                      <option value="Married">Menikah</option>
-                      <option value="Divorced">Cerai</option>
-                    </select>
-                  </div>
-
-                  {/* NIK */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">NIK</label>
-                    <input
-                      type="text"
-                      name="nik"
-                      value={formData.nik}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        required
+                        placeholder="Re-enter Password"
+                      />
+                    </div>
                   </div>
                 </div>
-                
-                <div className="mt-6 flex justify-end space-x-3">
+              ) : (
+                <div className="mb-6">
+                  <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Add Admin</h4>
+                  {/* <h5 className="text-sm font-medium mb-4">Personal Information</h5> */}
+
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Date full name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter email"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                      <div className="flex gap-2">
+                        <select
+                          name="dobDay"
+                          className="mt-1 block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">DD</option>
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                            <option key={day} value={day}>{day}</option>
+                          ))}
+                        </select>
+                        <select
+                          name="dobMonth"
+                          className="mt-1 block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">MM</option>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <select
+                          name="dobYear"
+                          className="mt-1 block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">YYYY</option>
+                          {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Gender</label>
+                      <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        required
+                        style={{ color: formData.gender ? '#111827' : '#9CA3AF' }}
+                      >
+                        <option value="" disabled hidden style={{ color: '#9CA3AF' }}>
+                          Select Gender
+                        </option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Marital Status</label>
+                      <select
+                        name="maritalStatus"
+                        value={formData.maritalStatus}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900" 
+                        required
+                        style={{ color: formData.gender ? '#111827' : '#9CA3AF' }}
+                      >
+                        <option value="" disabled hidden>
+                          Select Martial Status
+                        </option>
+                        <option value="male" className="text-gray-900">Single</option>
+                        <option value="male" className="text-gray-900">Married</option>
+                        <option value="male" className="text-gray-900">Divorced</option>
+                        <option value="male" className="text-gray-900">Widowed</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
+                      <input
+                        type="text"
+                        name="nik"
+                        value={formData.nik}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Email is number"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                      <input
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter educational background"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h5 className="text-sm font-medium mb-4">Educational Background</h5>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Education Level</label>
+                        <input
+                          type="text"
+                          name="educationLevel"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Select education level"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Health Area</label>
+                        <input
+                          type="text"
+                          name="healthArea"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Select health area"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Year of Graduation</label>
+                        <input
+                          type="text"
+                          name="graduationYear"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Select year"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between mt-6 pt-4 border-t">
+                {currentStep === 1 ? (
                   <button
                     type="button"
                     onClick={closeAddModal}
                     className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Batal
+                    Back
                   </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Simpan
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Modal */}
-        {editingManager && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Edit Admin</h3>
-                <button 
-                  onClick={closeEditModal} 
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <form onSubmit={saveEdit}>
-                <div className="space-y-4">
-                  {/* Nama Lengkap */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  {/* Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Alamat</label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nomor Telepon</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  {/* Date of Birth */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
-                    <input
-                      type="date"
-                      name="dob"
-                      value={formData.dob}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  {/* Gender */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="Male">Laki-laki</option>
-                      <option value="Female">Perempuan</option>
-                    </select>
-                  </div>
-
-                  {/* Education */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Pendidikan Terakhir</label>
-                    <input
-                      type="text"
-                      name="education"
-                      value={formData.education}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  {/* Marital Status */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Status Pernikahan</label>
-                    <select
-                      name="maritalStatus"
-                      value={formData.maritalStatus}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="Single">Belum Menikah</option>
-                      <option value="Married">Menikah</option>
-                      <option value="Divorced">Cerai</option>
-                    </select>
-                  </div>
-
-                  {/* NIK */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">NIK</label>
-                    <input
-                      type="text"
-                      name="nik"
-                      value={formData.nik}
-                      onChange={handleEditChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex justify-end space-x-3">
+                ) : (
                   <button
                     type="button"
-                    onClick={closeEditModal}
+                    onClick={() => setCurrentStep(1)}
                     className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Batal
+                    Back
                   </button>
+                )}
+
+                {currentStep === 1 ? (
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Simpan
+                    Next
                   </button>
-                </div>
-              </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={saveAdd}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Create Admin
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -575,8 +601,8 @@ const AdminList = () => {
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Hapus Admin</h3>
-                <button 
-                  onClick={() => setDeletingManager(null)} 
+                <button
+                  onClick={() => setDeletingManager(null)}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X size={20} />
