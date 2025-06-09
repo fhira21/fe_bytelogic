@@ -175,7 +175,7 @@ const ClientList = () => {
           onClick={() => navigate('/admin-list')} 
           className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
         >
-          <Folder size={18} /> Client Data
+          <Folder size={18} /> Admin Data
         </button>
         <button 
           onClick={() => navigate('/employee-list')} 

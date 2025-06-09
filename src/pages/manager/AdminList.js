@@ -42,8 +42,13 @@ const AdminList = () => {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
+        // Di API atau sebelum set state
         const data = Array.isArray(response.data) ? response.data : response.data.data;
-        setManagers(Array.isArray(data) ? data : []);
+        const cleanedData = data.map(item => ({
+          ...item,
+          riwayat_pendidikan: Array.isArray(item.riwayat_pendidikan) ? item.riwayat_pendidikan : []
+        }));
+        setManagers(cleanedData);
       })
       .catch(error => console.error('Error fetching admin data:', error));
   }, [token]);
@@ -257,7 +262,7 @@ const AdminList = () => {
                   filteredManagers.map(manager => (
                     <tr key={manager.id || manager.email}>
                       <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-900">
-                        {manager.nama_lengkap || '-'}
+                        {manager.nama_lengkap ?? '-'}
                       </td>
                       <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {manager.email || '-'}
@@ -278,9 +283,11 @@ const AdminList = () => {
                         {manager.nik || '-'}
                       </td>
                       <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-500">
-                        {manager.riwayat_pendidikan?.map(item =>
-                          `${item.jenjang || ''} - ${item.institusi || ''} - ${item.tahun_lulus || ''}`
-                        ).join(", ") || '-'}
+                        {manager.riwayat_pendidikan?.length > 0
+                          ? manager.riwayat_pendidikan.map(item =>
+                            `${item.jenjang || ''} - ${item.institusi || ''} - ${item.tahun_lulus || ''}`
+                          ).join(", ")
+                          : '-'}
                       </td>
                       <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {manager.status_pernikahan || '-'}
@@ -383,7 +390,7 @@ const AdminList = () => {
                 </div>
               ) : (
                 <div className="mb-6">
-                  <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Add Admin</h4>
+                  <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Login Information</h4>
                   {/* <h5 className="text-sm font-medium mb-4">Personal Information</h5> */}
 
                   <div className="grid grid-cols-2 gap-4 mb-6">
@@ -424,35 +431,17 @@ const AdminList = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                      <div className="flex gap-2">
-                        <select
-                          name="dobDay"
-                          className="mt-1 block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">DD</option>
-                          {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                            <option key={day} value={day}>{day}</option>
-                          ))}
-                        </select>
-                        <select
-                          name="dobMonth"
-                          className="mt-1 block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">MM</option>
-                          {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                            <option key={month} value={month}>{month}</option>
-                          ))}
-                        </select>
-                        <select
-                          name="dobYear"
-                          className="mt-1 block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">YYYY</option>
-                          {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                            <option key={year} value={year}>{year}</option>
-                          ))}
-                        </select>
+                      <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="dob"
+                          value={formData.dob}
+                          onChange={handleEditChange}
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 uppercase-date-input"
+                          required
+                          style={{ color: formData.dob ? '#111827' : '#9CA3AF' }}
+                        />
                       </div>
                     </div>
 
@@ -480,7 +469,7 @@ const AdminList = () => {
                         name="maritalStatus"
                         value={formData.maritalStatus}
                         onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900" 
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                         required
                         style={{ color: formData.gender ? '#111827' : '#9CA3AF' }}
                       >
@@ -495,7 +484,7 @@ const AdminList = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Id Number</label>
                       <input
                         type="text"
                         name="nik"
@@ -600,7 +589,7 @@ const AdminList = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Hapus Admin</h3>
+                <h3 className="text-lg font-semibold">Delete Admin</h3>
                 <button
                   onClick={() => setDeletingManager(null)}
                   className="text-gray-500 hover:text-gray-700"
@@ -608,13 +597,13 @@ const AdminList = () => {
                   <X size={20} />
                 </button>
               </div>
-              <p className="mb-6">Apakah Anda yakin ingin menghapus admin {deletingManager.nama_lengkap}?</p>
+              <p className="mb-6">Do You Want To Delete Admin {deletingManager.nama_lengkap}?</p>
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setDeletingManager(null)}
                   className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   onClick={() => {
@@ -632,8 +621,311 @@ const AdminList = () => {
                   }}
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
-                  Hapus
+                  Delete
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Edit Admin Modal */}
+        {editingManager && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">Edit Admin</h3>
+                <button
+                  onClick={closeEditModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={saveEdit}>
+                <div className="mb-6">
+                  <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Personal Information</h4>
+
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        name="nama_lengkap"
+                        value={formData.nama_lengkap || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter full name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        name="nomor_telepon"
+                        value={formData.nomor_telepon || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter email"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
+                      <input
+                        type="date"
+                        name="tanggal_lahir"
+                        value={formData.tanggal_lahir || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Gender</label>
+                      <select
+                        name="jenis_kelamin"
+                        value={formData.jenis_kelamin || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Marital Status</label>
+                      <select
+                        name="status_pernikahan"
+                        value={formData.status_pernikahan || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select Marital Status</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Widowed">Widowed</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ID Number (NIK)</label>
+                      <input
+                        type="text"
+                        name="nik"
+                        value={formData.nik || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter NIK"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                      <input
+                        type="text"
+                        name="alamat"
+                        value={formData.alamat || ''}
+                        onChange={handleEditChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter address"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h5 className="text-sm font-medium mb-4">Educational Background</h5>
+                    {formData.riwayat_pendidikan?.map((edu, index) => (
+                      <div key={index} className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Education Level</label>
+                          <input
+                            type="text"
+                            name={`riwayat_pendidikan[${index}].jenjang`}
+                            value={edu.jenjang || ''}
+                            onChange={(e) => {
+                              const newEducation = [...formData.riwayat_pendidikan];
+                              newEducation[index].jenjang = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                riwayat_pendidikan: newEducation
+                              }));
+                            }}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Education level"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+                          <input
+                            type="text"
+                            name={`riwayat_pendidikan[${index}].institusi`}
+                            value={edu.institusi || ''}
+                            onChange={(e) => {
+                              const newEducation = [...formData.riwayat_pendidikan];
+                              newEducation[index].institusi = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                riwayat_pendidikan: newEducation
+                              }));
+                            }}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Institution name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Graduation Year</label>
+                          <input
+                            type="text"
+                            name={`riwayat_pendidikan[${index}].tahun_lulus`}
+                            value={edu.tahun_lulus || ''}
+                            onChange={(e) => {
+                              const newEducation = [...formData.riwayat_pendidikan];
+                              newEducation[index].tahun_lulus = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                riwayat_pendidikan: newEducation
+                              }));
+                            }}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Graduation year"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* View Admin Modal */}
+        {viewingManager && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">Detail Admin</h3>
+                <button
+                  onClick={closeViewModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-medium mb-4 pb-2 border-b">Login Information</h4>
+
+                  <div className="grid grid-cols-1 gap-4 mb-6">
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Username:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.username || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">User Role:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.role || '-'}</span>
+                    </div>
+                  </div>
+
+                  <h4 className="text-lg font-medium mb-4 pb-2 border-b">Personal Information</h4>
+                  <div className="grid grid-cols-1 gap-4 mb-6">
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Full Name:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.nama_lengkap || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Email:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.email || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Phone Number:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.nomor_telepon || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Address:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.alamat || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Date of Birth:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.tanggal_lahir || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Gender:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.jenis_kelamin || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">ID Number:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.nik || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-1/3 font-normal text-black-500">Marital Status:</span>
+                      <span className="w-2/3 text-gray-900">{viewingManager.status_pernikahan || '-'}</span>
+                    </div>
+                  </div>
+
+                  {viewingManager.riwayat_pendidikan?.length > 0 ? (
+                    viewingManager.riwayat_pendidikan.map((edu, index) => (
+                      <div key={index} className="grid grid-cols-1 gap-4 mb-6">
+                        <div className="flex">
+                          <span className="w-1/3 font-normal text-black-500">Education Background:</span>
+                          <span className="w-2/3 text-gray-900">{edu.jenjang || '-'}</span>
+                        </div>
+                        <div className="flex">
+                          <span className="w-1/3 font-normal text-black-500">Institution:</span>
+                          <span className="w-2/3 text-gray-900">{edu.institusi || '-'}</span>
+                        </div>
+                        <div className="flex">
+                          <span className="w-1/3 font-normal text-black-500">Graduation Year:</span>
+                          <span className="w-2/3 text-gray-900">{edu.tahun_lulus || '-'}</span>
+                        </div>
+                        {index < viewingManager.riwayat_pendidikan.length - 1 && <hr className="my-2" />}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">No education data available</p>
+                  )}
+                </div>
+
+                <div className="flex justify-start">
+                  <button
+                    onClick={closeViewModal}
+                    className="px-4 py-2 bg-gray-200 font-medium text-black rounded-md hover:bg-black-700"
+                  >
+                    Back
+                  </button>
+                </div>
               </div>
             </div>
           </div>
