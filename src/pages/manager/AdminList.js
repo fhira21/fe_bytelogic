@@ -836,12 +836,6 @@ const AdminList = () => {
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold">Detail Admin</h3>
-                <button
-                  onClick={closeViewModal}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={24} />
-                </button>
               </div>
 
               <div className="space-y-6">
@@ -860,7 +854,7 @@ const AdminList = () => {
                   </div>
 
                   <h4 className="text-lg font-medium mb-4 pb-2 border-b">Personal Information</h4>
-                  <div className="grid grid-cols-1 gap-4 mb-6">
+                  <div className="grid grid-cols-1 gap-6 mb-6">
                     <div className="flex">
                       <span className="w-1/3 font-normal text-black-500">Full Name:</span>
                       <span className="w-2/3 text-gray-900">{viewingManager.nama_lengkap || '-'}</span>
@@ -889,42 +883,38 @@ const AdminList = () => {
                       <span className="w-1/3 font-normal text-black-500">ID Number:</span>
                       <span className="w-2/3 text-gray-900">{viewingManager.nik || '-'}</span>
                     </div>
-                    <div className="flex">
-                      <span className="w-1/3 font-normal text-black-500">Marital Status:</span>
-                      <span className="w-2/3 text-gray-900">{viewingManager.status_pernikahan || '-'}</span>
-                    </div>
                   </div>
-
+                  {/* Education Section */}
                   {viewingManager.riwayat_pendidikan?.length > 0 ? (
-                    viewingManager.riwayat_pendidikan.map((edu, index) => (
-                      <div key={index} className="grid grid-cols-1 gap-4 mb-6">
-                        <div className="flex">
-                          <span className="w-1/3 font-normal text-black-500">Education Background:</span>
-                          <span className="w-2/3 text-gray-900">{edu.jenjang || '-'}</span>
+                    <div className="space-y-4"> {/* Container untuk education items */}
+                      {viewingManager.riwayat_pendidikan.map((edu, index) => (
+                        <div key={index} className="flex">
+                          <span className="w-1/3 font-normal text-black-500">Educational Background:</span>
+                          <span className="w-2/3 text-gray-900">
+                            {`${edu.jenjang || '-'} - ${edu.institusi || '-'} (${edu.tahun_lulus || '-'})`}
+                          </span>
                         </div>
-                        <div className="flex">
-                          <span className="w-1/3 font-normal text-black-500">Institution:</span>
-                          <span className="w-2/3 text-gray-900">{edu.institusi || '-'}</span>
-                        </div>
-                        <div className="flex">
-                          <span className="w-1/3 font-normal text-black-500">Graduation Year:</span>
-                          <span className="w-2/3 text-gray-900">{edu.tahun_lulus || '-'}</span>
-                        </div>
-                        {index < viewingManager.riwayat_pendidikan.length - 1 && <hr className="my-2" />}
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   ) : (
                     <p className="text-sm text-gray-500">No education data available</p>
                   )}
-                </div>
 
-                <div className="flex justify-start">
-                  <button
-                    onClick={closeViewModal}
-                    className="px-4 py-2 bg-gray-200 font-medium text-black rounded-md hover:bg-black-700"
-                  >
-                    Back
-                  </button>
+                  {/* Marital Status */}
+                  <div className="flex pt-4"> {/* pt-4 untuk padding top */}
+                    <span className="w-1/3 font-normal text-black-500">Marital Status:</span>
+                    <span className="w-2/3 text-gray-900">{viewingManager.status_pernikahan || '-'}</span>
+                  </div>
+
+                  {/* Back Button */}
+                  <div className="flex justify-start pt-6"> {/* pt-6 untuk padding top lebih besar */}
+                    <button
+                      onClick={closeViewModal}
+                      className="px-4 py-2 bg-gray-200 font-medium text-black rounded-md hover:bg-gray-300"
+                    >
+                      Back
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

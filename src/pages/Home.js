@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import AboutUsImage from "../assets/images/AboutUs.jpg"; // Make sure this path is correct
+import AboutUsImage from "../assets/images/AboutUs.jpg";
+import WelcomeImage from "../assets/images/welcome.png";
 
 function Home() {
   const [showLoginForm, setShowLoginForm] = useState(false);
@@ -130,56 +131,95 @@ function Home() {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto bg-gray-50 p-8">
+      <div className="flex-1 overflow-y-auto bg-white-50 p-8">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">WELCOME TO BYTELOGIC</h1>
-          <p className="text-xl text-gray-600 italic mb-8">
-            Your Trusted Partner in Website Development - Building Digital Success, Together.
-          </p>
+          {/* Container utama dengan flex */}
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
+            {/* Bagian teks - mengambil 2/3 lebar di desktop */}
+            <div className="md:w-2/3">
+              <h1 className="text-4xl font-bold text-white-800 mb-4">WELCOME TO BYTELOGIC</h1>
+              <p className="text-xl text-gray-600 italic mb-8">
+                Your Trusted Partner in Website Development - Building Digital Success, Together.
+              </p>
 
-          {/* Get Started Button */}
-          <div className="mb-8">
-            <button
-              onClick={() => setShowLoginForm(true)}
-              className="bg-blue-600 text-white py-3 px-8 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg font-medium"
-            >
-              Get Started
-            </button>
+              {/* Tombol Get Started */}
+              <button
+                onClick={() => setShowLoginForm(true)}
+                className="bg-blue-600 text-white py-3 px-8 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg font-medium"
+              >
+                Get Started
+              </button>
+            </div>
+
+            {/* Bagian gambar - mengambil 1/3 lebar di desktop */}
+            <div className="md:w-1/3 w-full">
+              <img
+                src={WelcomeImage}
+                alt="Welcome"
+                className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
+              />
+            </div>
           </div>
 
-          <div className="border-t border-gray-300 my-8"></div>
+          <div className="border-t border-gray-300 bg-gray-50 p-8">
+            {/* Bytelogic Section with Image */}
+            <div className="flex flex-col md:flex-row gap-8 mb-8 bg-gray-50 p-8">
+              <div className="md:w-2/3">
+                <h1 className="text-4xl font-bold text-gray-800 mb-4 text-center">About Us</h1>
+                <h2 className="text-3xl font-bold text-gray-800 mb-4">Bytelogic</h2>
 
-          {/* Bytelogic Section with Image */}
-          <div className="flex flex-col md:flex-row gap-8 mb-8">
-            <div className="md:w-2/3">
-             <h1 className="text-4xl font-bold text-gray-800 mb-4 text-center">About Us</h1>
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">Bytelogic</h2>
+                <p className="text-gray-700 mb-4 leading-relaxed">
+                  Bytelogic specialize in crafting innovative, high-performance websites tailored to meet the unique needs of businesses across various industries. As a leading IT agency, our mission is to empower brands by delivering cutting-edge digital solutions that drive growth, enhance user experience, and maximize online presence.
+                </p>
+
+                <p className="text-gray-700 mb-4 leading-relaxed">
+                  Our team of skilled developers, designers, and strategists work collaboratively to create responsive, SEO-friendly websites using the latest technologies and best practices. Whether you need a sleek corporate site, an engaging e-commerce platform, or a custom web application, Bytelogic is committed to turning your vision into reality with precision and creativity.
+                </p>
+
+                <p className="text-gray-700 mb-4 leading-relaxed">
+                  Choose Bytelogic for reliable service, transparent communication, and results-driven solutions that elevate your business in the digital world.
+                </p>
+
+              </div>
+
+              <div className="md:w-1/3 flex items-center justify-center">
+                <img
+                  src={AboutUsImage}
+                  alt="About Us"
+                  className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-300 bg-blue-100 p-8"></div>
+          {/* Services */}
+          <div className="flex flex item -center justify-center bg-blue-100 p-8">
+            <div className="md:w-3/3">
+              <h1 className="text-4xl font-bold text-gray-800 mb-4 text-center">Services</h1>
 
               <p className="text-gray-700 mb-4 leading-relaxed">
-                Bytelogic specialize in crafting innovative, high-performance websites tailored to meet the unique needs of businesses across various industries. As a leading IT agency, our mission is to empower brands by delivering cutting-edge digital solutions that drive growth, enhance user experience, and maximize online presence.
-              </p>
-
-              <p className="text-gray-700 mb-4 leading-relaxed">
-                Our team of skilled developers, designers, and strategists work collaboratively to create responsive, SEO-friendly websites using the latest technologies and best practices. Whether you need a sleek corporate site, an engaging e-commerce platform, or a custom web application, Bytelogic is committed to turning your vision into reality with precision and creativity.
-              </p>
-
-              <p className="text-gray-700 mb-4 leading-relaxed">
-                Choose Bytelogic for reliable service, transparent communication, and results-driven solutions that elevate your business in the digital world.
+                We help turn your ideas into impactful digital solutions
               </p>
 
             </div>
-
-          <div className="md:w-1/3 flex items-center justify-center">
-            <img
-              src={AboutUsImage}
-              alt="About Us"
-              className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
-            />
           </div>
+
+          <div className="border-t border-gray-300 bg-white-100 p-8"></div>
+          {/* Services */}
+          <div className="flex flex item -center justify-center bg-white-100 p-8">
+            <div className="md:w-3/3">
+              <h1 className="text-4xl font-bold text-gray-800 mb-4 text-center">Projects</h1>
+
+              <p className="text-gray-700 mb-4 leading-relaxed">
+                Sit sint consectuter velit quisquam cupiditate impedit suscipit alias
+              </p>
+
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
     </div >
   );
 }
