@@ -9,8 +9,10 @@ import {
   ChartBar,
   FileText,
   Search,
-  X
+  X,
+  User
 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 const AdminList = () => {
   const navigate = useNavigate();
@@ -19,14 +21,14 @@ const AdminList = () => {
   const [editingManager, setEditingManager] = useState(null);
   const [deletingManager, setDeletingManager] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
+    nama_lengkap: '',
     email: '',
-    address: '',
-    phone: '',
-    dob: '',
-    gender: '',
-    education: '',
-    maritalStatus: '',
+    alamat: '',
+    nomor_telepon: '',
+    tanggal_lahir: '',
+    jenis_kelamin: '',
+    riwayat_pendidikan: [],
+    status_pernikahan: '',
     nik: '',
     username: '',
     password: '',
@@ -35,14 +37,24 @@ const AdminList = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1); // 1 for login info, 2 for personal info
+  const [currentStep, setCurrentStep] = useState(1);
+  const [viewingManager, setViewingManager] = useState(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [managerProfile, setManagerProfile] = useState({
+    loading: true,
+    data: {
+      foto_profile: ProfilePic,
+      nama_lengkap: 'Asep Jamaludin Wahid',
+      email: 'jamaludinasep@gmail.com'
+    }
+  });
 
   useEffect(() => {
+    // Fetch managers data
     axios.get('http://localhost:5000/api/managers', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
-        // Di API atau sebelum set state
         const data = Array.isArray(response.data) ? response.data : response.data.data;
         const cleanedData = data.map(item => ({
           ...item,
@@ -51,6 +63,24 @@ const AdminList = () => {
         setManagers(cleanedData);
       })
       .catch(error => console.error('Error fetching admin data:', error));
+
+    // Fetch manager profile
+    axios.get('http://localhost:5000/api/profile', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(response => {
+        setManagerProfile({
+          loading: false,
+          data: response.data
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching profile:', error);
+        setManagerProfile(prev => ({
+          ...prev,
+          loading: false
+        }));
+      });
   }, [token]);
 
   const filteredManagers = managers.filter(manager =>
@@ -59,20 +89,24 @@ const AdminList = () => {
 
   const openEditModal = (manager) => {
     setEditingManager(manager);
-    setFormData({ ...manager });
+    setFormData({
+      ...manager,
+      password: '',
+      confirmPassword: ''
+    });
   };
 
   const closeEditModal = () => {
     setEditingManager(null);
     setFormData({
-      name: '',
+      nama_lengkap: '',
       email: '',
-      address: '',
-      phone: '',
-      dob: '',
-      gender: '',
-      education: '',
-      maritalStatus: '',
+      alamat: '',
+      nomor_telepon: '',
+      tanggal_lahir: '',
+      jenis_kelamin: '',
+      riwayat_pendidikan: [],
+      status_pernikahan: '',
       nik: '',
       username: '',
       password: '',
@@ -92,7 +126,9 @@ const AdminList = () => {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((response) => {
-        setManagers(prev => prev.map(manager => (manager.id === editingManager.id ? response.data : manager)));
+        setManagers(prev => prev.map(manager =>
+          manager.id === editingManager.id ? response.data : manager
+        ));
         closeEditModal();
       })
       .catch((error) => console.error('Error updating manager:', error));
@@ -102,14 +138,14 @@ const AdminList = () => {
     setShowAddModal(true);
     setCurrentStep(1);
     setFormData({
-      name: '',
+      nama_lengkap: '',
       email: '',
-      address: '',
-      phone: '',
-      dob: '',
-      gender: '',
-      education: '',
-      maritalStatus: '',
+      alamat: '',
+      nomor_telepon: '',
+      tanggal_lahir: '',
+      jenis_kelamin: '',
+      riwayat_pendidikan: [],
+      status_pernikahan: '',
       nik: '',
       username: '',
       password: '',
@@ -127,7 +163,6 @@ const AdminList = () => {
     e.preventDefault();
 
     if (currentStep === 1) {
-      // Validate login information
       if (!formData.username || !formData.role || !formData.password || !formData.confirmPassword) {
         alert('Please fill all required fields');
         return;
@@ -142,7 +177,6 @@ const AdminList = () => {
       return;
     }
 
-    // Prepare data to send
     const dataToSend = {
       ...formData,
       confirmPassword: undefined
@@ -161,8 +195,6 @@ const AdminList = () => {
       });
   };
 
-  const [viewingManager, setViewingManager] = useState(null);
-
   const openViewModal = (manager) => {
     setViewingManager(manager);
   };
@@ -173,7 +205,7 @@ const AdminList = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - Responsif */}
+      {/* Sidebar */}
       <aside className="w-16 md:w-56 bg-blue-500 p-2 md:p-6 flex flex-col text-white select-none transition-all duration-300">
         <div className="hidden md:flex items-center gap-2 mb-8">
           <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
@@ -195,8 +227,9 @@ const AdminList = () => {
         <button onClick={() => navigate('/client-data')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
           <Folder size={18} /> Client Data
         </button>
-        <button onClick={() => navigate('/data-project')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <Briefcase size={18} /> Project Data
+        <button onClick={() => navigate('/data-project')} className="flex items-center justify-center md:justify-start gap-2 hover:bg-blue-600 p-2 rounded mb-2">
+          <Folder size={18} />
+          <span className="hidden md:inline">Project Data</span>
         </button>
         <button onClick={() => navigate('/employee-evaluation')} className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded mb-2">
           <ChartBar size={18} /> Evaluation
@@ -206,13 +239,69 @@ const AdminList = () => {
         </button>
       </aside>
 
-      {/* Main Content - Responsif */}
-      <main className="flex-1 p-2 md:p-6 overflow-auto bg-gray-50">
-        {/* Profile Section - Responsif - Diubah untuk berada di pojok kanan */}
-        <div className="flex justify-end items-center mb-4">
-          <div className="flex items-center gap-2">
-            <img src={ProfilePic} alt="Profile" className="w-8 h-8 md:w-10 md:h-10 rounded-full" />
-            <span className="hidden md:inline font-medium">Deni el mares</span>
+      {/* Main Content */}
+      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+        {/* Topbar */}
+        <div className="flex justify-end mb-4">
+          <div className="relative">
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onMouseEnter={() => setShowProfileDropdown(true)}
+              onMouseLeave={() => setShowProfileDropdown(false)}
+            >
+              <img
+                src={managerProfile.data?.foto_profile || ProfilePic}
+                alt="Profile"
+                className="w-10 h-10 rounded-full"
+              />
+              <div className="hidden md:block">
+                <p className="font-medium text-sm">
+                  {managerProfile.loading ? 'Loading...' : managerProfile.data?.nama_lengkap}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {managerProfile.data?.email}
+                </p>
+              </div>
+            </div>
+
+            {showProfileDropdown && (
+              <div
+                className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+                onMouseEnter={() => setShowProfileDropdown(true)}
+                onMouseLeave={() => setShowProfileDropdown(false)}
+              >
+                <div className="px-4 py-3 border-b">
+                  <p className="font-medium text-gray-800">{managerProfile.data?.nama_lengkap}</p>
+                  <p className="text-sm text-gray-500 truncate">{managerProfile.data?.email}</p>
+                </div>
+
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-sm text-black-700 hover:bg-black-100"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/profile');
+                  }}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center px-4 py-2 text-sm text-black-700 hover:bg-black-100"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('token');
+                    navigate('/login');
+                  }}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log Out
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -390,9 +479,7 @@ const AdminList = () => {
                 </div>
               ) : (
                 <div className="mb-6">
-                  <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Login Information</h4>
-                  {/* <h5 className="text-sm font-medium mb-4">Personal Information</h5> */}
-
+                  <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Personal Information</h4>
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
