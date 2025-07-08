@@ -337,12 +337,6 @@ const DashboardManager = () => {
     );
   };
 
-  const calculateSDLCProgress = (progress = {}) => {
-    const total = Object.values(progress).reduce((acc, val) => acc + val, 0);
-    const count = Object.keys(progress).length || 1;
-    return Math.round((total / (count * 100)) * 100);
-  };
-
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
