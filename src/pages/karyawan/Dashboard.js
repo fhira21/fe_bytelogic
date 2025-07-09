@@ -289,24 +289,24 @@ const DashboardKaryawan = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">Total Project</h3>
-            <p className="text-2xl font-bold">{projects.stats.total}</p>
+            <p className="text-medium font-bold">{projects.stats.total}</p>
           </div>
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">On Progress</h3>
-            <p className="text-2xl font-bold">{projects.stats.progress}</p>
+            <p className="text-medium font-bold">{projects.stats.progress}</p>
           </div>
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">Waiting List</h3>
-            <p className="text-2xl font-bold">{projects.stats.waiting}</p>
+            <p className="text-medium font-bold">{projects.stats.waiting}</p>
           </div>
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">Status Karyawan</h3>
-            <p className="text-2xl font-bold">{statusKaryawan.data}</p>
+            <p className="text-medium font-bold">{statusKaryawan.data}</p>
           </div>
         </div>
 
         <div className="bg-white text-black rounded-lg p-4 shadow col-span-2 mb-6">
-          <h3 className="text-sm font-medium mb-4">Evaluasi Proyek</h3>
+          <h3 className="text-xl font-medium mb-4">Evaluasi Bar</h3>
           <EvaluasiChart
             data={evaluasiData.data}
             loading={evaluasiData.loading}
