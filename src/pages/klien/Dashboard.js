@@ -10,13 +10,14 @@ import {
 } from "recharts";
 import axios from "axios";
 import {
-  FiBell,
-  FiChevronDown,
-  FiChevronUp,
   FiStar,
   FiPhone,
   FiMail,
+  FiChevronDown,
+  FiChevronUp,
 } from "react-icons/fi";
+import Header from "../../components/Header";
+const defaultAvatar = "https://www.w3schools.com/howto/img_avatar.png";
 
 const DashboardKlien = () => {
   // State untuk user
@@ -27,17 +28,6 @@ const DashboardKlien = () => {
   });
 
   const navigate = useNavigate();
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
-
-  const handleEditProfile = () => {
-    setIsProfileDropdownOpen(false);
-    navigate("/profile/edit");
-  };
 
   // State untuk profil klien
   const [profile, setProfile] = useState({
@@ -150,7 +140,7 @@ const DashboardKlien = () => {
     setReview((prev) => ({ ...prev, submitting: true, error: null }));
 
     try {
-      const response = await axios.post(
+      await axios.post(
         "http://localhost:5000/api/reviews",
         {
           rating: review.rating,
@@ -359,10 +349,11 @@ const DashboardKlien = () => {
               {projects.map((project) => (
                 <button
                   key={project._id}
-                  className={`block w-full text-left px-4 py-2 text-sm ${selectedProject?._id === project._id
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    selectedProject?._id === project._id
                       ? "bg-blue-100 text-blue-900"
                       : "text-gray-700 hover:bg-gray-100"
-                    }`}
+                  }`}
                   onClick={() => {
                     onSelect(project);
                     toggleDropdown();
@@ -380,66 +371,7 @@ const DashboardKlien = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">Bytelogic</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="p-1 text-gray-500 rounded-full hover:bg-gray-100">
-                <FiBell size={20} />
-              </button>
-              <div className="relative ml-3">
-                <div>
-                  <button
-                    type="button"
-                    className="flex items-center text-sm rounded-full focus:outline-none"
-                    onClick={() =>
-                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
-                    }
-                  >
-                    <img
-                      className="h-8 w-8 rounded-full"
-                      src={user.avatar}
-                      alt="User avatar"
-                    />
-                    <div className="ml-2">
-                      <div className="text-sm font-medium text-gray-800">
-                        {user.name}
-                      </div>
-                      <div className="text-xs text-gray-500">{user.email}</div>
-                    </div>
-                    {isProfileDropdownOpen ? (
-                      <FiChevronUp className="ml-1 h-4 w-4 text-gray-500" />
-                    ) : (
-                      <FiChevronDown className="ml-1 h-4 w-4 text-gray-500" />
-                    )}
-                  </button>
-                </div>
-
-                {isProfileDropdownOpen && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-10">
-                    <button
-                      onClick={handleEditProfile}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      Edit Profile
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header user={user} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -466,19 +398,22 @@ const DashboardKlien = () => {
               ) : profile.data ? (
                 <div className="space-y-4">
                   {/* Foto Profil dengan Username dan Nama Lengkap */}
+                  {/* Foto Profil dengan Username dan Nama Lengkap */}
                   <div className="flex flex-col items-center text-center mb-6">
                     <img
+                      className="h-24 w-24 rounded-full object-cover mx-auto"
                       src={
-                        profile.data?.client?.foto_profile ||
-                        "/default-profile.png"
+                        profile.data?.client?.foto_profile
+                          ? profile.data.client.foto_profile
+                          : defaultAvatar
                       }
-                      alt="Profile"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-blue-100 mb-4"
+                      alt="User avatar"
                       onError={(e) => {
-                        e.target.src = "/default-profile.png";
+                        e.target.onerror = null;
+                        e.target.src = defaultAvatar;
                       }}
                     />
-                    <div>
+                    <div className="mt-2">
                       <h3 className="text-lg font-bold">
                         {profile.data.user?.username || "-"}
                       </h3>
@@ -548,7 +483,10 @@ const DashboardKlien = () => {
                   </div>
 
                   {/* Edit Profile Button */}
-                  <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition duration-200">
+                  <button
+                    className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                    onClick={() => navigate("/profile/edit")}
+                  >
                     Edit Profile
                   </button>
                 </div>
@@ -612,13 +550,14 @@ const DashboardKlien = () => {
                           {projects.selectedProject.title || "Untitled Project"}
                         </h3>
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${projects.selectedProject.status === "Completed"
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            projects.selectedProject.status === "Completed"
                               ? "bg-green-100 text-green-800"
                               : projects.selectedProject.status ===
                                 "In Progress"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
                         >
                           {projects.selectedProject.status || "Unknown Status"}
                         </span>
@@ -659,6 +598,54 @@ const DashboardKlien = () => {
                   Tidak ada data proyek yang tersedia
                 </div>
               )}
+            </div>
+
+            {/* Review Section */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Beri Review</h2>
+              <form onSubmit={handleSubmitReview}>
+                <div className="mb-4">
+                  <label className="block text-gray-700 mb-2">Rating</label>
+                  <StarRating
+                    rating={review.rating}
+                    onRatingChange={(rating) =>
+                      setReview((prev) => ({ ...prev, rating }))
+                    }
+                    hoverRating={hoverRating}
+                    onHoverChange={setHoverRating}
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700 mb-2">Komentar</label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="4"
+                    value={review.comment}
+                    onChange={(e) =>
+                      setReview((prev) => ({
+                        ...prev,
+                        comment: e.target.value,
+                      }))
+                    }
+                    placeholder="Bagaimana pengalaman Anda bekerja dengan kami?"
+                  ></textarea>
+                </div>
+                {review.error && (
+                  <div className="mb-4 text-red-500">{review.error}</div>
+                )}
+                {review.success && (
+                  <div className="mb-4 text-green-500">
+                    Review berhasil dikirim!
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:opacity-50"
+                  disabled={review.submitting}
+                >
+                  {review.submitting ? "Mengirim..." : "Kirim Review"}
+                </button>
+              </form>
             </div>
           </div>
         </div>

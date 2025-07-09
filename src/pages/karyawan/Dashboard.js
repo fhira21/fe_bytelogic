@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  FiBell,
-  FiChevronDown,
-  FiEdit,
-  FiCheck,
-  FiClock,
-  FiCheckCircle,
-} from "react-icons/fi";
+import { FiEdit, FiCheck } from "react-icons/fi";
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
 import {
@@ -18,6 +11,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import Header from "../../components/Header";
 
 // Register ChartJS components
 ChartJS.register(
@@ -30,21 +24,18 @@ ChartJS.register(
 );
 
 const DashboardKaryawan = () => {
-  // State untuk user dan status karyawan
   const [user] = useState({
     name: "Loading...",
     email: "Loading...",
     avatar: "https://randomuser.me/api/portraits/men/32.jpg",
   });
 
-  // State untuk status karyawan
   const [statusKaryawan, setStatusKaryawan] = useState({
     loading: true,
     error: null,
     data: null,
   });
 
-  // State untuk project
   const [projects, setProjects] = useState({
     loading: true,
     error: null,
@@ -61,20 +52,12 @@ const DashboardKaryawan = () => {
     },
   });
 
-  // State untuk evaluasi
-  const [evaluations, setEvaluations] = useState({
+  const [evaluasiData, setEvaluasiData] = useState({
     loading: true,
     error: null,
-    data: {
-      nama_karyawan: "",
-      jumlah_proyek_dinilai: 0,
-      rata_rata_nilai: 0,
-      final_score: 0,
-      detail_evaluasi: [],
-    },
+    data: [],
   });
 
-  // Fetch data status karyawan
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -91,7 +74,7 @@ const DashboardKaryawan = () => {
         setStatusKaryawan({
           loading: false,
           error: null,
-          data: response.data.data.status_Karyawan,
+          data: response.data.data.karyawan.status_Karyawan,
         });
       } catch (error) {
         console.error("Error fetching employee status:", error);
@@ -107,7 +90,6 @@ const DashboardKaryawan = () => {
     fetchStatus();
   }, []);
 
-  // Fetch data project
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -161,9 +143,8 @@ const DashboardKaryawan = () => {
     fetchProjects();
   }, []);
 
-  // Fetch data evaluasi
   useEffect(() => {
-    const fetchEvaluations = async () => {
+    const fetchEvaluasi = async () => {
       try {
         const response = await axios.get(
           "http://localhost:5000/api/evaluations/evaluationmykaryawan",
@@ -175,52 +156,31 @@ const DashboardKaryawan = () => {
           }
         );
 
-        setEvaluations({
+        const hasil = response.data.detail_evaluasi.map((item) => ({
+          project: item.project_title,
+          score: item.final_score,
+        }));
+
+        setEvaluasiData({
           loading: false,
           error: null,
-          data: response.data.data || {
-            nama_karyawan: "",
-            jumlah_proyek_dinilai: 0,
-            rata_rata_nilai: 0,
-            final_score: 0,
-            detail_evaluasi: [],
-          },
+          data: hasil,
         });
       } catch (error) {
-        console.error("Error fetching evaluations:", error);
-        setEvaluations({
+        console.error("Gagal ambil data evaluasi:", error);
+        setEvaluasiData({
           loading: false,
-          error: error.response?.data?.message || "Gagal memuat data evaluasi",
-          data: {
-            nama_karyawan: "",
-            jumlah_proyek_dinilai: 0,
-            rata_rata_nilai: 0,
-            detail_evaluasi: [],
-          },
+          error: error.response?.data?.message || "Terjadi kesalahan",
+          data: [],
         });
       }
     };
 
-    fetchEvaluations();
+    fetchEvaluasi();
   }, []);
 
-  // Fungsi untuk memotong teks
-const truncateText = (text, maxLength = 10) => {
-  return text.length > maxLength
-    ? text.substring(0, maxLength) + '...'
-    : text;
-};
-
-  // Komponen untuk menampilkan daftar project (hanya title)
-  const ProjectList = ({
-    title,
-    items,
-    loading,
-    error,
-    showActions = false,
-  }) => {
-    if (loading)
-      return <div className="p-4 text-center">Memuat {title}...</div>;
+  const ProjectList = ({ title, items, loading, error, showActions = false }) => {
+    if (loading) return <div className="p-4 text-center">Memuat {title}...</div>;
     if (error) return <div className="p-4 text-red-500">{error}</div>;
     if (items.length === 0)
       return <div className="p-4 text-gray-500">Tidak ada {title}</div>;
@@ -260,26 +220,17 @@ const truncateText = (text, maxLength = 10) => {
     );
   };
 
-  // Komponen untuk menampilkan chart evaluasi
   const EvaluasiChart = ({ data, loading, error }) => {
-    if (
-      !data ||
-      !data.detail_evaluasi ||
-      !Array.isArray(data.detail_evaluasi)
-    ) {
-      return <div className="p-4 text-red-500">Data evaluasi tidak valid</div>;
-    }
-    // Siapkan data untuk chart
+    if (loading) return <p>Memuat data evaluasi...</p>;
+    if (error) return <p className="text-red-500">{error}</p>;
+    if (!data.length) return <p className="text-gray-500">Tidak ada data evaluasi</p>;
+
     const chartData = {
-      labels: data.detail_evaluasi.map(
-        (item) => item.project_title || "Proyek Tanpa Judul"
-      ),
+      labels: data.map((item) => item.project || "Tanpa Judul"),
       datasets: [
         {
           label: "Nilai Evaluasi",
-          data: data.detail_evaluasi.map((item) =>
-            Math.round(item.final_score)
-          ), // Bulatkan nilai
+          data: data.map((item) => Math.round(item.score)),
           backgroundColor: "rgba(54, 162, 235, 0.7)",
           borderColor: "rgba(54, 162, 235, 1)",
           borderWidth: 1,
@@ -289,14 +240,14 @@ const truncateText = (text, maxLength = 10) => {
 
     const options = {
       responsive: true,
-      maintainAspectRatio: false, // Untuk ukuran yang lebih fleksibel
+      maintainAspectRatio: false,
       scales: {
         y: {
           beginAtZero: true,
-          max: 1000,
+          max: 100,
           ticks: {
-            stepSize: 100,
-            callback: (value) => value, // Memastikan nilai y-axis tampil utuh
+            stepSize: 10,
+            callback: (value) => value,
           },
           title: {
             display: true,
@@ -311,13 +262,10 @@ const truncateText = (text, maxLength = 10) => {
         },
       },
       plugins: {
-        legend: {
-          display: false, // Sembunyikan legend karena hanya 1 dataset
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
-            title: (context) => context[0].label, // Judul tooltip = nama proyek
-            label: (context) => `Nilai: ${context.raw}`, // Isi tooltip = nilai
+            label: (context) => `Nilai: ${context.raw}`,
           },
         },
       },
@@ -325,132 +273,48 @@ const truncateText = (text, maxLength = 10) => {
 
     return (
       <div className="h-64 w-full">
-        {" "}
-        {/* Container dengan ukuran tetap */}
-        <Bar
-          data={chartData}
-          options={options}
-          redraw // Memastikan chart di-render ulang saat data berubah
-        />
+        <Bar data={chartData} options={options} />
       </div>
     );
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Top Navigation */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <img
-                src="/company-logo.png"
-                alt="Company Logo"
-                className="h-8 w-auto"
-              />
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="p-1 text-gray-500 rounded-full hover:bg-gray-100">
-                <FiBell size={20} />
-              </button>
-              <div className="flex items-center">
-                <img
-                  className="h-8 w-8 rounded-full"
-                  src={user.avatar}
-                  alt="User avatar"
-                />
-                <div className="ml-2">
-                  <div className="text-sm font-medium text-gray-800">
-                    {user.name}
-                  </div>
-                  <div className="text-xs text-gray-500">{user.email}</div>
-                </div>
-                <button className="ml-2 text-gray-500">
-                  <FiChevronDown size={18} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      <Header user={user} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
           Dashboard {user.name}
         </h1>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Total Project */}
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">Total Project</h3>
             <p className="text-2xl font-bold">{projects.stats.total}</p>
           </div>
-
-          {/* On Progress */}
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">On Progress</h3>
             <p className="text-2xl font-bold">{projects.stats.progress}</p>
           </div>
-
-          {/* Waiting List */}
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">Waiting List</h3>
             <p className="text-2xl font-bold">{projects.stats.waiting}</p>
           </div>
-
-          {/* Status Karyawan */}
           <div className="bg-white text-black rounded-lg p-4 shadow">
             <h3 className="text-sm font-medium">Status Karyawan</h3>
-            {statusKaryawan.loading ? (
-              <p className="text-2xl font-bold">Loading...</p>
-            ) : statusKaryawan.error ? (
-              <p className="text-red-500 text-sm">{statusKaryawan.error}</p>
-            ) : (
-              <p className="text-2xl font-bold">{statusKaryawan.data}</p>
-            )}
+            <p className="text-2xl font-bold">{statusKaryawan.data}</p>
           </div>
         </div>
 
-        {/* Evaluasi Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Evaluasi</h2>
-
-          {evaluations.loading ? (
-            <div className="p-4 text-center">Memuat evaluasi...</div>
-          ) : evaluations.error ? (
-            <div className="p-4 text-red-500">{evaluations.error}</div>
-          ) : (
-            // ) : evaluations.data.detail_evaluasi.length === 0 ? (
-            //   <div className="p-4 text-gray-500">Belum ada evaluasi</div>
-            <>
-              <EvaluasiChart
-                data={evaluations.data}
-                loading={evaluations.loading}
-                error={evaluations.error}
-              />
-              <div className="mt-4 text-sm text-gray-600">
-                <p>
-                  Rata-rata Nilai:{" "}
-                  <span className="font-bold">
-                    {Math.round(evaluations.data.rata_rata_nilai)}
-                  </span>
-                </p>
-                <p>
-                  Total Proyek Dinilai:{" "}
-                  <span className="font-bold">
-                    {evaluations.data.jumlah_proyek_dinilai}
-                  </span>
-                </p>
-              </div>
-            </>
-          )}
+        <div className="bg-white text-black rounded-lg p-4 shadow col-span-2 mb-6">
+          <h3 className="text-sm font-medium mb-4">Evaluasi Proyek</h3>
+          <EvaluasiChart
+            data={evaluasiData.data}
+            loading={evaluasiData.loading}
+            error={evaluasiData.error}
+          />
         </div>
 
-        {/* Project Lists */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Waiting List */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
               <h3 className="text-lg font-semibold text-gray-800">
@@ -465,7 +329,6 @@ const truncateText = (text, maxLength = 10) => {
             />
           </div>
 
-          {/* On Progress */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
               <h3 className="text-lg font-semibold text-gray-800">
@@ -481,7 +344,6 @@ const truncateText = (text, maxLength = 10) => {
             />
           </div>
 
-          {/* Completed */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
               <h3 className="text-lg font-semibold text-gray-800">
