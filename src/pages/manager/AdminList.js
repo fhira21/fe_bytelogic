@@ -40,14 +40,43 @@ const AdminList = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [viewingManager, setViewingManager] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [managerProfile, setManagerProfile] = useState({
-    loading: true,
-    data: {
-      foto_profile: ProfilePic,
-      nama_lengkap: 'Asep Jamaludin Wahid',
-      email: 'jamaludinasep@gmail.com'
+  
+  // State for manager profile
+const [managerProfile, setManagerProfile] = useState({
+  loading: true,
+  data: null,
+  error: null,
+});
+
+// useEffect untuk mengambil data profil manager
+useEffect(() => {
+  const fetchManagerProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        "http://localhost:5000/api/managers/profile",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setManagerProfile({
+        loading: false,
+        data: response.data.data, // Data profil dari backend
+        error: null,
+      });
+    } catch (error) {
+      console.error("Error fetching manager profile:", error);
+      setManagerProfile({
+        loading: false,
+        data: null,
+        error: "Gagal mengambil profil",
+      });
     }
-  });
+  };
+
+  fetchManagerProfile();
+}, []);
 
   useEffect(() => {
     // Fetch managers data
@@ -241,29 +270,35 @@ const AdminList = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto bg-gray-50">
-        {/* Topbar */}
-        <div className="flex justify-end mb-4">
-          <div className="relative">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onMouseEnter={() => setShowProfileDropdown(true)}
-              onMouseLeave={() => setShowProfileDropdown(false)}
-            >
-              <img
-                src={managerProfile.data?.foto_profile || ProfilePic}
-                alt="Profile"
-                className="w-10 h-10 rounded-full"
-              />
-              <div className="hidden md:block">
-                <p className="font-medium text-sm">
-                  {managerProfile.loading ? 'Loading...' : managerProfile.data?.nama_lengkap}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {managerProfile.data?.email}
-                </p>
-              </div>
-            </div>
-
+        {/* Topbar*/}
+                <div className="flex justify-end mb-4">
+                  <div className="relative">
+                    <div
+                      className="flex items-center gap-2 cursor-pointer"
+                      onMouseEnter={() => setShowProfileDropdown(true)}
+                      onMouseLeave={() => setShowProfileDropdown(false)}
+                    >
+                      <img
+                        src={
+                          managerProfile.data?.foto_profile
+                            ? `http://localhost:5000${managerProfile.data.foto_profile}`
+                            : ProfilePic
+                        }
+                        alt="Profile"
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div className="hidden md:block">
+                        <p className="font-medium text-sm">
+                          {managerProfile.loading
+                            ? "Loading..."
+                            : managerProfile.data?.nama_lengkap || "unknow"}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {managerProfile.data?.email || "unknow@gmail.com"}
+                        </p>
+                      </div>
+                    </div>
+                    
             {showProfileDropdown && (
               <div
                 className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"

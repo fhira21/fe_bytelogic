@@ -1,0 +1,146 @@
+[
+  {
+    "aspect_name": "Kesesuaian hasil dengan kebutuhan klien",
+    "question": "Seberapa tepat hasil akhir mencerminkan kebutuhan awal proyek?",
+    "weight": 15,
+    "criteria": [
+      { "score": 1, "label": "Tidak sesuai sama sekali, harus dikerjakan ulang dari nol" },
+      { "score": 2, "label": "Butuh revisi besar (>50% pekerjaan)" },
+      { "score": 3, "label": "Cukup sesuai, perlu minor revisi (10-30% pekerjaan)" },
+      { "score": 4, "label": "Hanya perlu penyesuaian kecil (<10%)" },
+      { "score": 5, "label": "Sempurna, bahkan melebihi ekspektasi klien" }
+    ]
+  },
+  {
+    "aspect_name": "Kualitas teknis pekerjaan",
+    "question": "Seberapa bebas error hasil deliverable yang diberikan?",
+    "weight": 12,
+    "criteria": [
+      { "score": 1, "label": "Banyak bug kritis yang menghambat operasional" },
+      { "score": 2, "label": "Ada beberapa bug signifikan tapi bisa diperbaiki" },
+      { "score": 3, "label": "Minor bug tidak mempengaruhi fungsi utama" },
+      { "score": 4, "label": "Hanya 1-2 kesalahan trivial" },
+      { "score": 5, "label": "Zero defect, siap produksi" }
+    ]
+  },
+  {
+    "aspect_name": "Ketepatan waktu",
+    "question": "Apakah deadline dipatuhi sesuai kesepakatan?",
+    "weight": 12,
+    "criteria": [
+      { "score": 1, "label": "Terlambat >3 hari tanpa pemberitahuan" },
+      { "score": 2, "label": "Terlambat 1-3 hari dengan alasan kurang jelas" },
+      { "score": 3, "label": "Tepat waktu dengan toleransi ±6 jam" },
+      { "score": 4, "label": "Selesai 1 hari lebih cepat" },
+      { "score": 5, "label": "Selesai >2 hari lebih cepat + proaktif lapor progres" }
+    ]
+  },
+  {
+    "aspect_name": "Kemampuan komunikasi",
+    "question": "Bagaimana efektifitas komunikasi selama proyek?",
+    "weight": 10,
+    "criteria": [
+      { "score": 1, "label": "Sulit dihubungi, respon >48 jam" },
+      { "score": 2, "label": "Merespons dalam 24-48 jam tapi kurang jelas" },
+      { "score": 3, "label": "Respon <24 jam dengan penjelasan memadai" },
+      { "score": 4, "label": "Proaktif update 1x/hari" },
+      { "score": 5, "label": "Real-time komunikasi + antisipasi pertanyaan klien" }
+    ]
+  },
+  {
+    "aspect_name": "Profesionalisme",
+    "question": "Seberapa profesional sikap saat menghadapi masalah?",
+    "weight": 10,
+    "criteria": [
+      { "score": 1, "label": "Emosional/menyalahkan pihak lain" },
+      { "score": 2, "label": "Kooperatif tapi terlihat tidak nyaman" },
+      { "score": 3, "label": "Tenang dan berusaha menyelesaikan" },
+      { "score": 4, "label": "Mengajukan solusi alternatif" },
+      { "score": 5, "label": "Transformasi masalah menjadi opportunity" }
+    ]
+  },
+  {
+    "aspect_name": "Kreativitas solusi",
+    "question": "Seberapa inovatif solusi yang ditawarkan?",
+    "weight": 8,
+    "criteria": [
+      { "score": 1, "label": "Hanya mengikuti brief secara kaku" },
+      { "score": 2, "label": "Menambahkan 1 ide minor" },
+      { "score": 3, "label": "Mengusulkan 2-3 pilihan solusi" },
+      { "score": 4, "label": "Solusi kreatif yang menghemat waktu 20-50%" },
+      { "score": 5, "label": "Terobosan revolusioner dengan dampak signifikan" }
+    ]
+  },
+  {
+    "aspect_name": "Kesopanan dan keramahan",
+    "question": "Bagaimana kesan sikap personal karyawan?",
+    "weight": 8,
+    "criteria": [
+      { "score": 1, "label": "Kurang sopan/terkesan arogan" },
+      { "score": 2, "label": "Formal tapi kaku" },
+      { "score": 3, "label": "Ramah dengan komunikasi standar" },
+      { "score": 4, "label": "Sangat menghargai + empatik" },
+      { "score": 5, "label": "Membangun chemistry positif dengan klien" }
+    ]
+  },
+  {
+    "aspect_name": "Kedisiplinan",
+    "question": "Seberapa konsisten mematuhi komitmen?",
+    "weight": 8,
+    "criteria": [
+      { "score": 1, "label": "Sering mengingkari janji/timeline" },
+      { "score": 2, "label": "Butuh pengingat berulang" },
+      { "score": 3, "label": "Memenuhi 80-90% komitmen" },
+      { "score": 4, "label": "100% patuh timeline" },
+      { "score": 5, "label": "Konsisten melebihi ekspektasi" }
+    ]
+  },
+  {
+    "aspect_name": "Manajemen waktu",
+    "question": "Seberapa baik waktu dan risiko dikelola?",
+    "weight": 7,
+    "criteria": [
+      { "score": 1, "label": "Tidak ada update sampai masalah muncul" },
+      { "score": 2, "label": "Memberi tahu setelah terjadi delay" },
+      { "score": 3, "label": "Early warning 1-2 hari sebelumnya" },
+      { "score": 4, "label": "Mitigasi risiko sejak awal proyek" },
+      { "score": 5, "label": "Membangun buffer time tanpa diminta" }
+    ]
+  },
+  {
+    "aspect_name": "Penanganan revisi",
+    "question": "Bagaimana respons terhadap permintaan perubahan?",
+    "weight": 5,
+    "criteria": [
+      { "score": 1, "label": "Menolak dengan alasan tidak jelas" },
+      { "score": 2, "label": "Mengerjakan dengan keluhan" },
+      { "score": 3, "label": "Kooperatif tapi lambat" },
+      { "score": 4, "label": "Cepat dan akurat" },
+      { "score": 5, "label": "Menawarkan improvement proaktif" }
+    ]
+  },
+  {
+    "aspect_name": "Dokumentasi",
+    "question": "Seberapa lengkap dokumentasi pekerjaan?",
+    "weight": 3,
+    "criteria": [
+      { "score": 1, "label": "Tidak ada dokumentasi" },
+      { "score": 2, "label": "Catatan tidak terstruktur" },
+      { "score": 3, "label": "Cukup untuk maintenance dasar" },
+      { "score": 4, "label": "Detail dengan contoh implementasi" },
+      { "score": 5, "label": "Lengkap + panduan troubleshooting" }
+    ]
+  },
+  {
+    "aspect_name": "Potensi kolaborasi",
+    "question": "Seberapa besar keinginan anda bekerja sama lagi?",
+    "weight": 2,
+    "criteria": [
+      { "score": 1, "label": "Tidak mau sama sekali" },
+      { "score": 2, "label": "Hanya untuk proyek sederhana" },
+      { "score": 3, "label": "Bisa dipertimbangkan" },
+      { "score": 4, "label": "Prioritas utama" },
+      { "score": 5, "label": "Ingin merekrut sebagai tim tetap" }
+    ]
+  }
+]

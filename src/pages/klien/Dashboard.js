@@ -143,8 +143,8 @@ const DashboardKlien = () => {
       await axios.post(
         "http://localhost:5000/api/reviews",
         {
-          rating: review.rating,
-          comment: review.comment,
+          review: review.comment,  // Ubah dari comment ke review
+          rating: review.rating
         },
         {
           headers: {
@@ -162,16 +162,17 @@ const DashboardKlien = () => {
         success: true,
       });
 
-      // Reset success message after 3 seconds
       setTimeout(() => {
         setReview((prev) => ({ ...prev, success: false }));
       }, 3000);
     } catch (error) {
-      console.error("Error submitting review:", error);
+      console.error("Error response:", error.response);
       setReview((prev) => ({
         ...prev,
         submitting: false,
-        error: error.response?.data?.message || "Gagal mengirim review",
+        error: error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Gagal mengirim review",
       }));
     }
   };
@@ -349,11 +350,10 @@ const DashboardKlien = () => {
               {projects.map((project) => (
                 <button
                   key={project._id}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    selectedProject?._id === project._id
+                  className={`block w-full text-left px-4 py-2 text-sm ${selectedProject?._id === project._id
                       ? "bg-blue-100 text-blue-900"
                       : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                    }`}
                   onClick={() => {
                     onSelect(project);
                     toggleDropdown();
@@ -550,14 +550,13 @@ const DashboardKlien = () => {
                           {projects.selectedProject.title || "Untitled Project"}
                         </h3>
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            projects.selectedProject.status === "Completed"
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${projects.selectedProject.status === "Completed"
                               ? "bg-green-100 text-green-800"
                               : projects.selectedProject.status ===
                                 "In Progress"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
                         >
                           {projects.selectedProject.status || "Unknown Status"}
                         </span>
@@ -587,6 +586,15 @@ const DashboardKlien = () => {
                               issues={projects.selectedProject.githubIssues}
                               state="closed"
                             />
+                          </div>
+                          {/* Tambahkan tombol evaluasi di sini */}
+                          <div className="mt-4">
+                            <button
+                              onClick={() => navigate(`/evaluate/${projects.selectedProject._id}`)}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition duration-200"
+                            >
+                              Berikan Evaluasi Proyek
+                            </button>
                           </div>
                         </div>
                       </div>

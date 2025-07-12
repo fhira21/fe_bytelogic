@@ -29,6 +29,7 @@ import DataProject from "./pages/manager/DataProject";
 // Klien & Karyawan Pages
 import DashboardKlien from "./pages/klien/Dashboard";
 import DashboardKaryawan from "./pages/karyawan/Dashboard";
+import EvaluationPage from "./pages/klien/EvaluationPage";
 
 // Global Components
 import Navbar from "./components/Navbar";
@@ -48,7 +49,7 @@ function MainLayout() {
 
   const showNavbar = ["/login", "/"].includes(location.pathname);
 
-   return (
+  return (
     <>
       {showNavbar && <Navbar />}
       <Routes>
@@ -104,6 +105,14 @@ function MainLayout() {
           element={
             <ProtectedRoute allowedRoles={["client"]}>
               <DashboardKlien />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/evaluate/:projectId"
+          element={
+            <ProtectedRoute allowedRoles={["client"]}>
+              <EvaluationPage />
             </ProtectedRoute>
           }
         />

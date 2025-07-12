@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ProfilePic from '../../assets/images/profile.jpg';
 import { Home, Folder, Briefcase, ChartBar, FileText, ChevronLeft, Search, User } from 'lucide-react';
-import { Bar, Pie } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 
 ChartJS.register(
@@ -57,7 +57,7 @@ const EmployeeEvaluation = () => {
     fetchManagerProfile();
   }, [token]);
 
-  // Fetch data with pagination
+  // Fetch employee evaluation data
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -74,35 +74,21 @@ const EmployeeEvaluation = () => {
           throw new Error('Invalid API response structure');
         }
 
-        if (Array.isArray(response.data.data)) {
-          const employeesData = response.data.data;
-          const formattedEmployees = employeesData.map(emp => ({
+        const responseData = response.data.data || response.data;
+
+        if (Array.isArray(responseData)) {
+          const formattedEmployees = responseData.map(emp => ({
             _id: emp.employee_id || emp._id,
-            nama_karyawan: emp.nama_karyawan || emp.nama_lengkap,
-            total_project_dinilai: emp.total_projects || emp.total_project_dinilai || 0,
-            rata_rata_point_evaluasi: calculateAverageScore(emp),
-            evaluasi_projects: emp.evaluations || emp.evaluasi_projects || []
+            nama_karyawan: emp.nama_karyawan || emp.nama_lengkap || 'Nama tidak tersedia',
+            total_project_dinilai: emp.total_projects || 0,
+            rata_rata_point_evaluasi: parseFloat(emp.average_final_score) || 0,
+            evaluasi_projects: emp.evaluations || []
           }));
 
           setEmployees(formattedEmployees);
           setPagination(prev => ({
             ...prev,
-            total: response.data.total || employeesData.length
-          }));
-        }
-        else if (Array.isArray(response.data)) {
-          const formattedEmployees = response.data.map(emp => ({
-            _id: emp.employee_id || emp._id,
-            nama_karyawan: emp.nama_karyawan || emp.nama_lengkap,
-            total_project_dinilai: emp.total_projects || emp.total_project_dinilai || 0,
-            rata_rata_point_evaluasi: calculateAverageScore(emp),
-            evaluasi_projects: emp.evaluations || emp.evaluasi_projects || []
-          }));
-
-          setEmployees(formattedEmployees);
-          setPagination(prev => ({
-            ...prev,
-            total: response.data.length
+            total: response.data.total || responseData.length
           }));
         } else {
           throw new Error('Unexpected data format from API');
@@ -130,31 +116,10 @@ const EmployeeEvaluation = () => {
     return 0;
   };
 
-  const handleViewEmployeeDetail = async (employeeId) => {
-    try {
-      setDetailLoading(true);
-      const employeeDetail = employees.find(emp => emp._id === employeeId);
-
-      // Fetch detailed evaluation data
-      const response = await axios.get(
-  `http://localhost:5000/api/evaluations/employee/${employeeId}/details`, 
-  { 
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    } 
-  }
-);
-
-      setSelectedEmployee(employeeDetail);
-      setEvaluationDetails(response.data);
-      setViewMode('detail');
-    } catch (error) {
-      console.error("Error fetching evaluation details:", error);
-      setError(error.response?.data?.message || 'Failed to load evaluation details');
-    } finally {
-      setDetailLoading(false);
-    }
+  const handleViewEmployeeDetail = (employeeId) => {
+    const employeeDetail = employees.find(emp => emp._id === employeeId);
+    setSelectedEmployee(employeeDetail);
+    setViewMode('detail');
   };
 
   const handleBackToList = () => {
@@ -260,6 +225,53 @@ const EmployeeEvaluation = () => {
 
   // Detail View Component - Updated to match the image
   const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
+    // Prepare chart data
+    const chartData = {
+      labels: evaluationDetails?.project_categories?.map(cat => cat.category_name) || [],
+      datasets: [
+        {
+          label: 'Average Score',
+          data: evaluationDetails?.project_categories?.map(cat => cat.average_score) || [],
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            stepSize: 10,
+            callback: (value) => value,
+          },
+          title: {
+            display: true,
+            text: 'Nilai Final',
+          },
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Kategori Proyek',
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `Nilai: ${context.raw}`,
+          },
+        },
+      },
+    };
+
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <button
@@ -267,100 +279,33 @@ const EmployeeEvaluation = () => {
           className="flex items-center text-blue-600 mb-4 hover:text-blue-800"
         >
           <ChevronLeft size={18} className="mr-1" />
-          Back to Evaluation
+          Kembali ke Daftar Evaluasi
         </button>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Detail Evaluasi Karyawan</h2>
 
         {loading ? (
           <div className="flex items-center justify-center p-4">
-            <i className="fas fa-spinner fa-spin mr-2"></i> Loading evaluation details...
+            <i className="fas fa-spinner fa-spin mr-2"></i> Memuat detail evaluasi...
           </div>
         ) : (
           <>
-            <div className="mb-6">
-              <h2 className="text-xl font-bold mb-2">Detail Evaluation</h2>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ranking</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Project</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Point</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{employee.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.projects} Project</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.totalScore} Point</td>
-                    </tr>
-                  </tbody>
-                </table>
+            {/* Chart Section */}
+            <div className="bg-white border rounded-lg p-4 shadow mb-6">
+              <h3 className="text-xl font-medium mb-4">Grafik Evaluasi per Kategori</h3>
+              <div className="h-72 w-full">
+                {evaluationDetails?.project_categories?.length > 0 ? (
+                  <Bar
+                    data={chartData}
+                    options={chartOptions}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-500">Tidak ada data kategori proyek yang tersedia.</p>
+                )}
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3">Project Categories</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {[
-                  "Monojemen...",
-                  "Website...",
-                  "Penjualon...",
-                  "Penyimpanan...",
-                  "Penhlolan...",
-                  "App koali...",
-                  "Karyawan...",
-                  "Relap...",
-                  "Areja...",
-                  "barang...",
-                  "Rental...",
-                  "Penyawan..."
-                ].map((category, index) => (
-                  <div key={index} className="border rounded p-3 hover:bg-gray-50">
-                    <p className="text-sm font-medium">{category}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {barData && (
-                <div className="border rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3">Project Performance by Category</h3>
-                  <div className="h-64">
-                    <Bar
-                      data={barData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                          y: {
-                            beginAtZero: true,
-                            max: 100
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {pieData && (
-                <div className="border rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3">Score Distribution</h3>
-                  <div className="h-64">
-                    <Pie
-                      data={pieData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Project List */}
           </>
         )}
       </div>
