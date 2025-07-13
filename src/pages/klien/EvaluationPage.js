@@ -1,11 +1,21 @@
 // src/pages/EvaluateProject.js
 
 import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import evaluationAspects from "../../data/evaluationAspect.json";
 import Header from "../../components/Header";
 
-const EvaluasiPage = ({ projectName, employeeName }) => {
+const EvaluasiPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { projectName, employeeName, projectId } = location.state || {};
+
   const [scores, setScores] = useState(Array(evaluationAspects.length).fill(0));
+  const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const handleScoreChange = (aspectIndex, value) => {
     const newScores = [...scores];
@@ -13,18 +23,49 @@ const EvaluasiPage = ({ projectName, employeeName }) => {
     setScores(newScores);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const payload = {
-      project_id: "ID_PROYEK", // Ganti sesuai kebutuhan
+      project_id: projectId,
       scores,
-      comments: "", // Tambah jika perlu input komentar
+      comments: comment,
     };
 
-    console.log("Submit Payload:", payload);
-    // axios.post("/api/evaluations", payload)
+    try {
+      setLoading(true);
+      setSuccessMessage(null);
+      setErrorMessage(null);
+
+      const response = await axios.post("http://localhost:5000/api/evaluations", payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      setSuccessMessage("✅ Evaluasi berhasil dikirim!");
+      setTimeout(() => navigate("/dashboard-klien"), 2000);
+    } catch (error) {
+      console.error("Error submitting evaluation:", error);
+      setErrorMessage("❌ Gagal mengirim evaluasi. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (!projectId) {
+    return (
+      <div className="p-10 text-center text-red-600">
+        <p>⚠ Data proyek tidak ditemukan. Silakan kembali dan pilih proyek terlebih dahulu.</p>
+        <button
+          onClick={() => navigate(-1)}
+          className="mt-4 text-blue-600 underline"
+        >
+          Kembali
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
@@ -37,8 +78,7 @@ const EvaluasiPage = ({ projectName, employeeName }) => {
 
         <h1 className="text-3xl font-semibold mt-4 mb-6">Evaluate Project</h1>
 
-        {/* Project Info */}
-        <div className="bg-white p-6 rounded-lg shadow mb-8 space-y-4">
+        <div className="p-6 rounded-lg mb-8 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Project Name
@@ -63,7 +103,6 @@ const EvaluasiPage = ({ projectName, employeeName }) => {
           </div>
         </div>
 
-        {/* Evaluation Table */}
         <form onSubmit={handleSubmit}>
           <div className="overflow-x-auto bg-white rounded-lg shadow">
             <table className="min-w-full border text-sm">
@@ -107,12 +146,34 @@ const EvaluasiPage = ({ projectName, employeeName }) => {
             </table>
           </div>
 
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Komentar Tambahan
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+              placeholder="Tulis komentar mengenai kinerja karyawan..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {successMessage && (
+            <div className="mt-4 text-green-600 text-sm">{successMessage}</div>
+          )}
+          {errorMessage && (
+            <div className="mt-4 text-red-600 text-sm">{errorMessage}</div>
+          )}
+
           <div className="mt-6 flex justify-end">
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-md shadow hover:bg-blue-700 transition"
+              disabled={loading}
+              className={`bg-blue-600 text-white px-6 py-2 rounded-md shadow hover:bg-blue-700 transition ${loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
             >
-              Submit Evaluation
+              {loading ? "Submitting..." : "Submit Evaluation"}
             </button>
           </div>
         </form>

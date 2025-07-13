@@ -351,8 +351,8 @@ const DashboardKlien = () => {
                 <button
                   key={project._id}
                   className={`block w-full text-left px-4 py-2 text-sm ${selectedProject?._id === project._id
-                      ? "bg-blue-100 text-blue-900"
-                      : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-blue-100 text-blue-900"
+                    : "text-gray-700 hover:bg-gray-100"
                     }`}
                   onClick={() => {
                     onSelect(project);
@@ -551,11 +551,11 @@ const DashboardKlien = () => {
                         </h3>
                         <span
                           className={`px-3 py-1 rounded-full text-sm font-medium ${projects.selectedProject.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : projects.selectedProject.status ===
-                                "In Progress"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-yellow-100 text-yellow-800"
+                            ? "bg-green-100 text-green-800"
+                            : projects.selectedProject.status ===
+                              "In Progress"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-yellow-100 text-yellow-800"
                             }`}
                         >
                           {projects.selectedProject.status || "Unknown Status"}
@@ -590,11 +590,20 @@ const DashboardKlien = () => {
                           {/* Tambahkan tombol evaluasi di sini */}
                           <div className="mt-4">
                             <button
-                              onClick={() => navigate(`/evaluate/${projects.selectedProject._id}`)}
+                              onClick={() =>
+                                navigate(`/evaluate/${projects.selectedProject._id}`, {
+                                  state: {
+                                    projectName: projects.selectedProject.title,
+                                    employeeName: projects.selectedProject.employees.join(", "),
+                                    projectId: projects.selectedProject._id,
+                                  },
+                                })
+                              }
                               className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition duration-200"
                             >
                               Berikan Evaluasi Proyek
                             </button>
+
                           </div>
                         </div>
                       </div>
