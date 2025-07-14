@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { FiEdit, FiCheck } from "react-icons/fi";
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
+import { Link } from "react-router-dom";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -57,6 +57,8 @@ const DashboardKaryawan = () => {
     error: null,
     data: [],
   });
+  const [evaluasiFilter, setEvaluasiFilter] = useState("terbaru");
+
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -179,7 +181,7 @@ const DashboardKaryawan = () => {
     fetchEvaluasi();
   }, []);
 
-  const ProjectList = ({ title, items, loading, error, showActions = false }) => {
+  const ProjectList = ({ title, items, loading, error }) => {
     if (loading) return <div className="p-4 text-center">Memuat {title}...</div>;
     if (error) return <div className="p-4 text-red-500">{error}</div>;
     if (items.length === 0)
@@ -187,50 +189,61 @@ const DashboardKaryawan = () => {
 
     return (
       <div className="divide-y divide-gray-200">
-        {items.map((project) => (
-          <div
-            key={project._id}
-            className="px-6 py-4 flex justify-between items-center"
-          >
-            <p
-              className="font-medium text-gray-800 truncate"
-              title={project.title}
+        {items.map((project) => {
+          const formattedDate = new Date(project.created_at).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+
+          return (
+            <div
+              key={project._id}
+              className="px-6 py-4 flex justify-between items-center"
             >
-              {project.title}
-            </p>
-            {showActions && (
-              <div className="flex space-x-2">
-                <button
-                  className="p-1 text-yellow-600 hover:text-yellow-800"
-                  title="Update Progress"
-                >
-                  <FiEdit size={16} />
-                </button>
-                <button
-                  className="p-1 text-green-600 hover:text-green-800"
-                  title="Mark as Completed"
-                >
-                  <FiCheck size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+              <span className="text-gray-800 truncate" title={project.title}>
+                {project.title}
+              </span>
+              <span className="text-sm text-gray-600">{formattedDate}</span>
+            </div>
+          );
+        })}
       </div>
     );
   };
 
-  const EvaluasiChart = ({ data, loading, error }) => {
+
+
+  const EvaluasiChart = ({ data, loading, error, filter }) => {
     if (loading) return <p>Memuat data evaluasi...</p>;
     if (error) return <p className="text-red-500">{error}</p>;
     if (!data.length) return <p className="text-gray-500">Tidak ada data evaluasi</p>;
 
+    // Sort berdasarkan filter
+    const sortedData = [...data];
+    switch (filter) {
+      case "tertinggi":
+        sortedData.sort((a, b) => b.score - a.score);
+        break;
+      case "terendah":
+        sortedData.sort((a, b) => a.score - b.score);
+        break;
+      case "terbaru":
+        // Misal project memiliki tanggal, urutkan descending berdasarkan tanggal evaluasi jika tersedia
+        // Jika tidak ada tanggal, abaikan ini
+        break;
+      case "terlama":
+        break;
+      default:
+        break;
+    }
+
     const chartData = {
-      labels: data.map((item) => item.project || "Tanpa Judul"),
+      labels: sortedData.map((item) => item.project || "Tanpa Judul"),
       datasets: [
         {
           label: "Nilai Evaluasi",
-          data: data.map((item) => Math.round(item.score)),
+          data: sortedData.map((item) => Math.round(item.score)),
           backgroundColor: "rgba(54, 162, 235, 0.7)",
           borderColor: "rgba(54, 162, 235, 1)",
           borderWidth: 1,
@@ -247,7 +260,6 @@ const DashboardKaryawan = () => {
           max: 100,
           ticks: {
             stepSize: 10,
-            callback: (value) => value,
           },
           title: {
             display: true,
@@ -278,6 +290,7 @@ const DashboardKaryawan = () => {
     );
   };
 
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Header user={user} />
@@ -306,56 +319,116 @@ const DashboardKaryawan = () => {
         </div>
 
         <div className="bg-white text-black rounded-lg p-4 shadow col-span-2 mb-6">
-          <h3 className="text-xl font-medium mb-4">Evaluasi Bar</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-medium">Evaluasi Bar</h3>
+            <div className="flex items-center space-x-2">
+              <select
+                value={evaluasiFilter}
+                onChange={(e) => setEvaluasiFilter(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="terbaru">Terbaru</option>
+                <option value="terlama">Terlama</option>
+                <option value="tertinggi">Tertinggi</option>
+                <option value="terendah">Terendah</option>
+              </select>
+              <Link
+                to="/detail-evaluasi"
+                className="text-sm text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-100"
+              >
+                Lihat Semua
+              </Link>
+            </div>
+          </div>
           <EvaluasiChart
             data={evaluasiData.data}
             loading={evaluasiData.loading}
             error={evaluasiData.error}
+            filter={evaluasiFilter}
           />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Waiting List */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Waiting List ({projects.stats.waiting})
+            <div className="px-6 py-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-800">
+                Status Project : Waiting List
               </h3>
+              <Link
+                to="/detail-project"
+                className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Lihat Semua
+              </Link>
             </div>
-            <ProjectList
-              title="waiting list"
-              items={projects.lists.waiting}
-              loading={projects.loading}
-              error={projects.error}
-            />
+            <div className="px-6">
+              <div className="flex justify-between px-6 py-2 border-b border-gray-200 text-sm text-gray-600 font-semibold mb-2">
+                <span>Nama Project</span>
+                <span>Tanggal</span>
+              </div>
+              <ProjectList
+                title="waiting list"
+                items={projects.lists.waiting}
+                loading={projects.loading}
+                error={projects.error}
+              />
+            </div>
           </div>
 
+          {/* On Progress */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
-              <h3 className="text-lg font-semibold text-gray-800">
-                On Progress ({projects.stats.progress})
+            <div className="px-6 py-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-800">
+                Status Project : On Progress
               </h3>
+              <Link
+                to="/detail-project"
+                className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Lihat Semua
+              </Link>
             </div>
-            <ProjectList
-              title="on progress"
-              items={projects.lists.progress}
-              loading={projects.loading}
-              error={projects.error}
-              showActions={true}
-            />
+            <div className="px-6">
+              <div className="flex justify-between px-6 py-2 border-b border-gray-200 text-sm text-gray-600 font-semibold mb-2">
+                <span>Nama Project</span>
+                <span>Tanggal</span>
+              </div>
+              <ProjectList
+                title="on progress"
+                items={projects.lists.progress}
+                loading={projects.loading}
+                error={projects.error}
+                showActions={true}
+              />
+            </div>
           </div>
 
+          {/* Completed */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Completed ({projects.stats.completed})
+            <div className="px-6 py-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-800">
+                Status Project : Completed
               </h3>
+              <Link
+                to="/detail-project"
+                className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Lihat Semua
+              </Link>
             </div>
-            <ProjectList
-              title="completed"
-              items={projects.lists.completed}
-              loading={projects.loading}
-              error={projects.error}
-            />
+            <div className="px-6">
+              <div className="flex justify-between px-6 py-2 border-b border-gray-200 text-sm text-gray-600 font-semibold mb-2">
+                <span>Nama Project</span>
+                <span>Tanggal</span>
+              </div>
+              <ProjectList
+                title="completed"
+                items={projects.lists.completed}
+                loading={projects.loading}
+                error={projects.error}
+              />
+            </div>
           </div>
         </div>
       </main>

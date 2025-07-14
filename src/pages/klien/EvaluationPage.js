@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import evaluationAspects from "../../data/evaluationAspect.json";
 import Header from "../../components/Header";
+import axios from "axios";
 
 const EvaluasiPage = () => {
   const location = useLocation();
@@ -26,6 +26,11 @@ const EvaluasiPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!projectId) {
+      setErrorMessage("ID proyek tidak ditemukan.");
+      return;
+    }
+
     const payload = {
       project_id: projectId,
       scores,
@@ -37,17 +42,21 @@ const EvaluasiPage = () => {
       setSuccessMessage(null);
       setErrorMessage(null);
 
-      const response = await axios.post("http://localhost:5000/api/evaluations", payload, {
+      await axios.post("http://localhost:5000/api/evaluations", payload, {
         headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",
         },
       });
 
-      setSuccessMessage("✅ Evaluasi berhasil dikirim!");
-      setTimeout(() => navigate("/dashboard-klien"), 2000);
+      setSuccessMessage("✅ Evaluasi berhasil dikirim.");
+      setScores(Array(evaluationAspects.length).fill(0));
+      setComment("");
     } catch (error) {
-      console.error("Error submitting evaluation:", error);
-      setErrorMessage("❌ Gagal mengirim evaluasi. Silakan coba lagi.");
+      console.error("Gagal mengirim evaluasi:", error);
+      setErrorMessage(
+        error.response?.data?.message || "❌ Gagal mengirim evaluasi."
+      );
     } finally {
       setLoading(false);
     }
@@ -56,7 +65,7 @@ const EvaluasiPage = () => {
   if (!projectId) {
     return (
       <div className="p-10 text-center text-red-600">
-        <p>⚠ Data proyek tidak ditemukan. Silakan kembali dan pilih proyek terlebih dahulu.</p>
+        <p>⚠️ Data proyek tidak ditemukan. Silakan kembali dan pilih proyek terlebih dahulu.</p>
         <button
           onClick={() => navigate(-1)}
           className="mt-4 text-blue-600 underline"
@@ -77,6 +86,9 @@ const EvaluasiPage = () => {
         </a>
 
         <h1 className="text-3xl font-semibold mt-4 mb-6">Evaluate Project</h1>
+
+        {successMessage && <div className="text-green-600 mb-4">{successMessage}</div>}
+        {errorMessage && <div className="text-red-600 mb-4">{errorMessage}</div>}
 
         <div className="p-6 rounded-lg mb-8 space-y-4">
           <div>
@@ -159,21 +171,13 @@ const EvaluasiPage = () => {
             />
           </div>
 
-          {successMessage && (
-            <div className="mt-4 text-green-600 text-sm">{successMessage}</div>
-          )}
-          {errorMessage && (
-            <div className="mt-4 text-red-600 text-sm">{errorMessage}</div>
-          )}
-
           <div className="mt-6 flex justify-end">
             <button
               type="submit"
               disabled={loading}
-              className={`bg-blue-600 text-white px-6 py-2 rounded-md shadow hover:bg-blue-700 transition ${loading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md shadow hover:bg-blue-700 transition disabled:opacity-50"
             >
-              {loading ? "Submitting..." : "Submit Evaluation"}
+              {loading ? "Mengirim..." : "Submit Evaluation"}
             </button>
           </div>
         </form>

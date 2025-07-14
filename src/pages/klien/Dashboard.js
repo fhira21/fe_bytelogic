@@ -58,6 +58,11 @@ const DashboardKlien = () => {
 
   // State untuk hover rating
   const [hoverRating, setHoverRating] = useState(0);
+  const [evaluatedProjects, setEvaluatedProjects] = useState([]);
+  const currentProjectId = String(projects.selectedProject?._id);
+  const isEvaluated = evaluatedProjects.includes(currentProjectId);
+
+
 
   // Fetch data profil klien
   useEffect(() => {
@@ -127,6 +132,29 @@ const DashboardKlien = () => {
     };
 
     fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    const fetchEvaluations = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/evaluations/evaluationmyclient", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        // Ambil hanya project_id yang sudah_dinilai === true
+        const evaluatedIds = (res.data?.data || [])
+          .filter((e) => e.sudah_dinilai)
+          .map((e) => e.project_id);
+
+        setEvaluatedProjects(evaluatedIds);
+      } catch (err) {
+        console.error("Gagal fetch evaluasi", err);
+      }
+    };
+    fetchEvaluations();
   }, []);
 
   // Handle submit review
@@ -590,18 +618,25 @@ const DashboardKlien = () => {
                           {/* Tambahkan tombol evaluasi di sini */}
                           <div className="mt-4">
                             <button
-                              onClick={() =>
-                                navigate(`/evaluate/${projects.selectedProject._id}`, {
-                                  state: {
-                                    projectName: projects.selectedProject.title,
-                                    employeeName: projects.selectedProject.employees.join(", "),
-                                    projectId: projects.selectedProject._id,
-                                  },
-                                })
-                              }
-                              className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition duration-200"
+                              onClick={() => {
+                                if (!isEvaluated) {
+                                  navigate(`/evaluate/${currentProjectId}`, {
+                                    state: {
+                                      projectName: projects.selectedProject.title,
+                                      employeeName: projects.selectedProject.employees.map(e => e.nama_lengkap).join(", "),
+                                      projectId: currentProjectId,
+                                    },
+                                  });
+                                }
+                              }}
+                              disabled={isEvaluated}
+                              className={`w-full py-2 px-4 rounded-md transition duration-200 text-white
+    ${isEvaluated
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-green-600 hover:bg-green-700"
+                                }`}
                             >
-                              Berikan Evaluasi Proyek
+                              {isEvaluated ? "Sudah Dievaluasi" : "Berikan Evaluasi Proyek"}
                             </button>
 
                           </div>
@@ -666,39 +701,6 @@ const DashboardKlien = () => {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <footer className="bg-white shadow-sm border-t mt-8 py-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              {/* Bagian Kiri */}
-              <div className="mb-3 md:mb-0">
-                <p className="text-gray-800 text-sm">
-                  <span className="font-medium">Connecting your ideas</span>
-                  <span className="mx-2 text-gray-400">•</span>
-                  <span className="text-gray-600">
-                    info reality. Bytelogic.com@2025
-                  </span>
-                </p>
-              </div>
-
-              {/* Bagian Kanan - Contact Us dengan Ikon */}
-              <div className="flex flex-col items-center md:items-end space-y-2">
-                <p className="text-sm font-medium text-gray-700">Contact us</p>
-                <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
-                  <div className="flex items-center">
-                    <FiPhone className="w-4 h-4 mr-2 text-gray-600" />
-                    <p className="text-sm text-gray-600">+6287770300417</p>
-                  </div>
-                  <div className="flex items-center">
-                    <FiMail className="w-4 h-4 mr-2 text-gray-600" />
-                    <p className="text-sm text-gray-600">hello@bytelogic.com</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </footer>
       </main>
     </div>
   );

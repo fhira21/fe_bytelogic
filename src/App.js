@@ -30,6 +30,7 @@ import DataProject from "./pages/manager/DataProject";
 import DashboardKlien from "./pages/klien/Dashboard";
 import DashboardKaryawan from "./pages/karyawan/Dashboard";
 import EvaluationPage from "./pages/klien/EvaluationPage";
+import EvaluateDetailed from "./pages/karyawan/EvaluateDetailed";
 
 // Global Components
 import Navbar from "./components/Navbar";
@@ -121,6 +122,14 @@ function MainLayout() {
           element={
             <ProtectedRoute allowedRoles={["karyawan"]}>
               <DashboardKaryawan />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/detail-evaluasi"
+          element={
+            <ProtectedRoute allowedRoles={["karyawan"]}>
+              <EvaluateDetailed />
             </ProtectedRoute>
           }
         />
