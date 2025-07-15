@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import ProfilePic from '../../assets/images/profile.jpg';
+import TopbarProfile from '../../components/TopbarProfile';
+import Sidebar from '../../components/SideBar';
 import { useNavigate } from "react-router-dom";
 import {
   Home,
@@ -19,15 +20,6 @@ export default function ProjectDataPage() {
   const [error, setError] = useState(null);
   const [viewingProject, setViewingProject] = useState(null);
   const navigate = useNavigate();
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [managerProfile, setManagerProfile] = useState({
-    loading: true,
-    data: {
-      foto_profile: ProfilePic, // pastikan ProfilePic sudah diimport
-      nama_lengkap: 'Nama Manager',
-      email: 'jamaludinasep@gmail.com'
-    }
-  });
 
   // State untuk filter
   const [statusFilter, setStatusFilter] = useState("all");
@@ -134,125 +126,11 @@ export default function ProjectDataPage() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-56 bg-blue-500 p-6 flex flex-col text-white select-none">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
-          <span className="font-semibold text-sm">Bytelogic</span>
-        </div>
-        <h1 className="text-xs font mb-6">MENU</h1>
-        <button
-          onClick={() => navigate('/dashboard-manager')}
-          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
-        >
-          <Home size={18} /> Dashboard
-        </button>
-        <button
-          onClick={() => navigate('/admin-list')}
-          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
-        >
-          <Folder size={18} /> Admin Data
-        </button>
-        <button
-          onClick={() => navigate('/employee-list')}
-          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
-        >
-          <Folder size={18} /> Employee Data
-        </button>
-        <button
-          onClick={() => navigate('/client-data')}
-          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
-        >
-          <Folder size={18} /> Client Data
-        </button>
-        <button onClick={() => navigate('/data-project')} className="flex items-center justify-center md:justify-start gap-2 bg-blue-600 p-2 rounded mb-2">
-          <Folder size={18} />
-          <span className="hidden md:inline">Project Data</span>
-        </button>
-        <button
-          onClick={() => navigate('/employee-evaluation')}
-          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
-        >
-          <ChartBar size={18} /> Evaluation
-        </button>
-        <button
-          onClick={() => navigate('/customer-reviews')}
-          className="flex items-center gap-2 hover:bg-blue-600 p-2 rounded mb-2 text-left"
-        >
-          <FileText size={18} /> Review
-        </button>
-      </aside>
+      <Sidebar />
 
       {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto bg-gray-50">
-        {/* Topbar*/}
-        <div className="flex justify-end mb-4">
-          <div className="relative">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onMouseEnter={() => setShowProfileDropdown(true)}
-              onMouseLeave={() => setShowProfileDropdown(false)}
-            >
-              <img
-                src={managerProfile.data?.foto_profile || ProfilePic}
-                alt="Profile"
-                className="w-10 h-10 rounded-full"
-              />
-              <div className="hidden md:block">
-                <p className="font-medium text-sm">
-                  {managerProfile.loading ? 'Asep Jamaludin Wahid' :
-                    managerProfile.data?.nama_lengkap ||
-                    'Asep Jamaludin Wahid'}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {managerProfile.data?.email || 'jamaludinasep@gmail.com'}
-                </p>
-              </div>
-            </div>
-
-            {/* Dropdown menu */}
-            {showProfileDropdown && (
-              <div
-                className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
-                onMouseEnter={() => setShowProfileDropdown(true)}
-                onMouseLeave={() => setShowProfileDropdown(false)}
-              >
-                {/* Header dropdown */}
-                <div className="px-4 py-3 border-b">
-                  <p className="font-medium text-gray-800">{managerProfile.data?.nama_lengkap || 'Asep Jamaludin Wahid'}</p>
-                  <p className="text-sm text-gray-500 truncate">{managerProfile.data?.email || 'jamaludinasep@gmail.com'}</p>
-                </div>
-
-                {/* Menu items */}
-                <a
-                  href="#"
-                  className="flex items-center px-4 py-2 text-sm text-black-700 hover:bg-black-100"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate('/profile');
-                  }}
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Edit Profile
-                </a>
-                <a
-                  href="#"
-                  className="flex items-center px-4 py-2 text-sm text-black-700 hover:bg-black-100"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('token');
-                    navigate('/login');
-                  }}
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Log Out
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
+        <TopbarProfile />
 
         {/* Judul Section */}
         <h1 className="text-2xl font-bold mb-6">Project Data</h1>

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ProfilePic from '../../assets/images/profile.jpg';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
+import Sidebar from '../../components/SideBar';
 import {
   Home,
   Folder,
@@ -31,14 +31,14 @@ const ClientList = () => {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  
-    // State for manager profile
-    const [managerProfile, setManagerProfile] = useState({
-      loading: true,
-      error: null,
-      data: null
-    });
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  // State for manager profile
+  const [managerProfile, setManagerProfile] = useState({
+    loading: true,
+    error: null,
+    data: null
+  });
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -180,8 +180,8 @@ const ClientList = () => {
   };
 
   const closeEditModal = () => {
-  setEditingClient(null);
-};
+    setEditingClient(null);
+  };
 
   const saveAdd = async (e) => {
     e.preventDefault();
@@ -239,114 +239,11 @@ const ClientList = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - Responsif */}
-      <aside className="w-16 md:w-56 bg-blue-500 p-2 md:p-6 flex flex-col text-white select-none transition-all duration-300">
-        <div className="hidden md:flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-white rounded-full font-semibold text-sm flex items-center justify-center text-blue-700">B</div>
-          <span className="font-semibold text-sm">Bytelogic</span>
-        </div>
-        <h1 className="hidden md:block text-xs font mb-6">MENU</h1>
-        <button onClick={() => navigate('/dashboard-manager')}
-          className="flex items-center justify-center md:justify-start gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <Home size={18} />
-          <span className="hidden md:inline">Dashboard</span>
-        </button>
-        <button onClick={() => navigate('/admin-list')} className="flex items-center justify-center md:justify-start gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <Folder size={18} />
-          <span className="hidden md:inline">Admin Data</span>
-        </button>
-        <button onClick={() => navigate('/employee-list')} className="flex items-center justify-center md:justify-start gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <Folder size={18} />
-          <span className="hidden md:inline">Employee Data</span>
-        </button>
-        <button onClick={() => navigate('/client-data')} className="flex items-center justify-center md:justify-start gap-2 bg-blue-600 p-2 rounded mb-2">
-          <Folder size={18} />
-          <span className="hidden md:inline">Client Data</span>
-        </button>
-        <button onClick={() => navigate('/data-project')} className="flex items-center justify-center md:justify-start gap-2 hover:bg-blue-600 p-2 rounded mb-2">
-          <Folder size={18} />
-          <span className="hidden md:inline">Project Data</span>
-        </button>
-        <button onClick={() => navigate('/employee-evaluation')} className="flex items-center justify-center md:justify-start gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <ChartBar size={18} />
-          <span className="hidden md:inline">Evaluation</span>
-        </button>
-        <button onClick={() => navigate('/customer-reviews')} className="flex items-center justify-center md:justify-start gap-2 hover:bg-gray-700 p-2 rounded mb-2">
-          <FileText size={18} />
-          <span className="hidden md:inline">Review</span>
-        </button>
-      </aside>
+      <Sidebar />
 
-     {/* Main Content */}
-           <main className="flex-1 p-6 overflow-auto bg-gray-50">
-             {/* Topbar*/}
-             <div className="flex justify-end mb-4">
-               <div className="relative">
-                 <div
-                   className="flex items-center gap-2 cursor-pointer"
-                   onMouseEnter={() => setShowProfileDropdown(true)}
-                   onMouseLeave={() => setShowProfileDropdown(false)}
-                 >
-                   <img
-                     src={managerProfile.data?.foto_profile || ProfilePic}
-                     alt="Profile"
-                     className="w-10 h-10 rounded-full"
-                   />
-                   <div className="hidden md:block">
-                     <p className="font-medium text-sm">
-                       {managerProfile.loading ? 'Asep Jamaludin Wahid' :
-                         managerProfile.data?.nama_lengkap ||
-                         'Asep Jamaludin Wahid'}
-                     </p>
-                     <p className="text-xs text-gray-500 truncate">
-                       {managerProfile.data?.email || 'jamaludinasep@gmail.com'}
-                     </p>
-                   </div>
-                 </div>
-     
-                 {/* Dropdown menu */}
-                 {showProfileDropdown && (
-                   <div
-                     className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
-                     onMouseEnter={() => setShowProfileDropdown(true)}
-                     onMouseLeave={() => setShowProfileDropdown(false)}
-                   >
-                     {/* Header dropdown */}
-                     <div className="px-4 py-3 border-b">
-                       <p className="font-medium text-gray-800">{managerProfile.data?.nama_lengkap || 'Asep Jamaludin Wahid'}</p>
-                       <p className="text-sm text-gray-500 truncate">{managerProfile.data?.email || 'jamaludinasep@gmail.com'}</p>
-                     </div>
-     
-                     {/* Menu items */}
-                     <a
-                       href="#"
-                       className="flex items-center px-4 py-2 text-sm text-black-700 hover:bg-black-100"
-                       onClick={(e) => {
-                         e.preventDefault();
-                         navigate('/profile');
-                       }}
-                     >
-                       <User className="w-4 h-4 mr-2" />
-                       Edit Profile
-                     </a>
-                     <a
-                       href="#"
-                       className="flex items-center px-4 py-2 text-sm text-black-700 hover:bg-black-100"
-                       onClick={(e) => {
-                         e.preventDefault();
-                         localStorage.removeItem('token');
-                         navigate('/login');
-                       }}
-                     >
-                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                       </svg>
-                       Log Out
-                     </a>
-                   </div>
-                 )}
-               </div>
-             </div>
+      {/* Main Content */}
+      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+        <TopbarProfile />
 
         {/* Judul Section */}
         <h1 className="text-2xl font-bold mb-6">Client Data</h1>

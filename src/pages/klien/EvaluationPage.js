@@ -1,5 +1,3 @@
-// src/pages/EvaluateProject.js
-
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import evaluationAspects from "../../data/evaluationAspect.json";

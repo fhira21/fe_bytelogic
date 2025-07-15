@@ -26,13 +26,13 @@ function Login() {
     try {
       const res = await axios.post("http://localhost:5000/api/users/login", formData);
       console.log("RESPON DARI BACKEND:", res.data); // 
-  
+
       const { token, role } = res.data;
       console.log("ROLE YANG DITERIMA:", role); // 
-  
+
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
-  
+
       const roleLower = role.toLowerCase();
 
       console.log("ROLE YANG DITERIMA:", roleLower); //
@@ -51,15 +51,15 @@ function Login() {
       console.error(err);
       setError(err.response?.data?.message || "Login gagal. Periksa username dan password.");
     }
-  };  
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-white-100">
       <div className="flex w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
-        <img 
-          src={loginImg} 
-          alt="Login Illustration" 
-          className="w-1/2 object-cover hidden md:block" 
+        <img
+          src={loginImg}
+          alt="Login Illustration"
+          className="w-1/2 object-cover hidden md:block"
         />
 
         <div className="w-full md:w-1/2 p-8">
@@ -94,8 +94,8 @@ function Login() {
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
               />
-              <span 
-                onClick={togglePassword} 
+              <span
+                onClick={togglePassword}
                 className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer text-gray-500 hover:text-gray-700"
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -103,9 +103,9 @@ function Login() {
             </div>
 
             <div className="flex items-center">
-              <input 
-                type="checkbox" 
-                id="remember" 
+              <input
+                type="checkbox"
+                id="remember"
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
@@ -113,8 +113,8 @@ function Login() {
               </label>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
               Masuk

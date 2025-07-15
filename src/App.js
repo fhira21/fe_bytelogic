@@ -12,6 +12,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Unauthorized from "./pages/Unauthorized";
+import EditProfile from "./pages/manager/EditProfile";
 
 // Manager/Admin Pages
 import DashboardManager from "./pages/manager/Dashboard";
@@ -225,6 +226,16 @@ function MainLayout() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={["manager/admin"]}>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+
 
       </Routes>
     </>
