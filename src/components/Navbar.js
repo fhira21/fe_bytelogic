@@ -16,11 +16,11 @@ const Navbar = () => {
         section.scrollIntoView({ behavior: "smooth" });
       }
     }
-    // Jika bukan homepage, biarkan router yang menangani navigasi
   };
 
   return (
-<nav className="flex items-center px-10 bg-white sticky top-0 z-50 h-16 transition-all duration-300">      {/* Logo dan Nama Bytelogic */}
+    <nav className="flex items-center px-10 bg-white sticky top-0 z-50 h-16 transition-all duration-300">
+      {/* Logo dan Nama Bytelogic */}
       <div className="flex items-center mr-8 pt-4">
         <Link
           to="/"

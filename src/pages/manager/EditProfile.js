@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from '../../components/SideBar';
 import ProfilePic from "../../assets/images/profile.jpg";
+import { useNavigate } from "react-router-dom";
 
 const EditProfile = () => {
   const [profile, setProfile] = useState({
@@ -13,6 +14,8 @@ const EditProfile = () => {
   });
 
   const [previewImage, setPreviewImage] = useState(ProfilePic);
+  const [initialProfile, setInitialProfile] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -25,6 +28,7 @@ const EditProfile = () => {
         });
 
         setProfile(response.data.data);
+        setInitialProfile(response.data.data);
         setPreviewImage(`http://localhost:5000${response.data.data.foto_profile}`);
       } catch (error) {
         console.error("Gagal ambil data profil:", error);
@@ -68,7 +72,7 @@ const EditProfile = () => {
                 className="w-20 h-20 rounded-full object-cover mr-4"
               />
               <div>
-                <input
+                {/* <input
                   id="upload-photo"
                   type="file"
                   accept="image/*"
@@ -79,7 +83,7 @@ const EditProfile = () => {
                     }
                   }}
                   className="hidden"
-                />
+                /> */}
                 <div className="flex gap-2">
                   <label
                     htmlFor="upload-photo"
@@ -157,7 +161,14 @@ const EditProfile = () => {
             </div>
 
             <div className="flex justify-end gap-4">
-              <button type="button" className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+              <button
+                type="button"
+                onClick={() => navigate(-1)} // kembali ke halaman sebelumnya
+                className="bg-gray-300 px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+
               <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Save</button>
             </div>
           </form>
