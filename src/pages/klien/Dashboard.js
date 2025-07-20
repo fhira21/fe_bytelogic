@@ -58,10 +58,11 @@ const DashboardKlien = () => {
   });
   const [hoverRating, setHoverRating] = useState(0);
   const [evaluatedProjects, setEvaluatedProjects] = useState([]);
+  const [isEvaluated, setIsEvaluated] = useState(false);
 
   // Menghindari potential null reference
   const currentProjectId = projects.selectedProject?._id ? String(projects.selectedProject._id) : "";
-  const isEvaluated = evaluatedProjects.includes(currentProjectId);
+  // const isEvaluated = evaluatedProjects.includes(currentProjectId);
 
   // Fetch data profil klien dengan error handling yang lebih baik
   useEffect(() => {
@@ -164,14 +165,12 @@ const DashboardKlien = () => {
           }
         );
 
-        const evaluatedIds = Array.isArray(res.data?.data)
-          ? res.data.data
-            .filter(e => e?.sudah_dinilai)
-            .map(e => e?.project_id ? String(e.project_id) : "")
-            .filter(id => id !== "")
-          : [];
+        const sudahDinilaiSemua = Array.isArray(res.data?.data)
+          ? res.data.data.every(e => e?.sudah_dinilai === true)
+          : false;
 
-        setEvaluatedProjects(evaluatedIds);
+        setIsEvaluated(sudahDinilaiSemua);
+
       } catch (err) {
         console.error("Gagal fetch evaluasi", err);
         setEvaluatedProjects([]);
@@ -412,8 +411,8 @@ const DashboardKlien = () => {
                 <button
                   key={project._id || Math.random()}
                   className={`block w-full text-left px-4 py-2 text-sm ${selectedProject?._id === project._id
-                      ? "bg-blue-100 text-blue-900"
-                      : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-blue-100 text-blue-900"
+                    : "text-gray-700 hover:bg-gray-100"
                     }`}
                   onClick={() => {
                     onSelect(project);
@@ -586,10 +585,10 @@ const DashboardKlien = () => {
                         </h3>
                         <span
                           className={`px-3 py-1 rounded-full text-sm font-medium ${projects.selectedProject.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : projects.selectedProject.status === "In Progress"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-yellow-100 text-yellow-800"
+                            ? "bg-green-100 text-green-800"
+                            : projects.selectedProject.status === "In Progress"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-yellow-100 text-yellow-800"
                             }`}
                         >
                           {projects.selectedProject.status || "Unknown Status"}
@@ -636,8 +635,8 @@ const DashboardKlien = () => {
                               }}
                               disabled={isEvaluated}
                               className={`w-full py-2 px-4 rounded-md transition duration-200 text-white ${isEvaluated
-                                  ? "bg-gray-400 cursor-not-allowed"
-                                  : "bg-blue-600 hover:bg-blue-700"
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-blue-600 hover:bg-blue-700"
                                 }`}
                             >
                               {isEvaluated ? "Sudah Dievaluasi" : "Berikan Evaluasi Proyek"}

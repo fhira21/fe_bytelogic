@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Unauthorized from "./pages/Unauthorized";
 import EditProfile from "./pages/manager/EditProfile";
+import Projects from "./pages/Projects";
 
 // Manager/Admin Pages
 import DashboardManager from "./pages/manager/Dashboard";
@@ -58,6 +59,7 @@ function MainLayout() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/projects" element={<Projects />} />
 
         <Route
           path="/dashboard-manager"
@@ -136,14 +138,9 @@ function MainLayout() {
         />
 
         {/* ✅ Route tambahan untuk ProjectDetail */}
-        <Route
-          path="/project/:id"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin", "client", "karyawan"]}>
-              <ProjectDetail />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
+
+        <Route path="/project-details/:id" element={<ProjectDetail />} />
 
         {/* ✅ Route tambahan untuk EmployeeList */}
         <Route

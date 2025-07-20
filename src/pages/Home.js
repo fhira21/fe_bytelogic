@@ -34,6 +34,9 @@ function Home() {
     phone: "",
     message: ""
   });
+  const [projects, setProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [projectsError, setProjectsError] = useState(null);
 
   const navigate = useNavigate();
 
@@ -57,7 +60,6 @@ function Home() {
 
   const handleContactSubmit = (e) => {
     e.preventDefault();
-    // Here you would typically send the contact form data to your backend
     console.log("Contact form submitted:", contactForm);
     alert("Thank you for your message! We'll get back to you soon.");
     setContactForm({ email: "", phone: "", message: "" });
@@ -67,10 +69,7 @@ function Home() {
     e.preventDefault();
     try {
       const res = await axios.post("http://localhost:5000/api/users/login", formData);
-      console.log("RESPONSE FROM BACKEND:", res.data);
-
       const { token, role } = res.data;
-      console.log("RECEIVED ROLE:", role);
 
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
@@ -95,17 +94,12 @@ function Home() {
     try {
       setLoadingReviews(true);
       setReviewsError(null);
-
       const res = await axios.get("http://localhost:5000/api/reviews");
 
-      console.log("Full API response:", res.data); // Untuk debugging
-
-      // Pastikan response memiliki struktur yang benar
       if (!res.data || !Array.isArray(res.data.data)) {
         throw new Error("Format data tidak valid dari server");
       }
 
-      // Transformasi data dari backend ke format yang diharapkan frontend
       const formattedReviews = res.data.data.map(item => ({
         clientName: item.client_id?.nama_lengkap || "Anonymous Client",
         comment: item.review,
@@ -115,7 +109,6 @@ function Home() {
       }));
 
       setReviews(formattedReviews);
-
     } catch (err) {
       console.error("Error fetching reviews:", err);
       setReviewsError(`Gagal memuat review: ${err.message}`);
@@ -125,22 +118,59 @@ function Home() {
     }
   };
 
-  const loadMoreReviews = async () => {
+  const fetchProjects = async () => {
     try {
-      setLoadingReviews(true);
-      const res = await axios.get(`http://localhost:5000/api/reviews?offset=${reviews.length}`);
+      setLoadingProjects(true);
+      setProjectsError(null);
 
-      if (Array.isArray(res?.data)) {
-        setReviews([...reviews, ...res.data]);
+      const res = await axios.get("http://localhost:5000/api/projects/summary");
+
+      if (!res.data || !Array.isArray(res.data.data)) {
+        throw new Error("Format data proyek tidak valid");
       }
+
+      const formattedProjects = res.data.data.map(project => ({
+        id: project._id,
+        title: project.title,
+        description: project.description,
+        framework: project.framework,
+        figma: project.figma,
+        githubUrl: project.github_repo_url,
+        images: project.images || [],
+        status: project.status
+      }));
+
+      setProjects(formattedProjects);
     } catch (err) {
-      setReviewsError("Failed to load more reviews");
+      console.error("Error fetching projects:", err);
+      let errorMessage = "Gagal memuat proyek";
+
+      if (err.response) {
+        errorMessage += `: ${err.response.data.message || err.response.statusText}`;
+      } else if (err.request) {
+        errorMessage += ": Tidak ada response dari server";
+      } else {
+        errorMessage += `: ${err.message}`;
+      }
+
+      setProjectsError(errorMessage);
+      setProjects([]);
     } finally {
-      setLoadingReviews(false);
+      setLoadingProjects(false);
     }
   };
 
+  const handleViewDetail = (projectId) => {
+    const project = projects.find(p => p.id === projectId);
+    navigate(`/projects/${projectId}`, {
+      state: {
+        project: project || null
+      }
+    });
+  };
+
   useEffect(() => {
+    fetchProjects();
     fetchReviews();
   }, []);
 
@@ -349,304 +379,255 @@ function Home() {
             </div>
           </div>
         </div>
-
+        
         {/* Our Projects Section */}
         <div id="projects" className="w-full bg-white py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-4xl font-bold text-gray-800 mb-2 text-center">Our Projects</h1>
             <p className="text-xl text-gray-600 mb-12 text-center">
-              Explore our completed projects – each one reflects our dedication to delivering comprehensive digital solutions through thoughtful design, strategic development, and seamless, inclusive user experiences.
+              Explore our completed projects – each one reflects our dedication to delivering
+              comprehensive digital solutions.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              {/* Project 1 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="h-54 overflow-hidden">
-                  <img
-                    src={OurProject1Image}
-                    alt="ourproject1"
-                    className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
-                  />
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-600">
-                    <strong>Website Digital Marketing</strong> <h2>BoldHive is a digital marketing agency that helps businesses grow through services such as market research, content marketing, SEO, and media distribution — all powered by creative approaches and data-driven strategies.</h2>
-                  </p>
-                </div>
-                <div className="p-4 flex justify-end">
-                  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                    View Detail
-                  </button>
-                </div>
-              </div>
-
-              {/* Project 2 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="h-54 overflow-hidden">
-                  <img
-                    src={OurProject2Image}
-                    alt="ourproject2"
-                    className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
-                  />
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-600">
-                    <strong>Website Packaging Company</strong> <h2>Packify provides smart, eco-friendly packaging solutions tailored to your brand's needs. From material sourcing to logistics, we ensure quality, innovation, and customer satisfaction at every step.</h2>
-                  </p>
-                </div>
-                <div className="p-4 flex justify-end">
-                  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                    View Detail
-                  </button>
-                </div>
-              </div>
-
-              {/* Project 3 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="h-54 overflow-hidden">
-                  <img
-                    src={OurProject3Image}
-                    alt="ourproject3"
-                    className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
-                  />
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-600">
-                    <strong>Website Coffee Store</strong> <h2>Madcap Coffee offers a curated selection of premium coffee blends with a focus on quality, taste, and exceptional café hospitality. From single-origin beans to monthly subscriptions, enjoy a coffee experience crafted with care.</h2>
-                  </p>
-                </div>
-                <div className="p-4 flex justify-end">
-                  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                    View Detail
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              {/* Project 4 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="h-54 overflow-hidden">
-                  <img
-                    src={OurProject4Image}
-                    alt="ourproject4"
-                    className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
-                  />
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-600">
-                    <strong>Website Anemia Prediction</strong> <h2>A health-tech web app that uses deep learning and palm scan technology to detect anemia risk through your smartphone. Fast, accessible, and designed for early screening anywhere.</h2>
-                  </p>
-                </div>
-                <div className="p-4 flex justify-end">
-                  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                    View Detail
-                  </button>
-                </div>
-              </div>
-
-              {/* Project 5 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="h-54 overflow-hidden">
-                  <img
-                    src={OurProject5Image}
-                    alt="ourproject5"
-                    className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
-                  />
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-600">
-                    <strong>Website Profile</strong> <h2>Faeznz Creative is a company profile website designed to showcase the identity and services of a creative tech studio. The website presents comprehensive information about its expertise in AI, website, and mobile application development.</h2>
-                  </p>
-                </div>
-                <div className="p-4 flex justify-end">
-                  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                    View Detail
-                  </button>
-                </div>
-              </div>
-
-              {/* Project 6 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="h-54 overflow-hidden">
-                  <img
-                    src={OurProject6Image}
-                    alt="ourproject6"
-                    className="rounded-lg shadow-md object-cover w-full h-auto max-h-64 md:max-h-80"
-                  />
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-600">
-                    <strong>Website E-commerce Tanaman Hias</strong><h2>A clean and modern e-commerce website for houseplants, offering a curated collection of plants to beautify your living space. Equipped with decor inspiration features and user-friendly navigation.</h2>
-                  </p>
-                </div>
-                <div className="p-4 flex justify-end">
-                  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                    View Detail
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-12 pr-12 sm:pr-2 lg:pr flex justify-end">
-              <button
-                onClick={() => setShowLoginForm(true)}
-                className="bg-blue-600 text-white py-3 px-8 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg font-medium"
-              >
-                See More
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Client Reviews Section */}
-        <div id="review" className="w-full bg-blue-100 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2 text-center">Reviews</h1>
-
-            {loadingReviews && reviews.length === 0 ? (
-              <div className="flex justify-center items-center h-40">
+            {loadingProjects ? (
+              <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>
-            ) : reviewsError ? (
-              <div className="text-center text-red-500 py-8">{reviewsError}</div>
-            ) : (
-              <div className="mt-8 space-y-8">
-                {reviews.map((review, index) => (
-                  <div key={index} className="space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-800">{review.clientName}</h3>
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <svg
-                          key={i}
-                          className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
+            ) : projectsError ? (
+              <div className="text-center py-8">
+                <div className="text-red-500 mb-4">{projectsError}</div>
+                <button
+                  onClick={fetchProjects}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : projects.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                  {projects.slice(0, 6).map((project, index) => ( // Hanya menampilkan 6 project pertama
+                    <div key={project.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
+                      <div className="h-54 overflow-hidden">
+                        {project.images.length > 0 ? (
+                          <img
+                            src={project.images[0]}
+                            alt={project.title}
+                            className="w-full h-64 object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={
+                              index === 0 ? OurProject1Image :
+                                index === 1 ? OurProject2Image :
+                                  index === 2 ? OurProject3Image :
+                                    index === 3 ? OurProject4Image :
+                                      index === 4 ? OurProject5Image : OurProject6Image
+                            }
+                            alt={project.title}
+                            className="w-full h-64 object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="p-6">
+                        <h3 className="font-bold text-lg mb-2">{project.title}</h3>
+                        <p className="text-gray-600 mb-2">
+                          <strong>Framework:</strong> {project.framework}
+                        </p>
+                        <p className="text-gray-600 line-clamp-3">{project.description}</p>
+                      </div>
+                      <div className="p-4 flex justify-between items-center">
+                        <span className={`px-2 py-1 text-xs rounded-full ${project.status === "Completed" ? "bg-green-100 text-green-800" :
+                          project.status === "On Progress" ? "bg-yellow-100 text-yellow-800" :
+                            "bg-gray-100 text-gray-800"
+                          }`}>
+                          {project.status}
+                        </span>
+                        <button
+                          onClick={() => handleViewDetail(project.id)}
+                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                         >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
+                          View Detail
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500">
-                      {new Date(review.date).toLocaleDateString('id-ID', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                    <p className="text-gray-700 mt-2">{review.comment}</p>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No projects available
+              </div>
+            )}
 
-                    {index !== reviews.length - 1 && (
-                      <hr className="mt-6 border-gray-300" />
-                    )}
-                  </div>
-                ))}
+            {projects.length > 6 && ( // Hanya tampilkan tombol See More jika ada lebih dari 6 project
+              <div className="mt-12 flex justify-end">
+                <button
+                  onClick={() => navigate("/projects")}
+                  className="bg-blue-600 text-white py-3 px-8 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg font-medium"
+                >
+                  See More
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* New Contact Section - Exactly like the image */}
-        <div id="contact" className="w-full bg-[#3B82F6] py-16 pl-0 pr-0 overflow-hidden">
-          <div className="max-w-7xl mx-auto">
-            <div className="relative">
-              {/* White rounded rectangle */}
-              <div className="bg-white rounded-r-3xl rounded-l-none p-8 md:p-12 shadow-lg -ml-4 md:-ml-8 lg:-ml-16 xl:-ml-60">
-                <div className="max-w-3xl mx-auto">
-                  {/* Grid container untuk teks dan form */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Bagian teks di sebelah kiri */}
-                    <div className="flex flex-col justify-center">
-                      <h2 className="text-3xl font-bold text-[#3B82F6] mb-6 text-left">
-                        Let's talk<br />
-                        about your<br />
-                        project
-                      </h2>
-                    </div>
+      {/* Client Reviews Section */}
+      <div id="review" className="w-full bg-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 text-center">Reviews</h1>
 
-                    {/* Bagian form di sebelah kanan */}
-                    <div>
-                      <form className="space-y-6">
-                        <div className="grid grid-cols-1 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input
-                              type="email"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Your email"
-                            />
-                          </div>
+          {loadingReviews && reviews.length === 0 ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : reviewsError ? (
+            <div className="text-center text-red-500 py-8">{reviewsError}</div>
+          ) : (
+            <div className="mt-8 space-y-8">
+              {reviews.map((review, index) => (
+                <div key={index} className="space-y-2">
+                  <h3 className="text-lg font-semibold text-gray-800">{review.clientName}</h3>
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {new Date(review.date).toLocaleDateString('id-ID', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                  <p className="text-gray-700 mt-2">{review.comment}</p>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                            <input
-                              type="tel"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Your phone"
-                            />
-                          </div>
+                  {index !== reviews.length - 1 && (
+                    <hr className="mt-6 border-gray-300" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                            <input
-                              type="text"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Your message"
-                            />
-                          </div>
+      {/* Contact Section */}
+      <div id="contact" className="w-full bg-[#3B82F6] py-16 pl-0 pr-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative">
+            <div className="bg-white rounded-r-3xl rounded-l-none p-8 md:p-12 shadow-lg -ml-4 md:-ml-8 lg:-ml-16 xl:-ml-60">
+              <div className="max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="flex flex-col justify-center">
+                    <h2 className="text-3xl font-bold text-[#3B82F6] mb-6 text-left">
+                      Let's talk<br />
+                      about your<br />
+                      project
+                    </h2>
+                  </div>
+
+                  <div>
+                    <form className="space-y-6" onSubmit={handleContactSubmit}>
+                      <div className="grid grid-cols-1 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            name="email"
+                            value={contactForm.email}
+                            onChange={handleContactChange}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Your email"
+                            required
+                          />
                         </div>
 
-                        <div className="flex justify-end">
-                          <button
-                            type="submit"
-                            className="bg-[#3B82F6] text-white py-3 px-8 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg font-medium"
-                          >
-                            Send
-                          </button>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={contactForm.phone}
+                            onChange={handleContactChange}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Your phone"
+                            required
+                          />
                         </div>
-                      </form>
-                    </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                          <input
+                            type="text"
+                            name="message"
+                            value={contactForm.message}
+                            onChange={handleContactChange}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Your message"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          className="bg-[#3B82F6] text-white py-3 px-8 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg font-medium"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Footer Section - Matching the image */}
-        <footer className="w-full bg-white-900 text-black-900 py-8 px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="mb-4 md:mb-0">
-                <p className="text-sm opacity-70">CONNECTING YOUR IDEAS</p>
-                <p className="text-sm opacity-70">INTO REALITY.<b>Bytelogi.com@2025</b></p>
-              </div>
-              <div className="flex items-center space-x-6">
-                <p className="text-sm opacity-70"><b>Contact Us</b></p>
-                <span className="h-12 w-px bg-blue-400"></span>
-                {/* Container untuk nomor telepon dan email (disusun vertikal) */}
-                <div className="flex flex-col">
-                  <a
-                    href="https://wa.me/6283121596554"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                  >
-                    <b>+6283121596554</b>
-                  </a>
-                  <a
-                    href="mailto:hello@bytelogic.com"
-                    className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                  >
-                    hello@bytelogic.com
-                  </a>
-                </div>
+      {/* Footer Section */}
+      <footer className="w-full bg-white-900 text-black-900 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <p className="text-sm opacity-70">CONNECTING YOUR IDEAS</p>
+              <p className="text-sm opacity-70">INTO REALITY.<b>Bytelogi.com@2025</b></p>
+            </div>
+            <div className="flex items-center space-x-6">
+              <p className="text-sm opacity-70"><b>Contact Us</b></p>
+              <span className="h-12 w-px bg-blue-400"></span>
+              <div className="flex flex-col">
+                <a
+                  href="https://wa.me/6283121596554"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                >
+                  <b>+6283121596554</b>
+                </a>
+                <a
+                  href="mailto:hello@bytelogic.com"
+                  className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                >
+                  hello@bytelogic.com
+                </a>
               </div>
             </div>
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </div>
+    </div >
   );
 }
 
