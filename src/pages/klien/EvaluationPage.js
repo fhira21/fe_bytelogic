@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import evaluationAspects from "../../data/evaluationAspect.json";
 import Header from "../../components/Header";
 import axios from "axios";
+import StarRating from "../../components/StarRating"; // Pastikan path-nya sesuai
+import ReviewForm from "../../components/ReviewForm";
+
+const defaultAvatar = "https://www.w3schools.com/howto/img_avatar.png";
 
 const EvaluasiPage = () => {
   const location = useLocation();
@@ -15,11 +19,67 @@ const EvaluasiPage = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
+  const [review, setReview] = useState({
+    rating: 0,
+    comment: "",
+    submitting: false,
+    success: false,
+    error: "",
+  });
+  const [hoverRating, setHoverRating] = useState(0);
+
   const handleScoreChange = (aspectIndex, value) => {
     const newScores = [...scores];
     newScores[aspectIndex] = parseInt(value);
     setScores(newScores);
   };
+
+  const [profile, setProfile] = useState({
+    loading: true,
+    error: null,
+    data: {
+      client: {},
+      user: {}
+    }
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
+        const response = await axios.get(
+          "http://localhost:5000/api/clients/profile",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        setProfile({
+          loading: false,
+          error: null,
+          data: response.data?.data || { client: {}, user: {} },
+        });
+      } catch (error) {
+        console.error("Error fetching client profile:", error);
+        setProfile({
+          loading: false,
+          error: error.response?.data?.message ||
+            error.message ||
+            "Gagal memuat profil klien",
+          data: { client: {}, user: {} }
+        });
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,6 +117,46 @@ const EvaluasiPage = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+
+    if (!review.rating || !review.comment) {
+      setReview((prev) => ({ ...prev, error: "Rating dan komentar wajib diisi" }));
+      return;
+    }
+
+    try {
+      setReview((prev) => ({ ...prev, submitting: true, error: "", success: false }));
+
+      const payload = {
+        project_id: projectId,
+        rating: review.rating,
+        comment: review.comment,
+      };
+
+      await axios.post("http://localhost:5000/api/reviews", payload, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      setReview({
+        rating: 0,
+        comment: "",
+        submitting: false,
+        success: true,
+        error: "",
+      });
+    } catch (error) {
+      setReview((prev) => ({
+        ...prev,
+        submitting: false,
+        error: "Gagal mengirim review.",
+      }));
     }
   };
 
@@ -179,6 +279,17 @@ const EvaluasiPage = () => {
             </button>
           </div>
         </form>
+
+        {/* Form Review */}
+        <ReviewForm
+          profile={profile}
+          review={review}
+          hoverRating={hoverRating}
+          setHoverRating={setHoverRating}
+          setReview={setReview}
+          handleSubmitReview={handleSubmitReview}
+        />
+
       </div>
     </div>
   );

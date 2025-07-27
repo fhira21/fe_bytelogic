@@ -650,8 +650,13 @@ const DashboardManager = () => {
                 <button
                   className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onClick={() => {
-                    /* Tambahkan fungsi untuk view detail disini */
+                    if (projectStatusFilter === "All") {
+                      navigate("/data-project");
+                    } else {
+                      navigate(`/data-project?status=${encodeURIComponent(projectStatusFilter)}`);
+                    }
                   }}
+
                 >
                   View Detail
                 </button>
@@ -696,6 +701,7 @@ const DashboardManager = () => {
                           projectStatusFilter === "All" ||
                           project.status === projectStatusFilter
                       )
+                      .slice(0, 5)
                       .map((project) => (
                         <tr
                           key={project._id}
@@ -710,24 +716,23 @@ const DashboardManager = () => {
                           <td className="px-6 py-4">
                             {project.deadline
                               ? new Date(project.deadline).toLocaleDateString(
-                                  "id-ID",
-                                  {
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                  }
-                                )
+                                "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                }
+                              )
                               : "-"}
                           </td>
                           <td className="px-6 py-4 capitalize">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs ${
-                                project.status === "Completed"
-                                  ? "bg-green-100 text-green-800"
-                                  : project.status === "On Progress"
+                              className={`px-2 py-1 rounded-full text-xs ${project.status === "Completed"
+                                ? "bg-green-100 text-green-800"
+                                : project.status === "On Progress"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-gray-100 text-gray-800"
-                              }`}
+                                }`}
                             >
                               {project.status || "-"}
                             </span>

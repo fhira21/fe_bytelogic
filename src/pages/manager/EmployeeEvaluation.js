@@ -4,7 +4,7 @@ import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
 import Sidebar from '../../components/SideBar';
 import { Home, Folder, Briefcase, ChartBar, FileText, ChevronLeft, Search, User } from 'lucide-react';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 
 ChartJS.register(
@@ -13,14 +13,13 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend,
-  ArcElement
+  Legend
 );
 
 const EmployeeEvaluation = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const [ setManagerProfile] = useState({ data: null, loading: true });
+  const [setManagerProfile] = useState({ data: null, loading: true });
 
   // State management
   const [employees, setEmployees] = useState([]);
@@ -100,10 +99,27 @@ const EmployeeEvaluation = () => {
     return 0;
   };
 
-  const handleViewEmployeeDetail = (employeeId) => {
+  const handleViewEmployeeDetail = async (employeeId) => {
     const employeeDetail = employees.find(emp => emp._id === employeeId);
     setSelectedEmployee(employeeDetail);
+    setDetailLoading(true);
     setViewMode('detail');
+
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/evaluations/karyawan/evaluasi-detailed/${employeeId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setEvaluationDetails(res.data.data || res.data); // tergantung struktur responsmu
+    } catch (err) {
+      console.error('Gagal mengambil detail evaluasi:', err);
+      setEvaluationDetails(null);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleBackToList = () => {
@@ -256,6 +272,67 @@ const EmployeeEvaluation = () => {
       },
     };
 
+    const barChartDataCategory = {
+      labels: evaluationDetails?.project_categories?.map(cat => cat.category_name) || [],
+      datasets: [
+        {
+          label: 'Average Score',
+          data: evaluationDetails?.project_categories?.map(cat => cat.average_score) || [],
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const barChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            stepSize: 10,
+            callback: (value) => value,
+          },
+          title: {
+            display: true,
+            text: 'Nilai Final',
+          },
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Kategori Proyek',
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `Nilai: ${context.raw}`,
+          },
+        },
+      },
+    };
+
+    const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
+    // Bar chart untuk Distribusi Skor
+    const barChartDataScoreDist = {
+      labels: evaluationDetails?.score_distribution?.map(item => item.score_range) || [],
+      datasets: [
+        {
+          label: 'Jumlah Karyawan',
+          data: evaluationDetails?.score_distribution?.map(item => item.count) || [],
+          backgroundColor: 'rgba(255, 159, 64, 0.6)',
+          borderColor: 'rgba(255, 159, 64, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <button
@@ -274,27 +351,35 @@ const EmployeeEvaluation = () => {
           </div>
         ) : (
           <>
-            {/* Chart Section */}
+            {/* Grafik Evaluasi Perkategori */}
             <div className="bg-white border rounded-lg p-4 shadow mb-6">
-              <h3 className="text-xl font-medium mb-4">Grafik Evaluasi per Kategori</h3>
+              <h3 className="text-xl font-medium mb-4">Grafik Evaluasi Perkategori</h3>
               <div className="h-72 w-full">
-                {evaluationDetails?.project_categories?.length > 0 ? (
-                  <Bar
-                    data={chartData}
-                    options={chartOptions}
-                  />
+                {barChartDataCategory.labels.length > 0 ? (
+                  <Bar data={barChartDataCategory} options={barChartOptions} />
                 ) : (
-                  <p className="text-sm text-gray-500">Tidak ada data kategori proyek yang tersedia.</p>
+                  <p className="text-sm text-gray-500">Tidak ada data kategori proyek tersedia.</p>
                 )}
               </div>
             </div>
 
-            {/* Project List */}
+            {/* Grafik Distribusi Skor */}
+            <div className="bg-white border rounded-lg p-4 shadow">
+              <h3 className="text-xl font-medium mb-4">Distribusi Skor</h3>
+              <div className="h-72 w-full">
+                {barChartDataScoreDist.labels.length > 0 ? (
+                  <Bar data={barChartDataScoreDist} options={{ responsive: true, maintainAspectRatio: false }} />
+                ) : (
+                  <p className="text-sm text-gray-500">Tidak ada data distribusi skor tersedia.</p>
+                )}
+              </div>
+            </div>
           </>
         )}
       </div>
     );
   };
+}
 
   return (
     <div className="flex h-screen overflow-hidden">
