@@ -1,4 +1,4 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
 import StarRating from "./StarRating"; // Pastikan path sesuai
 
 const defaultAvatar = "https://www.w3schools.com/howto/img_avatar.png";
@@ -11,6 +11,7 @@ const ReviewForm = ({
   setReview,
   handleSubmitReview,
 }) => {
+  const navigate = useNavigate();
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex items-center gap-4 mb-6">

@@ -110,6 +110,16 @@ const EvaluasiPage = () => {
       setSuccessMessage("✅ Evaluasi berhasil dikirim.");
       setScores(Array(evaluationAspects.length).fill(0));
       setComment("");
+
+      // ✅ ARAHKAN KE HALAMAN REVIEW SETELAH BERHASIL SUBMIT EVALUASI
+      navigate('/review', {
+        state: {
+          projectId,
+          projectName,
+          employeeName,
+        },
+      });
+
     } catch (error) {
       console.error("Gagal mengirim evaluasi:", error);
       setErrorMessage(
@@ -175,10 +185,9 @@ const EvaluasiPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800">
-      <Header />
+    <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto">      <Header />
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="max-w-4xl mx-auto px-6 py-10">
         <a href="/dashboard-klien" className="text-blue-600 hover:underline text-sm">
           ← Back to Home
         </a>
@@ -279,17 +288,6 @@ const EvaluasiPage = () => {
             </button>
           </div>
         </form>
-
-        {/* Form Review */}
-        <ReviewForm
-          profile={profile}
-          review={review}
-          hoverRating={hoverRating}
-          setHoverRating={setHoverRating}
-          setReview={setReview}
-          handleSubmitReview={handleSubmitReview}
-        />
-
       </div>
     </div>
   );
