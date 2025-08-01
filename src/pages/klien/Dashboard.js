@@ -17,6 +17,7 @@ import {
   FiChevronUp,
 } from "react-icons/fi";
 import Header from "../../components/Header";
+import DonutChart from '../../components/DonutChart';
 
 const defaultAvatar = "https://www.w3schools.com/howto/img_avatar.png";
 
@@ -236,7 +237,7 @@ const DashboardKlien = () => {
   };
 
   // Komponen ProgressPieChart dengan null checks
-  const ProgressPieChart = ({ progressData }) => {
+  const ProgressPieChart = ({ progressData, project }) => {
     if (!progressData || typeof progressData !== 'object') {
       return (
         <div className="text-center text-gray-500 p-4">
@@ -250,40 +251,71 @@ const DashboardKlien = () => {
     const remaining = Math.max(0, total - closed);
     const progressPercentage = total > 0 ? Math.round((closed / total) * 100) : 0;
 
-    const data = [
-      { name: "Completed", value: closed },
-      { name: "Remaining", value: remaining },
-    ];
-
     return (
-      <div className="h-64">
-        <h4 className="text-center font-medium mb-2">
-          Progress: {progressPercentage}%
-        </h4>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-              label={({ name, percent }) =>
-                `${name}: ${(percent * 100).toFixed(0)}%`
-              }
-            >
-              <Cell fill="#00C49F" />
-              <Cell fill="#FF8042" />
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      <div className="bg-white shadow rounded-lg p-6 space-y-4">
+        <div className="h-64 w-full">
+          <h4 className="text-center font-medium mb-2">
+            {progressPercentage}% Overall Progress
+          </h4>
+          <ResponsiveContainer width="100%" height="100%">
+            <DonutChart progress={progressData.percentage || 0} />
+          </ResponsiveContainer>
+        </div>
+
+        <div className="flex flex-wrap gap-6 text-sm text-gray-700 mb-4">
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">Deadline:</span>
+            <span>
+              {project?.deadline ? new Date(project.deadline).toLocaleDateString() : "N/A"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">Status:</span>
+            <span>{project?.status || "N/A"}</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">Framework:</span>
+            <span>{project?.framework || "Belum ditentukan"}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 text-sm text-gray-700 mb-4">
+          <p><b>Link Figma:</b>{" "}
+            {project?.figma ? (
+              <a
+                href={project.figma}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline"
+              >
+                {project.figma}
+              </a>
+            ) : "Tidak tersedia"}
+          </p>
+          <p><b>Employee Name:</b> {
+            project?.employees && project.employees.length > 0
+              ? project.employees.map((emp) => emp?.nama_lengkap).join(", ")
+              : "Tidak ada data"
+          }</p>
+          <p><b>Link GitHub:</b>{" "}
+            {project?.github_repo_url ? (
+              <a
+                href={project.github_repo_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline"
+              >
+                {project.github_repo_url}
+              </a>
+            ) : "Tidak tersedia"}
+          </p>
+        </div>
+      </div >
     );
   };
+
 
   // Komponen RecentActivity dengan null checks
   const RecentActivity = ({ commits = [] }) => {
@@ -430,129 +462,17 @@ const DashboardKlien = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="min-h-screen w-full bg-gray-100">
       <Header user={user} />
 
-      <main className="flex-grow max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* <main className="flex-grow py-6"> */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard Klien</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-          {/* Kolom Kiri - 1/3 lebar */}
-          <div className="space-y-6">
-            {/* Profile Section */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
-
-              {profile.loading ? (
-                <div className="text-center py-8">Memuat profil...</div>
-              ) : profile.error ? (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4">
-                  <p className="font-bold">Error</p>
-                  <p>{profile.error}</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex flex-col items-center text-center mb-6">
-                    <img
-                      className="h-24 w-24 rounded-full object-cover mx-auto"
-                      src={profile.data?.client?.foto_profile || defaultAvatar}
-                      alt="User avatar"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = defaultAvatar;
-                      }}
-                    />
-                    <div className="mt-2">
-                      <h3 className="text-lg font-bold">
-                        {profile.data?.user?.username || "-"}
-                      </h3>
-                      <p className="text-gray-600">
-                        {profile.data?.client?.nama_lengkap || "-"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="border-b pb-4">
-                      <h3 className="font-medium text-gray-500 mb-1">Email</h3>
-                      <div className="flex items-center">
-                        <FiMail className="w-4 h-4 mr-2 text-gray-600" />
-                        <p className="text-gray-800">
-                          {profile.data?.client?.email || "-"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-b pb-4">
-                      <h3 className="font-medium text-gray-500 mb-1">Address</h3>
-                      <div className="flex items-center">
-                        <svg
-                          className="w-4 h-4 mr-2 text-gray-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        <p className="text-gray-800">
-                          {profile.data?.client?.alamat || "-"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-b pb-4">
-                      <h3 className="font-medium text-gray-500 mb-1">Phone Number</h3>
-                      <div className="flex items-center">
-                        <FiPhone className="w-4 h-4 mr-2 text-gray-600" />
-                        <p className="text-gray-800">
-                          {profile.data?.client?.nomor_telepon || "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition duration-200"
-                    onClick={() => navigate("/profile/edit")}
-                  >
-                    Edit Profile
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Recent GitHub Activity Section */}
-            <div className="bg-white shadow rounded-lg p-6">
-              {projects.loading ? (
-                <div className="text-center py-8">Memuat aktivitas GitHub...</div>
-              ) : projects.selectedProject ? (
-                <RecentActivity
-                  commits={projects.selectedProject.github_commits || []}
-                />
-              ) : (
-                <div className="text-gray-500">
-                  Pilih proyek untuk melihat aktivitas
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Kolom Kanan - 2/3 lebar */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-center">
           <div className="lg:col-span-2 space-y-6">
             {/* Projects Section */}
-            <div className="bg-white shadow rounded-lg p-5">
+            <div className="bg-white shadow rounded-lg p-5 w-full">
               <h2 className="text-xl font-semibold mb-4">Project Progress</h2>
 
               {projects.loading ? (
@@ -639,7 +559,7 @@ const DashboardKlien = () => {
                                 : "bg-blue-600 hover:bg-blue-700"
                                 }`}
                             >
-                              {isEvaluated ? "Sudah Dievaluasi" : "Berikan Evaluasi Proyek"}
+                              {isEvaluated ? "Sudah Dievaluasi" : "Evaluate Project"}
                             </button>
                           </div>
                         </div>
@@ -654,74 +574,25 @@ const DashboardKlien = () => {
               )}
             </div>
 
-            {/* Review Section */}
+            {/* Recent GitHub Activity Section */}
             <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <img
-                  className="h-12 w-12 rounded-full object-cover"
-                  src={profile.data?.client?.foto_profile || defaultAvatar}
-                  alt="User avatar"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = defaultAvatar;
-                  }}
+              {projects.loading ? (
+                <div className="text-center py-8">Memuat aktivitas GitHub...</div>
+              ) : projects.selectedProject ? (
+                <RecentActivity
+                  commits={projects.selectedProject.github_commits || []}
                 />
-                <div>
-                  <h3 className="text-base font-semibold">
-                    {profile.data?.user?.username || "-"}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {profile.data?.client?.nama_lengkap || "-"}
-                  </p>
+              ) : (
+                <div className="text-gray-500">
+                  Pilih proyek untuk melihat aktivitas
                 </div>
-              </div>
-
-              <form onSubmit={handleSubmitReview}>
-                <div className="flex justify-center mb-4">
-                  <StarRating
-                    rating={review.rating}
-                    onRatingChange={(rating) =>
-                      setReview((prev) => ({ ...prev, rating }))
-                    }
-                    hoverRating={hoverRating}
-                    onHoverChange={setHoverRating}
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-gray-700 mb-2">Komentar</label>
-                  <textarea
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows="4"
-                    value={review.comment}
-                    onChange={(e) =>
-                      setReview((prev) => ({
-                        ...prev,
-                        comment: e.target.value,
-                      }))
-                    }
-                    placeholder="Berikan ulasan untuk proyek?"
-                  ></textarea>
-                </div>
-                {review.error && (
-                  <div className="mb-4 text-red-500">{review.error}</div>
-                )}
-                {review.success && (
-                  <div className="mb-4 text-green-500">
-                    Review berhasil dikirim!
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:opacity-50"
-                  disabled={review.submitting}
-                >
-                  {review.submitting ? "Mengirim..." : "Kirim Review"}
-                </button>
-              </form>
+              )}
             </div>
+
           </div>
         </div>
-      </main>
+      </div>
+      {/* </main> */}
 
       <footer className="w-full bg-white text-black py-8 px-4">
         <div className="max-w-7xl mx-auto">

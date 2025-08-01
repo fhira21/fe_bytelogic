@@ -34,6 +34,8 @@ import DashboardKaryawan from "./pages/karyawan/Dashboard";
 import EvaluationPage from "./pages/klien/EvaluationPage";
 import EvaluateDetailed from "./pages/karyawan/EvaluateDetailed";
 import ReviewFormPage from "./pages/klien/ReviewFormPage";
+import ProjectOnProgress from "./pages/karyawan/ProjectOnProgress";
+import ProjectCompleted from "./pages/karyawan/ProjectCompleted";
 
 // Global Components
 import Navbar from "./components/Navbar";
@@ -141,8 +143,12 @@ function MainLayout() {
 
         <Route path="/project-details/:id" element={<ProjectDetail />} />
 
-       <Route path="/review" element={<ReviewFormPage />} />
-            
+        <Route path="/review" element={<ReviewFormPage />} />
+
+        <Route path="/project-onprogress" element={<ProjectOnProgress />} />
+
+        <Route path="/project-completed" element={<ProjectCompleted />} />
+
         {/* ✅ Route tambahan untuk EmployeeList */}
         <Route
           path="/employee-list"

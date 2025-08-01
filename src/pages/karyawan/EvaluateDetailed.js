@@ -38,12 +38,13 @@ const DetailEvaluasi = () => {
       {
         label: "Nilai Evaluasi",
         data: dataEvaluasi.map((e) => e.final_score),
-        backgroundColor: "rgba(54, 162, 235, 0.7)",
-        borderColor: "rgba(54, 162, 235, 1)",
+        backgroundColor: "rgba(34, 107, 197, 0.6)",  
+        borderColor: "rgba(34, 197, 94, 1)",
         borderWidth: 1,
       },
     ],
   };
+
 
   const options = {
     onClick: (_, elements) => {
