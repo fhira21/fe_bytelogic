@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import ProfilePic from "../../assets/images/profile.jpg";
 import { useNavigate } from "react-router-dom";
 
@@ -21,7 +21,7 @@ const EditProfile = () => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5000/api/managers/profile", {
+        const response = await axios.get("http://be.bytelogic.orenjus.com/api/managers/profile", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -29,7 +29,7 @@ const EditProfile = () => {
 
         setProfile(response.data.data);
         setInitialProfile(response.data.data);
-        setPreviewImage(`http://localhost:5000${response.data.data.foto_profile}`);
+        setPreviewImage(`http://be.bytelogic.orenjus.com${response.data.data.foto_profile}`);
       } catch (error) {
         console.error("Gagal ambil data profil:", error);
       }
@@ -47,7 +47,7 @@ const EditProfile = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      await axios.put("http://localhost:5000/api/managers/profile", profile, {
+      await axios.put("http://be.bytelogic.orenjus.com/api/managers/profile", profile, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

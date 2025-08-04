@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import {
   Home,
   Folder,
@@ -50,7 +50,7 @@ const CustomerReviews = () => {
         setError(null);
 
         const response = await axios.get(
-          'http://localhost:5000/api/reviews',
+          'http://be.bytelogic.orenjus.com/api/reviews',
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -97,7 +97,7 @@ const CustomerReviews = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        'http://localhost:5000/api/reviews',
+        'http://be.bytelogic.orenjus.com/api/reviews',
         {
           review: newReview.review,
           rating: newReview.rating
@@ -130,7 +130,7 @@ const CustomerReviews = () => {
     try {
       setLoading(true);
       await axios.delete(
-        `http://localhost:5000/api/reviews/${deletingReview._id}`,
+        `http://be.bytelogic.orenjus.com/api/reviews/${deletingReview._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

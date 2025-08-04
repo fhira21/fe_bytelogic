@@ -25,9 +25,9 @@ const Header = () => {
         // Tentukan endpoint berdasarkan role
         let endpoint = "";
         if (userRole === "client") {
-          endpoint = "http://localhost:5000/api/clients/profile";
+          endpoint = "http://be.bytelogic.orenjus.com/api/clients/profile";
         } else if (userRole === "karyawan") {
-          endpoint = "http://localhost:5000/api/karyawan/profile";
+          endpoint = "http://be.bytelogic.orenjus.com/api/karyawan/profile";
         } else {
           console.warn("Role tidak dikenali:", userRole);
           return;

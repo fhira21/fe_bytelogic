@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfilePic from '../../assets/images/profile.jpg';
 import axios from 'axios';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import TopbarProfile from '../../components/TopbarProfile';
 import {
   Home,
@@ -52,7 +52,7 @@ const EmployeeList = () => {
   }, []);
 
   const fetchEmployees = () => {
-    axios.get('http://localhost:5000/api/karyawan', {
+    axios.get('http://be.bytelogic.orenjus.com/api/karyawan', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
@@ -98,7 +98,7 @@ const EmployeeList = () => {
 
   const saveEdit = (e) => {
     e.preventDefault();
-    axios.put(`http://localhost:5000/api/karyawan/${editingEmployee._id}`, formData, {
+    axios.put(`http://be.bytelogic.orenjus.com/api/karyawan/${editingEmployee._id}`, formData, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((response) => {
@@ -153,7 +153,7 @@ const EmployeeList = () => {
       confirmPassword: undefined
     };
 
-    axios.post('http://localhost:5000/api/karyawan', dataToSend, {
+    axios.post('http://be.bytelogic.orenjus.com/api/karyawan', dataToSend, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
@@ -528,7 +528,7 @@ const EmployeeList = () => {
                 </button>
                 <button
                   onClick={() => {
-                    axios.delete(`http://localhost:5000/api/karyawan/${deletingEmployee._id}`, {
+                    axios.delete(`http://be.bytelogic.orenjus.com/api/karyawan/${deletingEmployee._id}`, {
                       headers: { Authorization: `Bearer ${token}` }
                     })
                       .then(() => {

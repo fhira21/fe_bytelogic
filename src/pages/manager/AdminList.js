@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfilePic from '../../assets/images/profile.jpg';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import axios from 'axios';
 
 import {
@@ -57,7 +57,7 @@ useEffect(() => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        "http://localhost:5000/api/managers/profile",
+        "http://be.bytelogic.orenjus.com/api/managers/profile",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -83,7 +83,7 @@ useEffect(() => {
 
   useEffect(() => {
     // Fetch managers data
-    axios.get('http://localhost:5000/api/managers', {
+    axios.get('http://be.bytelogic.orenjus.com/api/managers', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
@@ -97,7 +97,7 @@ useEffect(() => {
       .catch(error => console.error('Error fetching admin data:', error));
 
     // Fetch manager profile
-    axios.get('http://localhost:5000/api/profile', {
+    axios.get('http://be.bytelogic.orenjus.com/api/profile', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
@@ -154,7 +154,7 @@ useEffect(() => {
 
   const saveEdit = (e) => {
     e.preventDefault();
-    axios.put(`http://localhost:5000/api/managers/${editingManager.id}`, formData, {
+    axios.put(`http://be.bytelogic.orenjus.com/api/managers/${editingManager.id}`, formData, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((response) => {
@@ -214,7 +214,7 @@ useEffect(() => {
       confirmPassword: undefined
     };
 
-    axios.post('http://localhost:5000/api/managers', dataToSend, {
+    axios.post('http://be.bytelogic.orenjus.com/api/managers', dataToSend, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(response => {
@@ -632,7 +632,7 @@ useEffect(() => {
                 </button>
                 <button
                   onClick={() => {
-                    axios.delete(`http://localhost:5000/api/managers/${deletingManager.id}`, {
+                    axios.delete(`http://be.bytelogic.orenjus.com/api/managers/${deletingManager.id}`, {
                       headers: { Authorization: `Bearer ${token}` }
                     })
                       .then(() => {

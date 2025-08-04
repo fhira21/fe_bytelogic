@@ -19,7 +19,7 @@ function Projects() {
             setLoading(true);
             setError(null);
 
-            const res = await axios.get("http://localhost:5000/api/projects/summary");
+            const res = await axios.get("http://be.bytelogic.orenjus.com/api/projects/summary");
 
             if (!res.data || !Array.isArray(res.data.data)) {
                 throw new Error("Format data proyek tidak valid");

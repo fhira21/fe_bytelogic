@@ -59,7 +59,7 @@ const ProjectDetail = () => {
         // Jika ada token, coba endpoint private terlebih dahulu
         if (token) {
           try {
-            response = await axios.get(`http://localhost:5000/api/projects/${id}`, {
+            response = await axios.get(`http://be.bytelogic.orenjus.com/api/projects/${id}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             setProject(formatProjectData(response.data));
@@ -73,7 +73,7 @@ const ProjectDetail = () => {
         }
 
         // Gunakan endpoint public summary untuk guest
-        const publicResponse = await axios.get(`http://localhost:5000/api/projects/summary`);
+        const publicResponse = await axios.get(`http://be.bytelogic.orenjus.com/api/projects/summary`);
         const projectFromSummary = publicResponse.data.data.find(p => p._id === id);
 
         if (!projectFromSummary) {

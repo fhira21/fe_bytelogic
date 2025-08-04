@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import { Home, Folder, Briefcase, ChartBar, FileText, ChevronLeft, Search, User } from 'lucide-react';
 import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
@@ -49,7 +49,7 @@ const EmployeeEvaluation = () => {
 
         const { page, limit } = pagination;
         const response = await axios.get(
-          `http://localhost:5000/api/evaluations/karyawan/evaluasi-detailed?page=${page}&limit=${limit}`,
+          `http://be.bytelogic.orenjus.com/api/evaluations/karyawan/evaluasi-detailed?page=${page}&limit=${limit}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -107,7 +107,7 @@ const EmployeeEvaluation = () => {
 
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/evaluations/karyawan/evaluasi-detailed/${employeeId}`,
+        `http://be.bytelogic.orenjus.com/api/evaluations/karyawan/evaluasi-detailed/${employeeId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

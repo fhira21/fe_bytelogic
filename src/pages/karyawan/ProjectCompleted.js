@@ -11,7 +11,7 @@ const ProjectCompleted = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/projects/total-project", {
+        const response = await axios.get("http://be.bytelogic.orenjus.com/api/projects/total-project", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "application/json",

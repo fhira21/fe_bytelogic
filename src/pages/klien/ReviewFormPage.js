@@ -37,7 +37,7 @@ const ReviewFormPage = () => {
                 }
 
                 const response = await axios.get(
-                    "http://localhost:5000/api/clients/profile",
+                    "http://be.bytelogic.orenjus.com/api/clients/profile",
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,

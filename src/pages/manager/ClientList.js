@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import {
   Home,
   Folder,
@@ -52,7 +52,7 @@ const ClientList = () => {
           return;
         }
 
-        const response = await axios.get("http://localhost:5000/api/clients", {
+        const response = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -121,11 +121,11 @@ const ClientList = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      await axios.put(`http://localhost:5000/api/clients/${editingClient._id}`, formData, {
+      await axios.put(`http://be.bytelogic.orenjus.com/api/clients/${editingClient._id}`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Refresh client list
-      const response = await axios.get("http://localhost:5000/api/clients", {
+      const response = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setClients(response.data.data || response.data);
@@ -138,11 +138,11 @@ const ClientList = () => {
   const confirmDelete = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/clients/${deletingClient._id}`, {
+      await axios.delete(`http://be.bytelogic.orenjus.com/api/clients/${deletingClient._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Refresh client list
-      const response = await axios.get("http://localhost:5000/api/clients", {
+      const response = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setClients(response.data.data || response.data);
@@ -188,7 +188,7 @@ const ClientList = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.post('http://localhost:5000/api/clients', formData, {
+      const response = await axios.post('http://be.bytelogic.orenjus.com/api/clients', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -506,7 +506,7 @@ const ClientList = () => {
                 </button>
                 <button
                   onClick={() => {
-                    axios.delete(`http://localhost:5000/api/client/${deletingClient._id}`, {
+                    axios.delete(`http://be.bytelogic.orenjus.com/api/client/${deletingClient._id}`, {
                       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
                     })
                       .then(() => {

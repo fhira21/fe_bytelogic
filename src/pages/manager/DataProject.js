@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import { useNavigate } from "react-router-dom";
 import {
   Home,
@@ -56,7 +56,7 @@ export default function ProjectDataPage() {
   const fetchProjects = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5000/api/projects", {
+      const response = await axios.get("http://be.bytelogic.orenjus.com/api/projects", {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -95,7 +95,7 @@ export default function ProjectDataPage() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/projects/${projectId}`, {
+      await axios.delete(`http://be.bytelogic.orenjus.com/api/projects/${projectId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

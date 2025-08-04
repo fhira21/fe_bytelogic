@@ -108,7 +108,7 @@ const DashboardManager = () => {
     const fetchTotalClients = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5000/api/clients", {
+        const response = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -138,7 +138,7 @@ const DashboardManager = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/api/managers/profile",
+          "http://be.bytelogic.orenjus.com/api/managers/profile",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -168,7 +168,7 @@ const DashboardManager = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/api/karyawan/statuskaryawan",
+          "http://be.bytelogic.orenjus.com/api/karyawan/statuskaryawan",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -196,10 +196,10 @@ const DashboardManager = () => {
 
         // Buat dua request paralel untuk mendapatkan data statistik dan daftar proyek
         const [statusResponse, projectsResponse] = await Promise.all([
-          axios.get("http://localhost:5000/api/projects/status-summary", {
+          axios.get("http://be.bytelogic.orenjus.com/api/projects/status-summary", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get("http://localhost:5000/api/projects", {
+          axios.get("http://be.bytelogic.orenjus.com/api/projects", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -229,7 +229,7 @@ const DashboardManager = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/api/evaluations/karyawan/evaluasi-detailed",
+          "http://be.bytelogic.orenjus.com/api/evaluations/karyawan/evaluasi-detailed",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -271,7 +271,7 @@ const DashboardManager = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/api/reviews/stats",
+          "http://be.bytelogic.orenjus.com/api/reviews/stats",
           {
             headers: { Authorization: `Bearer ${token}` },
           }

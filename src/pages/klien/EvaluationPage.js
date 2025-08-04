@@ -52,7 +52,7 @@ const EvaluasiPage = () => {
         }
 
         const response = await axios.get(
-          "http://localhost:5000/api/clients/profile",
+          "http://be.bytelogic.orenjus.com/api/clients/profile",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -100,7 +100,7 @@ const EvaluasiPage = () => {
       setSuccessMessage(null);
       setErrorMessage(null);
 
-      await axios.post("http://localhost:5000/api/evaluations", payload, {
+      await axios.post("http://be.bytelogic.orenjus.com/api/evaluations", payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",
@@ -147,7 +147,7 @@ const EvaluasiPage = () => {
         comment: review.comment,
       };
 
-      await axios.post("http://localhost:5000/api/reviews", payload, {
+      await axios.post("http://be.bytelogic.orenjus.com/api/reviews", payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",

@@ -18,7 +18,7 @@ const TopbarProfile = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          "http://localhost:5000/api/managers/profile",
+          "http://be.bytelogic.orenjus.com/api/managers/profile",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -52,7 +52,7 @@ const TopbarProfile = () => {
           <img
             src={
               managerProfile.data?.foto_profile
-                ? `http://localhost:5000${managerProfile.data.foto_profile}`
+                ? `http://be.bytelogic.orenjus.com${managerProfile.data.foto_profile}`
                 : ProfilePic
             }
             alt="Profile"

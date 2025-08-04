@@ -49,7 +49,7 @@ const DashboardKaryawan = () => {
 
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/evaluations/detail-by-project?title=${encodeURIComponent(projectName)}`,
+        `http://be.bytelogic.orenjus.com/api/evaluations/detail-by-project?title=${encodeURIComponent(projectName)}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -96,7 +96,7 @@ const DashboardKaryawan = () => {
     const fetchStatus = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/karyawan/profile",
+          "http://be.bytelogic.orenjus.com/api/karyawan/profile",
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -127,7 +127,7 @@ const DashboardKaryawan = () => {
     const fetchProjects = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/projects/total-project",
+          "http://be.bytelogic.orenjus.com/api/projects/total-project",
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -180,7 +180,7 @@ const DashboardKaryawan = () => {
     const fetchEvaluasi = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/evaluations/evaluationmykaryawan",
+          "http://be.bytelogic.orenjus.com/api/evaluations/evaluationmykaryawan",
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

@@ -75,7 +75,7 @@ const DashboardKlien = () => {
         }
 
         const response = await axios.get(
-          "http://localhost:5000/api/clients/profile",
+          "http://be.bytelogic.orenjus.com/api/clients/profile",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -114,7 +114,7 @@ const DashboardKlien = () => {
         }
 
         const response = await axios.get(
-          "http://localhost:5000/api/projects/klien",
+          "http://be.bytelogic.orenjus.com/api/projects/klien",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -157,7 +157,7 @@ const DashboardKlien = () => {
         }
 
         const res = await axios.get(
-          "http://localhost:5000/api/evaluations/evaluationmyclient",
+          "http://be.bytelogic.orenjus.com/api/evaluations/evaluationmyclient",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -199,7 +199,7 @@ const DashboardKlien = () => {
       }
 
       await axios.post(
-        "http://localhost:5000/api/reviews",
+        "http://be.bytelogic.orenjus.com/api/reviews",
         {
           review: review.comment,
           rating: review.rating
