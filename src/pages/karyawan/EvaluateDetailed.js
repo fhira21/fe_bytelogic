@@ -32,39 +32,6 @@ const DetailEvaluasi = () => {
       });
   }, []);
 
-  const chartData = {
-    labels: dataEvaluasi.map((e) => e.project_title),
-    datasets: [
-      {
-        label: "Nilai Evaluasi",
-        data: dataEvaluasi.map((e) => e.final_score),
-        backgroundColor: "rgba(34, 107, 197, 0.6)",  
-        borderColor: "rgba(34, 197, 94, 1)",
-        borderWidth: 1,
-      },
-    ],
-  };
-
-
-  const options = {
-    onClick: (_, elements) => {
-      if (elements.length > 0) {
-        const index = elements[0].index;
-        setSelectedDetail(dataEvaluasi[index]);
-      }
-    },
-    plugins: {
-      tooltip: {
-        callbacks: {
-          label: (ctx) => `Nilai: ${ctx.raw} - ${ctx.label}`,
-        },
-      },
-    },
-    scales: {
-      y: { beginAtZero: true, max: 100 },
-    },
-  };
-
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white rounded">
       <h1 className="text-2xl font-bold mb-4">Detail Evaluasi</h1>
