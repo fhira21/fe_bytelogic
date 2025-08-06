@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../components/SideBar';
 import {
   Home,
   Folder,

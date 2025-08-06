@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../components/SideBar';
 import {
   Home,
   Folder,
@@ -24,14 +24,18 @@ const ClientList = () => {
   const [deletingClient, setDeletingClient] = useState(null);
   const [viewingClient, setViewingClient] = useState(null);
   const [formData, setFormData] = useState({
+    user_id: '',
     nama_lengkap: '',
     email: '',
     alamat: '',
     nomor_telepon: '',
+    foto_profile: null,
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [users, setUsers] = useState([]);
+
 
   // State for manager profile
   const [managerProfile, setManagerProfile] = useState({
@@ -99,6 +103,28 @@ const ClientList = () => {
     fetchClients();
   }, [navigate]);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/users");
+        setUsers(response.data);
+      } catch (error) {
+        console.error("Gagal mengambil user client", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+
+
   const handleEditClient = (client) => {
     setEditingClient(client);
     setFormData({
@@ -108,6 +134,33 @@ const ClientList = () => {
       nomor_telepon: client.nomor_telepon,
     });
   };
+
+  const handleRegister = async () => {
+    try {
+      if (formData.password !== formData.confirmPassword) {
+        alert("Password and Confirm Password do not match");
+        return;
+      }
+
+      const registerPayload = {
+        username: formData.username,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        role: "client",
+      };
+
+      const response = await axios.post("http://be.bytelogic.orenjus.com/api/users/register", registerPayload);
+
+      if (response.status === 200 || response.status === 201) {
+        alert("User registered successfully, please select them from dropdown.");
+        setCurrentStep(2); // Pindah ke step pengisian data klien
+      }
+    } catch (error) {
+      console.error("Register error:", error);
+      alert("Failed to register. Please try again.");
+    }
+  };
+
 
   const handleViewClient = (client) => {
     setViewingClient(client);
@@ -188,17 +241,36 @@ const ClientList = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.post('http://be.bytelogic.orenjus.com/api/clients', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
 
-      setClients(prev => [...prev, response.data]);
+      // Pastikan data yang dikirim hanya yang dibutuhkan backend
+      const payload = {
+        user_id: formData.user_id, // dari dropdown
+        nama_lengkap: formData.nama_lengkap,
+        email: formData.email,
+        nomor_telepon: formData.nomor_telepon,
+        alamat: formData.alamat,
+        foto_profile: formData.foto_profile || "", // kosong jika tidak ada
+      };
+
+      const response = await axios.post(
+        "http://be.bytelogic.orenjus.com/api/clients",
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setClients((prev) => [...prev, response.data]);
       closeAddModal();
     } catch (error) {
-      console.error('Error adding new client:', error);
-      alert('Failed to add client. Please check the data and try again.');
+      console.error("Error adding new client:", error.response || error);
+      alert(
+        error?.response?.data?.message ||
+        "Failed to add client. Please check the data and try again."
+      );
     }
   };
+
 
   const filteredClients = clients.filter(client => {
     const term = searchTerm.toLowerCase();
@@ -391,6 +463,27 @@ const ClientList = () => {
                 <div>
                   <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Personal Information</h4>
                   <div className="space-y-4">
+                    <div className="mb-4">
+                      <label htmlFor="user_id" className="block text-gray-700 font-bold mb-2">
+                        Pilih Username
+                      </label>
+                      <select
+                        id="user_id"
+                        name="user_id"
+                        value={formData.user_id}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border rounded-md"
+                        required
+                      >
+                        <option value="">-- Pilih Username --</option>
+                        {users.map((user) => (
+                          <option key={user._id} value={user._id}>
+                            {user.username}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Full Name</label>
                       <input
@@ -464,11 +557,12 @@ const ClientList = () => {
                 {currentStep === 1 ? (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={handleRegister}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     Next
                   </button>
+
                 ) : (
                   <button
                     type="button"

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfilePic from '../../assets/images/profile.jpg';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../components/SideBar';
 import axios from 'axios';
 
 import {
@@ -23,6 +23,7 @@ const AdminList = () => {
   const [managers, setManagers] = useState([]);
   const [editingManager, setEditingManager] = useState(null);
   const [deletingManager, setDeletingManager] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [formData, setFormData] = useState({
     nama_lengkap: '',
     email: '',
@@ -43,43 +44,46 @@ const AdminList = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [viewingManager, setViewingManager] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+
   // State for manager profile
-const [managerProfile, setManagerProfile] = useState({
-  loading: true,
-  data: null,
-  error: null,
-});
+  const [managerProfile, setManagerProfile] = useState({
+    loading: true,
+    data: null,
+    error: null,
+  });
 
-// useEffect untuk mengambil data profil manager
-useEffect(() => {
-  const fetchManagerProfile = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        "http://be.bytelogic.orenjus.com/api/managers/profile",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  // useEffect untuk mengambil data profil manager
+  useEffect(() => {
+    const fetchManagerProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          "http://be.bytelogic.orenjus.com/api/managers/profile",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-      setManagerProfile({
-        loading: false,
-        data: response.data.data, // Data profil dari backend
-        error: null,
-      });
-    } catch (error) {
-      console.error("Error fetching manager profile:", error);
-      setManagerProfile({
-        loading: false,
-        data: null,
-        error: "Gagal mengambil profil",
-      });
-    }
-  };
+        setManagerProfile({
+          loading: false,
+          data: response.data.data, // Data profil dari backend
+          error: null,
+        });
+      } catch (error) {
+        console.error("Error fetching manager profile:", error);
+        setManagerProfile({
+          loading: false,
+          data: null,
+          error: "Gagal mengambil profil",
+        });
+      }
+    };
 
-  fetchManagerProfile();
-}, []);
+    fetchManagerProfile();
+  }, []);
 
   useEffect(() => {
     // Fetch managers data
@@ -150,6 +154,33 @@ useEffect(() => {
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.post("http://be.bytelogic.orenjus.com/api/users/register", {
+        username: formData.username,
+        password: formData.password,
+        role: "admin",
+      });
+
+      const newUserId = response.data._id;
+      setUserId(newUserId); // simpan ID user untuk dipakai di personal info
+      setCurrentStep(2); // pindah ke step personal info
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to register.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const saveEdit = (e) => {
@@ -476,11 +507,11 @@ useEffect(() => {
                         name="gender"
                         value={formData.gender}
                         onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         required
-                        style={{ color: formData.gender ? '#111827' : '#9CA3AF' }}
+                        style={{ color: formData.gender === "" ? '#9CA3AF' : '#111827' }}
                       >
-                        <option value="" disabled hidden style={{ color: '#9CA3AF' }}>
+                        <option value="" disabled hidden>
                           Select Gender
                         </option>
                         <option value="male">Male</option>
@@ -496,15 +527,15 @@ useEffect(() => {
                         onChange={handleEditChange}
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                         required
-                        style={{ color: formData.gender ? '#111827' : '#9CA3AF' }}
+                        style={{ color: formData.maritalStatus ? '#111827' : '#9CA3AF' }}
                       >
                         <option value="" disabled hidden>
-                          Select Martial Status
+                          Select Marital Status
                         </option>
-                        <option value="male" className="text-gray-900">Single</option>
-                        <option value="male" className="text-gray-900">Married</option>
-                        <option value="male" className="text-gray-900">Divorced</option>
-                        <option value="male" className="text-gray-900">Widowed</option>
+                        <option value="single" className="text-gray-900">Single</option>
+                        <option value="married" className="text-gray-900">Married</option>
+                        <option value="divorced" className="text-gray-900">Divorced</option>
+                        <option value="widowed" className="text-gray-900">Widowed</option>
                       </select>
                     </div>
 
@@ -528,7 +559,7 @@ useEffect(() => {
                         value={formData.address}
                         onChange={handleEditChange}
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter educational background"
+                        placeholder="Enter Address"
                       />
                     </div>
                   </div>
@@ -537,34 +568,32 @@ useEffect(() => {
                     <h5 className="text-sm font-medium mb-4">Educational Background</h5>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Education Level</label>
                         <input
                           type="text"
                           name="educationLevel"
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Select education level"
+                          className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter Education Level"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Health Area</label>
                         <input
                           type="text"
-                          name="healthArea"
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Select health area"
+                          name="institution"
+                          className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter Institution"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Year of Graduation</label>
                         <input
                           type="text"
                           name="graduationYear"
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Select year"
+                          className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter Year of Graduation"
                         />
                       </div>
                     </div>
                   </div>
+
                 </div>
               )}
 

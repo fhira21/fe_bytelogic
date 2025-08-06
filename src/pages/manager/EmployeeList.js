@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfilePic from '../../assets/images/profile.jpg';
 import axios from 'axios';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../components/SideBar';
 import TopbarProfile from '../../components/TopbarProfile';
 import {
   Home,
