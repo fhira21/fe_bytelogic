@@ -103,6 +103,8 @@ const DashboardManager = () => {
     },
   });
 
+  const ALLOWED_STATUSES = ["Waiting List", "On Progress", "Completed"];
+
   //useeffect total client
   useEffect(() => {
     const fetchTotalClients = async () => {
@@ -401,28 +403,24 @@ const DashboardManager = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Employee Data Card */}
+          {/* Employee Data Card (non-clickable) */}
           <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => navigate("/employee-list")}
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
           >
             <div className="p-3 bg-blue-100 rounded-full">
               <User className="text-blue-600" size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500">
-                Employee Data
-              </h3>
+              <h3 className="text-sm font-medium text-gray-500">Employee Data</h3>
               <p className="text-2xl font-bold">
                 {employeeData.loading ? "..." : employeeData.totalKaryawan}
               </p>
             </div>
           </div>
 
-          {/* Client Data Card */}
+          {/* Client Data Card (non-clickable) */}
           <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => navigate("/client-data")}
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
           >
             <div className="p-3 bg-green-100 rounded-full">
               <ClientsIcon className="text-green-600" size={20} />
@@ -435,28 +433,24 @@ const DashboardManager = () => {
             </div>
           </div>
 
-          {/* Waiting List Card */}
+          {/* Waiting List Card (non-clickable) */}
           <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => navigate("/data-project?status=waiting")}
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
           >
             <div className="p-3 bg-purple-100 rounded-full">
               <List className="text-purple-600" size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500">
-                Waiting List
-              </h3>
+              <h3 className="text-sm font-medium text-gray-500">Waiting List</h3>
               <p className="text-2xl font-bold">
                 {projects.loading ? "..." : projects.stats.waiting}
               </p>
             </div>
           </div>
 
-          {/* On Progress Card */}
+          {/* On Progress Card (non-clickable) */}
           <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => navigate("/data-project?status=progress")}
+            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
           >
             <div className="p-3 bg-yellow-100 rounded-full">
               <TrendingUp className="text-yellow-600" size={20} />
@@ -675,70 +669,57 @@ const DashboardManager = () => {
                 <tbody>
                   {projects.loading ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center">
-                        Loading projects...
-                      </td>
+                      <td colSpan="4" className="px-6 py-4 text-center">Loading projects...</td>
                     </tr>
                   ) : projects.error ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-red-500">
-                        {projects.error}
-                      </td>
+                      <td colSpan="4" className="px-6 py-4 text-red-500">{projects.error}</td>
                     </tr>
                   ) : projects.lists.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan="4"
-                        className="px-6 py-4 text-gray-500 text-center"
-                      >
-                        No projects found
-                      </td>
+                      <td colSpan="4" className="px-6 py-4 text-gray-500 text-center">No projects found</td>
                     </tr>
                   ) : (
                     projects.lists
-                      .filter(
-                        (project) =>
-                          projectStatusFilter === "All" ||
-                          project.status === projectStatusFilter
+                      // 🔒 hanya tampilkan status yang diizinkan
+                      .filter(project => ALLOWED_STATUSES.includes(project.status))
+                      // 🔎 filter dropdown: All → tampilkan semua yg diizinkan
+                      .filter(project =>
+                        projectStatusFilter === "All" || project.status === projectStatusFilter
                       )
                       .slice(0, 5)
-                      .map((project) => (
-                        <tr
-                          key={project._id}
-                          className="border-t hover:bg-gray-50"
-                        >
-                          <td className="px-6 py-4">{project.title || "-"}</td>
-                          <td className="px-6 py-4">
-                            {project.client?.nama_lengkap ||
-                              project.client?.name ||
-                              "-"}
-                          </td>
-                          <td className="px-6 py-4">
-                            {project.deadline
-                              ? new Date(project.deadline).toLocaleDateString(
-                                "id-ID",
-                                {
+                      .map((project) => {
+                        const displayStatus = ALLOWED_STATUSES.includes(project.status) ? project.status : "-";
+                        return (
+                          <tr key={project._id} className="border-t hover:bg-gray-50">
+                            <td className="px-6 py-4">{project.title || "-"}</td>
+                            <td className="px-6 py-4">
+                              {project.client?.nama_lengkap || project.client?.name || "-"}
+                            </td>
+                            <td className="px-6 py-4">
+                              {project.deadline
+                                ? new Date(project.deadline).toLocaleDateString("id-ID", {
                                   day: "numeric",
                                   month: "long",
                                   year: "numeric",
-                                }
-                              )
-                              : "-"}
-                          </td>
-                          <td className="px-6 py-4 capitalize">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs ${project.status === "Completed"
-                                ? "bg-green-100 text-green-800"
-                                : project.status === "On Progress"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-gray-100 text-gray-800"
-                                }`}
-                            >
-                              {project.status || "-"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
+                                })
+                                : "-"}
+                            </td>
+                            <td className="px-6 py-4 capitalize">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${displayStatus === "Completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : displayStatus === "On Progress"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}
+                              >
+                                {displayStatus}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
                   )}
                 </tbody>
               </table>

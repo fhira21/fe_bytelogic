@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ClipboardList, ClipboardCheck, Clock, UserCheck } from "lucide-react";
 import { Bar } from "react-chartjs-2";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import {
   Chart as ChartJS,
@@ -25,6 +26,7 @@ ChartJS.register(
 );
 
 const DashboardKaryawan = () => {
+  const navigate = useNavigate();
   const [user] = useState({
     name: "Loading...",
     email: "Loading...",
@@ -41,33 +43,11 @@ const DashboardKaryawan = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Fungsi untuk menangani klik pada bar chart
-  const handleBarClick = async (projectName) => {
-    if (!projectName) {
-      console.error("Nama proyek tidak valid");
-      return;
-    }
-
-    try {
-      const response = await axios.get(
-        `http://be.bytelogic.orenjus.com/api/evaluations/detail-by-project?title=${encodeURIComponent(projectName)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data && response.data.data) {
-        setSelectedProjectDetail(response.data.data);
-        setShowDetailModal(true);
-      } else {
-        console.error("Data detail proyek tidak ditemukan");
-      }
-    } catch (err) {
-      console.error("Gagal mengambil detail proyek:", err);
-    }
-  };
+  // Fungsi untuk menangani klik pada bar chart
+const handleBarClick = (projectName) => {
+  if (!projectName) return;
+  navigate(`/detail-evaluasi?project=${encodeURIComponent(projectName)}`);
+};
 
   const [projects, setProjects] = useState({
     loading: true,

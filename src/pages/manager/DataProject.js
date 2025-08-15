@@ -19,6 +19,16 @@ export default function ProjectDataPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewingProject, setViewingProject] = useState(null);
+
+  // === Tambahan: state untuk EDIT modal ===
+  const [editingProject, setEditingProject] = useState(null);
+  const [projectForm, setProjectForm] = useState({
+    title: "",
+    description: "",
+    status: "Waiting List",
+    deadline: "",
+  });
+
   const navigate = useNavigate();
 
   // State untuk filter
@@ -84,9 +94,16 @@ export default function ProjectDataPage() {
     navigate("/projects/create");
   };
 
-  // Navigasi ke halaman edit proyek
-  const handleEditProject = (projectId) => {
-    navigate(`/projects/edit/${projectId}`);
+  // === DIUBAH: Edit sekarang buka modal, bukan navigate ===
+  const handleEditProject = (project) => {
+    setEditingProject(project);
+    setProjectForm({
+      title: project.title || "",
+      description: project.description || "",
+      status: project.status || "Waiting List",
+      // jadikan yyyy-mm-dd untuk input type="date"
+      deadline: project.deadline ? new Date(project.deadline).toISOString().slice(0, 10) : "",
+    });
   };
 
   // Fungsi untuk menghapus proyek
@@ -110,6 +127,43 @@ export default function ProjectDataPage() {
   // Fungsi untuk melihat detail proyek
   const handleViewProject = (project) => {
     setViewingProject(project);
+  };
+
+  // === Handlers untuk EDIT modal ===
+  const handleProjectFormChange = (e) => {
+    const { name, value } = e.target;
+    setProjectForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const closeEditModal = () => {
+    setEditingProject(null);
+  };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      // siapkan payload sesuai backend
+      const payload = {
+        title: projectForm.title,
+        description: projectForm.description,
+        status: projectForm.status,
+        deadline: projectForm.deadline || null,
+      };
+
+      await axios.put(
+        `http://be.bytelogic.orenjus.com/api/projects/${editingProject._id}`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Refresh list
+      await fetchProjects();
+      setEditingProject(null);
+    } catch (err) {
+      console.error("Gagal mengupdate proyek:", err);
+      alert(err?.response?.data?.message || "Gagal mengupdate proyek. Coba lagi.");
+    }
   };
 
   if (loading) return (
@@ -216,7 +270,7 @@ export default function ProjectDataPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleEditProject(project._id)}
+                            onClick={() => handleEditProject(project)}
                             className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 rounded-lg hover:bg-yellow-600 transition-colors"
                           >
                             <span className="text-sm">Edit</span>
@@ -303,6 +357,80 @@ export default function ProjectDataPage() {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* === EDIT MODAL (baru) === */}
+        {editingProject && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Edit Project</h3>
+              </div>
+              <form onSubmit={saveEdit}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Project Name</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={projectForm.title}
+                      onChange={handleProjectFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                      name="description"
+                      value={projectForm.description}
+                      onChange={handleProjectFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <select
+                      name="status"
+                      value={projectForm.status}
+                      onChange={handleProjectFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option>Waiting List</option>
+                      <option>On Progress</option>
+                      <option>Completed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Deadline</label>
+                    <input
+                      type="date"
+                      name="deadline"
+                      value={projectForm.deadline}
+                      onChange={handleProjectFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Edit Project
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

@@ -1,121 +1,300 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
-import { Home, Folder, Briefcase, ChartBar, FileText, ChevronLeft, Search, User } from 'lucide-react';
-import { Bar, Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-
-ChartJS.register(
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
+import { ChevronLeft } from "lucide-react";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
   Title,
   Tooltip,
-  Legend
-);
+  Legend,
+} from "chart.js";
+
+import Sidebar from "../../components/SideBar";
+import TopbarProfile from "../../components/TopbarProfile";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+/* ===================== Helpers ===================== */
+
+// Skor 0–100 (dukung final_score langsung, atau results skala 1..5)
+const getFinalScore100 = (item) => {
+  if (typeof item?.final_score === "number") {
+    return Math.round(item.final_score);
+  }
+  if (Array.isArray(item?.results) && item.results.length) {
+    const total = item.results.reduce(
+      (s, r) => s + (r?.selected_criteria?.value || 0),
+      0
+    );
+    return Math.round((total / item.results.length) * 20); // 1..5 → 0..100
+  }
+  return 0;
+};
+
+// Ekstrak array proyek dari berbagai kemungkinan struktur respons backend
+const extractProjectsArray = (detail) => {
+  if (!detail) return [];
+  const d = detail.data && typeof detail.data === "object" ? detail.data : detail;
+
+  const candidates = [
+    d.detail_evaluasi, // contoh /evaluationmykaryawan
+    d.evaluations,     // contoh /karyawan/evaluasi-detailed/:id
+    d.projects,        // kemungkinan lain
+    d.project_list,    // jaga-jaga
+  ];
+
+  for (const c of candidates) {
+    if (Array.isArray(c) && c.length) return c;
+  }
+  return [];
+};
+
+// Normalisasi 1 item proyek → { id, title, score, date }
+const normalizeProjectItem = (p) => ({
+  id: p?.project_id || p?.project?._id || p?._id || undefined,
+  title: (p?.project_title || p?.title || p?.project?.title || "Tanpa Nama").trim(),
+  score: getFinalScore100(p),
+  date: p?.created_at || p?.date || null,
+});
+
+/* ===================== Detail View ===================== */
+
+const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
+  const projectsForChart = useMemo(() => {
+    const raw = extractProjectsArray(evaluationDetails);
+    return raw.map(normalizeProjectItem);
+  }, [evaluationDetails]);
+
+  const labels = projectsForChart.map((p) => p.title);
+  const values = projectsForChart.map((p) => p.score);
+
+  const barData = {
+    labels,
+    datasets: [
+      {
+        label: "Nilai Final",
+        data: values,
+        backgroundColor: "rgba(54, 162, 235, 0.7)",
+        borderColor: "rgba(54, 162, 235, 1)",
+        borderWidth: 1,
+        borderRadius: 6,
+        barThickness: 28,
+      },
+    ],
+  };
+
+  const barOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: { beginAtZero: true, max: 100, ticks: { stepSize: 10 }, title: { display: true, text: "Nilai Final" } },
+      x: {
+        ticks: {
+          callback: function (val, index) {
+            const label = this.getLabelForValue(index);
+            return label.length > 12 ? `${label.slice(0, 12)}…` : label;
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => `Nilai: ${ctx.raw}` } },
+    },
+  };
+
+  const employeeName = employee?.nama_karyawan || employee?.name || "-";
+  const rank = typeof employee?.rank === "number" ? employee.rank : 1;
+
+  // Total project: pakai detail, fallback ke angka list
+  const totalProjectDetail = projectsForChart.length;
+  const totalProjectFallback = Number(employee?.total_project_dinilai || 0);
+  const totalProject = totalProjectDetail > 0 ? totalProjectDetail : totalProjectFallback;
+
+  // Total Point: pakai nilai dari list (agar sama persis)
+  const totalPoint =
+    employee?.listTotalPoint != null
+      ? Number(employee.listTotalPoint)
+      : totalProjectDetail > 0
+      ? Math.round(values.reduce((a, b) => a + b, 0) / totalProjectDetail)
+      : Math.round(Number(employee?.rating || 0) * 20);
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <button onClick={onBack} className="flex items-center text-blue-600 mb-4 hover:text-blue-800">
+        <ChevronLeft size={18} className="mr-1" />
+        Back to Evaluation
+      </button>
+
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Detail Evaluation</h2>
+
+      {/* Summary header */}
+      <div className="w-full border-b border-gray-200 pb-3 mb-4 grid grid-cols-4 text-sm text-gray-600">
+        <div>
+          <div className="text-gray-400">Ranking</div>
+          <div className="mt-1 font-semibold">{rank}</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Employee Name</div>
+          <div className="mt-1 font-semibold">{employeeName}</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Total Project</div>
+          <div className="mt-1 font-semibold">{totalProject} Project</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Total Point</div>
+          <div className="mt-1 font-semibold">{isNaN(totalPoint) ? 0 : totalPoint} Point</div>
+        </div>
+      </div>
+
+      {/* Bar chart per project */}
+      <div className="h-72 w-full">
+        {loading ? (
+          <div className="flex items-center justify-center h-full text-sm text-gray-500">Memuat detail evaluasi…</div>
+        ) : labels.length ? (
+          <Bar data={barData} options={barOptions} />
+        ) : (
+          <p className="text-sm text-gray-500">
+            Tidak ada data proyek pada respons detail. Menampilkan ringkasan berdasarkan data list.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ===================== Halaman Utama ===================== */
 
 const EmployeeEvaluation = () => {
-  const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const [setManagerProfile] = useState({ data: null, loading: true });
+  const token = localStorage.getItem("token");
 
-  // State management
+  // Data list
   const [employees, setEmployees] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0
-  });
-  const [sortConfig, setSortConfig] = useState({
-    key: 'totalScore',
-    direction: 'descending'
-  });
-  const [viewMode, setViewMode] = useState('list');
+
+  // Paging (dipakai untuk menghitung ranking global)
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+
+  // Sorting
+  const [sortConfig, setSortConfig] = useState({ key: "totalScore", direction: "descending" });
+
+  // Detail
+  const [viewMode, setViewMode] = useState("list");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [evaluationDetails, setEvaluationDetails] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Fetch employee evaluation data
+  // Fetch list karyawan + ringkasan
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
         setError(null);
-
         const { page, limit } = pagination;
-        const response = await axios.get(
+
+        const res = await axios.get(
           `http://be.bytelogic.orenjus.com/api/evaluations/karyawan/evaluasi-detailed?page=${page}&limit=${limit}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        if (!response.data) {
-          throw new Error('Invalid API response structure');
+        const responseData = res.data?.data || res.data;
+        if (!Array.isArray(responseData)) {
+          throw new Error("Unexpected data format from API");
         }
 
-        const responseData = response.data.data || response.data;
+        const formatted = responseData.map((emp) => ({
+          _id: emp.employee_id || emp._id,
+          nama_karyawan: emp.nama_karyawan || emp.nama_lengkap || "Nama tidak tersedia",
+          total_project_dinilai: emp.total_projects || 0,
+          rata_rata_point_evaluasi: parseFloat(emp.average_final_score) || 0, // skala mengikuti backend
+          evaluasi_projects: emp.evaluations || [],
+        }));
 
-        if (Array.isArray(responseData)) {
-          const formattedEmployees = responseData.map(emp => ({
-            _id: emp.employee_id || emp._id,
-            nama_karyawan: emp.nama_karyawan || emp.nama_lengkap || 'Nama tidak tersedia',
-            total_project_dinilai: emp.total_projects || 0,
-            rata_rata_point_evaluasi: parseFloat(emp.average_final_score) || 0,
-            evaluasi_projects: emp.evaluations || []
-          }));
-
-          setEmployees(formattedEmployees);
-          setPagination(prev => ({
-            ...prev,
-            total: response.data.total || responseData.length
-          }));
-        } else {
-          throw new Error('Unexpected data format from API');
-        }
-
-      } catch (error) {
-        console.error("Fetch Error:", error);
-        setError(error.response?.data?.message || error.message || 'Failed to load evaluation data');
+        setEmployees(formatted);
+        setPagination((prev) => ({ ...prev, total: res.data?.total || responseData.length }));
+      } catch (err) {
+        console.error("Fetch Error:", err);
+        setError(err.response?.data?.message || err.message || "Failed to load evaluation data");
       } finally {
         setLoading(false);
       }
     };
 
     fetchEmployees();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, pagination.page, pagination.limit]);
 
-  // Helper functions
-  const calculateAverageScore = (employee) => {
-    if (employee.rata_rata_point_evaluasi) {
-      return parseFloat(employee.rata_rata_point_evaluasi);
-    }
-    if (employee.total_final_score && employee.total_evaluations) {
-      return employee.total_final_score / employee.total_evaluations;
-    }
-    return 0;
+  const requestSort = (key) => {
+    let direction = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") direction = "descending";
+    setSortConfig({ key, direction });
   };
 
-  const handleViewEmployeeDetail = async (employeeId) => {
-    const employeeDetail = employees.find(emp => emp._id === employeeId);
-    setSelectedEmployee(employeeDetail);
+  // Transformasi untuk tabel list
+  const filteredEmployees = useMemo(() => {
+    return employees
+      .map((emp) => ({
+        id: emp._id,
+        name: emp.nama_karyawan,
+        projects: Number(emp.total_project_dinilai || 0),
+        rating: emp.rata_rata_point_evaluasi ? Number(emp.rata_rata_point_evaluasi) : 0, // skala mengikuti backend
+      }))
+      .filter(
+        (emp) => emp.name && typeof emp.name === "string" && emp.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map((emp) => ({
+        ...emp,
+        // ⚠️ Total Point di list — atur sesuai skala backend:
+        // Jika average_final_score sudah 0..100 → pakai rating * projects
+        // Jika 0..5 dan ingin skala 0..100 → pakai (rating * 20) * projects
+        totalScore: Number((emp.rating * emp.projects).toFixed(2)),
+        // contoh alternatif skala 0..100:
+        // totalScore: Math.round(emp.rating * 20) * emp.projects,
+      }));
+  }, [employees, searchTerm]);
+
+  const sortedEmployees = useMemo(() => {
+    const items = [...filteredEmployees];
+    if (sortConfig.key) {
+      items.sort((a, b) => {
+        const va = a[sortConfig.key];
+        const vb = b[sortConfig.key];
+        if (va < vb) return sortConfig.direction === "ascending" ? -1 : 1;
+        if (va > vb) return sortConfig.direction === "ascending" ? 1 : -1;
+        return 0;
+      });
+    }
+    return items;
+  }, [filteredEmployees, sortConfig]);
+
+  // klik "View Detail" —> ambil detail, oper totalPoint & rank dari list agar SAMA persis
+  const handleViewEmployeeDetail = async (employeeId, listTotalPoint, rankFromList) => {
+    const employeeDetail = employees.find((emp) => emp._id === employeeId);
+
+    setSelectedEmployee({
+      ...employeeDetail,
+      listTotalPoint: listTotalPoint != null ? Number(listTotalPoint) : null, // nilai dari list
+      rank: rankFromList, // ranking dari list (mengikuti sort + pagination)
+      rating: employeeDetail?.rata_rata_point_evaluasi || 0,
+    });
+
     setDetailLoading(true);
-    setViewMode('detail');
+    setViewMode("detail");
 
     try {
       const res = await axios.get(
         `http://be.bytelogic.orenjus.com/api/evaluations/karyawan/evaluasi-detailed/${employeeId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setEvaluationDetails(res.data.data || res.data); // tergantung struktur responsmu
+      setEvaluationDetails(res.data?.data || res.data || null);
     } catch (err) {
-      console.error('Gagal mengambil detail evaluasi:', err);
+      console.error("Gagal mengambil detail evaluasi:", err);
       setEvaluationDetails(null);
     } finally {
       setDetailLoading(false);
@@ -123,263 +302,10 @@ const EmployeeEvaluation = () => {
   };
 
   const handleBackToList = () => {
-    setViewMode('list');
+    setViewMode("list");
     setSelectedEmployee(null);
     setEvaluationDetails(null);
   };
-
-  const requestSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  // Memoized calculations
-  const filteredEmployees = useMemo(() => {
-    return employees
-      .map(emp => ({
-        id: emp._id,
-        name: emp.nama_karyawan,
-        projects: emp.total_project_dinilai || 0,
-        rating: emp.rata_rata_point_evaluasi ? parseFloat(emp.rata_rata_point_evaluasi) : 0,
-        detail: emp.evaluasi_projects || []
-      }))
-      .filter(emp =>
-        emp.name &&
-        typeof emp.name === 'string' &&
-        emp.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .map(emp => ({
-        ...emp,
-        totalScore: (emp.rating * emp.projects).toFixed(2)
-      }));
-  }, [employees, searchTerm]);
-
-  const sortedEmployees = useMemo(() => {
-    let sortableItems = [...filteredEmployees];
-    if (sortConfig.key) {
-      sortableItems.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    return sortableItems;
-  }, [filteredEmployees, sortConfig]);
-
-  // Prepare chart data from evaluation details
-  const prepareChartData = () => {
-    if (!evaluationDetails) return { barData: null, pieData: null };
-
-    // Bar chart data - Project performance by category
-    const projectCategories = evaluationDetails.project_categories || [];
-    const barData = {
-      labels: projectCategories.map(cat => cat.category_name),
-      datasets: [
-        {
-          label: 'Average Score',
-          data: projectCategories.map(cat => cat.average_score),
-          backgroundColor: 'rgba(54, 162, 235, 0.6)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1
-        }
-      ]
-    };
-
-    // Pie chart data - Score distribution
-    const scoreDistribution = evaluationDetails.score_distribution || [];
-    const pieData = {
-      labels: scoreDistribution.map(item => `Score ${item.score_range}`),
-      datasets: [
-        {
-          data: scoreDistribution.map(item => item.count),
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.6)',
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)'
-          ],
-          borderColor: [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)'
-          ],
-          borderWidth: 1
-        }
-      ]
-    };
-
-    return { barData, pieData };
-  };
-
-  const { barData, pieData } = prepareChartData();
-
-  // Detail View Component - Updated to match the image
-  const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
-    // Prepare chart data
-    const chartData = {
-      labels: evaluationDetails?.project_categories?.map(cat => cat.category_name) || [],
-      datasets: [
-        {
-          label: 'Average Score',
-          data: evaluationDetails?.project_categories?.map(cat => cat.average_score) || [],
-          backgroundColor: 'rgba(54, 162, 235, 0.7)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1,
-        },
-      ],
-    };
-
-    const chartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            stepSize: 10,
-            callback: (value) => value,
-          },
-          title: {
-            display: true,
-            text: 'Nilai Final',
-          },
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Kategori Proyek',
-          },
-        },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (context) => `Nilai: ${context.raw}`,
-          },
-        },
-      },
-    };
-
-    const barChartDataCategory = {
-      labels: evaluationDetails?.project_categories?.map(cat => cat.category_name) || [],
-      datasets: [
-        {
-          label: 'Average Score',
-          data: evaluationDetails?.project_categories?.map(cat => cat.average_score) || [],
-          backgroundColor: 'rgba(54, 162, 235, 0.7)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1,
-        },
-      ],
-    };
-
-    const barChartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            stepSize: 10,
-            callback: (value) => value,
-          },
-          title: {
-            display: true,
-            text: 'Nilai Final',
-          },
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Kategori Proyek',
-          },
-        },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (context) => `Nilai: ${context.raw}`,
-          },
-        },
-      },
-    };
-
-    const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
-    // Bar chart untuk Distribusi Skor
-    const barChartDataScoreDist = {
-      labels: evaluationDetails?.score_distribution?.map(item => item.score_range) || [],
-      datasets: [
-        {
-          label: 'Jumlah Karyawan',
-          data: evaluationDetails?.score_distribution?.map(item => item.count) || [],
-          backgroundColor: 'rgba(255, 159, 64, 0.6)',
-          borderColor: 'rgba(255, 159, 64, 1)',
-          borderWidth: 1,
-        },
-      ],
-    };
-
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <button
-          onClick={onBack}
-          className="flex items-center text-blue-600 mb-4 hover:text-blue-800"
-        >
-          <ChevronLeft size={18} className="mr-1" />
-          Kembali ke Daftar Evaluasi
-        </button>
-
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Detail Evaluasi Karyawan</h2>
-
-        {loading ? (
-          <div className="flex items-center justify-center p-4">
-            <i className="fas fa-spinner fa-spin mr-2"></i> Memuat detail evaluasi...
-          </div>
-        ) : (
-          <>
-            {/* Grafik Evaluasi Perkategori */}
-            <div className="bg-white border rounded-lg p-4 shadow mb-6">
-              <h3 className="text-xl font-medium mb-4">Grafik Evaluasi Perkategori</h3>
-              <div className="h-72 w-full">
-                {barChartDataCategory.labels.length > 0 ? (
-                  <Bar data={barChartDataCategory} options={barChartOptions} />
-                ) : (
-                  <p className="text-sm text-gray-500">Tidak ada data kategori proyek tersedia.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Grafik Distribusi Skor */}
-            <div className="bg-white border rounded-lg p-4 shadow">
-              <h3 className="text-xl font-medium mb-4">Distribusi Skor</h3>
-              <div className="h-72 w-full">
-                {barChartDataScoreDist.labels.length > 0 ? (
-                  <Bar data={barChartDataScoreDist} options={{ responsive: true, maintainAspectRatio: false }} />
-                ) : (
-                  <p className="text-sm text-gray-500">Tidak ada data distribusi skor tersedia.</p>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-}
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -388,111 +314,116 @@ const EmployeeEvaluation = () => {
       {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto bg-gray-50">
         <TopbarProfile />
-
-        {/* Judul Section */}
         <h1 className="text-2xl font-bold mb-6">Evaluation</h1>
 
-        {/* Search Section */}
-        <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
-          <div className="relative w-full md:w-auto">
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-            />
+        {viewMode === "list" && (
+          <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
+            <div className="relative w-full md:w-auto">
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-3 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {viewMode === 'list' ? (
+        {viewMode === "list" ? (
           <>
-            {/* Loading State */}
             {loading && (
               <div className="flex items-center justify-center p-4">
-                <i className="fas fa-spinner fa-spin mr-2"></i> Loading employee data...
+                <i className="fas fa-spinner fa-spin mr-2" />
+                Loading employee data...
               </div>
             )}
 
-            {/* Error State */}
             {error && (
               <div className="flex items-center justify-center p-4 text-red-500">
-                <i className="fas fa-exclamation-circle mr-2"></i> {error}
+                <i className="fas fa-exclamation-circle mr-2" />
+                {error}
               </div>
             )}
 
-            {/* Employee Evaluation Table */}
             {!loading && !error && (
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Ranking</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">
+                        Ranking
+                      </th>
                       <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => requestSort('name')}
+                        onClick={() => requestSort("name")}
                       >
                         Employee Name
-                        {sortConfig.key === 'name' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'ascending' ? '↑' : '↓'}
-                          </span>
+                        {sortConfig.key === "name" && (
+                          <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
                         )}
                       </th>
                       <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => requestSort('projects')}
+                        onClick={() => requestSort("projects")}
                       >
                         Total Project
-                        {sortConfig.key === 'projects' && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'ascending' ? '↑' : '↓'}
-                          </span>
+                        {sortConfig.key === "projects" && (
+                          <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
                         )}
                       </th>
                       <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => requestSort('totalScore')}
+                        onClick={() => requestSort("totalScore")}
                       >
                         Total Point
+                        {sortConfig.key === "totalScore" && (
+                          <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                        )}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedEmployees.length > 0 ? (
-                      sortedEmployees.map((emp, index) => (
-                        <tr key={emp.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {index + 1}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {emp.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {emp.projects} Project
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {emp.totalScore} Point
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex gap-2">
+                      sortedEmployees.map((emp, index) => {
+                        // Ranking global (ikut pagination). Jika mau per halaman: pakai `index + 1`.
+                        const rank =
+                          (pagination.page - 1) * pagination.limit + index + 1;
+
+                        return (
+                          <tr key={emp.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {rank}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {emp.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {emp.projects} Project
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {emp.totalScore} Point
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <button
-                                onClick={() => handleViewEmployeeDetail(emp.id)}
-                                className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-colors"
+                                onClick={() =>
+                                  handleViewEmployeeDetail(emp.id, emp.totalScore, rank)
+                                }
+                                className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors"
                               >
-                                <span className="text-sm">View Detail</span>
+                                View Detail
                               </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
                           {employees.length === 0
-                            ? 'No employee evaluation data available'
-                            : 'No employees match your search'}
+                            ? "No employee evaluation data available"
+                            : "No employees match your search"}
                         </td>
                       </tr>
                     )}

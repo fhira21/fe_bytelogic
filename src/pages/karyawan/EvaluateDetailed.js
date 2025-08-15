@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
 import {
@@ -10,113 +10,272 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const DetailEvaluasi = () => {
-  const [dataEvaluasi, setDataEvaluasi] = useState([]);
-  const [selectedDetail, setSelectedDetail] = useState(null);
+// util skor
+function avgScore5(results = []) {
+  if (!results.length) return 0;
+  const total = results.reduce((s, r) => s + (r?.selected_criteria?.value || 0), 0);
+  return total / results.length; // 0..5
+}
+function score100(detail) {
+  // jika backend sudah kasih final_score (biasanya skala 0..100), pakai itu,
+  // kalau tidak ada, hitung dari rata-rata * 20
+  if (typeof detail?.final_score === "number") return Math.round(detail.final_score);
+  return Math.round(avgScore5(detail?.results) * 20);
+}
 
+const EvaluateDetailed = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const selectedProjectFromUrl = searchParams.get("project");
+
+  const [allEvaluations, setAllEvaluations] = useState({
+    loading: true,
+    error: null,
+    data: [], // [{ project_title, results[], client_name, created_at, final_score? }, ...]
+  });
+
+  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  // 1) Ambil semua evaluasi untuk grafik
   useEffect(() => {
-    axios
-      .get("http://be.bytelogic.orenjus.com/api/evaluations/evaluationmykaryawan", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-      .then((res) => {
-        setDataEvaluasi(res.data.detail_evaluasi);
-        // Auto-select the first project for detailed view
-        if (res.data.detail_evaluasi.length > 0) {
-          setSelectedDetail(res.data.detail_evaluasi[0]);
-        }
-      })
-      .catch((err) => {
-        console.error("Gagal fetch evaluasi", err);
-      });
+    let alive = true;
+    (async () => {
+      try {
+        const res = await axios.get(
+          "http://be.bytelogic.orenjus.com/api/evaluations/evaluationmykaryawan",
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+        if (!alive) return;
+        setAllEvaluations({
+          loading: false,
+          error: null,
+          data: res.data?.detail_evaluasi || [],
+        });
+      } catch (err) {
+        if (!alive) return;
+        setAllEvaluations({
+          loading: false,
+          error: err?.response?.data?.message || "Gagal memuat data evaluasi",
+          data: [],
+        });
+      }
+    })();
+    return () => { alive = false; };
   }, []);
 
-  // Buat chartData dari dataEvaluasi
-  const chartData = {
-    labels: dataEvaluasi.map((item) => item.project_title),
-    datasets: [
-      {
-        label: "Skor Rata-Rata",
-        data: dataEvaluasi.map((item) => {
-          const total = item.results.reduce(
-            (sum, r) => sum + (r.selected_criteria?.value || 0),
-            0
-          );
-          const avg = item.results.length ? total / item.results.length : 0;
-          return avg.toFixed(2);
-        }),
-        backgroundColor: "rgba(75, 192, 192, 0.6)",
-        borderRadius: 5,
-      },
-    ],
-  };
+  // 2) Ambil detail proyek spesifik jika ada ?project=
+  useEffect(() => {
+    if (!selectedProjectFromUrl) return;
+    let alive = true;
+    (async () => {
+      try {
+        setLoadingDetail(true);
+        const res = await axios.get(
+          `http://be.bytelogic.orenjus.com/api/evaluations/detail-by-project?title=${encodeURIComponent(selectedProjectFromUrl)}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+        if (!alive) return;
+        // { data: {...} } → detail untuk proyek ini
+        setSelectedDetail(res.data?.data || null);
+      } catch (err) {
+        if (!alive) return;
+        console.error("Gagal fetch detail project:", err);
+        setSelectedDetail(null);
+      } finally {
+        if (alive) setLoadingDetail(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [selectedProjectFromUrl]);
 
-  const options = {
+  // 3) Jika tidak ada ?project=, default ke item pertama
+  useEffect(() => {
+    if (selectedProjectFromUrl) return;
+    if (!allEvaluations.loading && allEvaluations.data.length > 0) {
+      setSelectedDetail(allEvaluations.data[0]);
+    }
+  }, [allEvaluations, selectedProjectFromUrl]);
+
+  // 4) Data grafik (rata-rata per proyek)
+  const chartData = useMemo(() => {
+    const labels = allEvaluations.data.map((i) => i.project_title || "Tanpa Nama");
+    const values = allEvaluations.data.map((i) => Number(avgScore5(i.results).toFixed(2)));
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Skor Rata-Rata (0–5)",
+          data: values,
+          backgroundColor: "#2196F3",
+          borderRadius: 6,
+          barThickness: 30,
+        },
+      ],
+    };
+  }, [allEvaluations.data]);
+
+  const options = useMemo(() => ({
     responsive: true,
-    plugins: {
-      legend: {
-        position: "top",
-      },
-      title: {
-        display: true,
-        text: "Rata-Rata Evaluasi per Proyek",
-      },
-    },
+    maintainAspectRatio: false,
     scales: {
-      y: {
-        beginAtZero: true,
-        max: 5,
+      y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 }, title: { display: true, text: "Rata-rata Nilai" } },
+      x: {
+        ticks: {
+          callback: function (val, index) {
+            const label = this.getLabelForValue(index);
+            return label.length > 14 ? `${label.slice(0, 14)}…` : label;
+          },
+        },
+        title: { display: true, text: "Nama Proyek" },
       },
     },
+    plugins: {
+      legend: { display: false },
+      title: { display: true, text: "Rata-Rata Evaluasi per Proyek" },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `Nilai: ${ctx.raw}`,
+          title: (items) => items?.[0]?.label || "",
+        },
+      },
+    },
+    onClick: (_evt, elements) => {
+      if (elements?.length) {
+        const idx = elements[0].index;
+        const projectName = chartData.labels[idx];
+        if (projectName) navigate(`/detail-evaluasi?project=${encodeURIComponent(projectName)}`);
+      }
+    },
+  }), [chartData.labels, navigate]);
+
+  // komponen kecil untuk progress bar aspek
+  const AspectRow = ({ idx, name, value, description }) => {
+    const val = Math.max(0, Math.min(5, Number(value) || 0));
+    const pct = (val / 5) * 100;
+    return (
+      <li className="py-3 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-medium">
+            {idx}. {name || "Aspek tidak tersedia"}
+          </span>
+          <span className="font-semibold">{val}/5</span>
+        </div>
+        <div className="w-full h-3 bg-gray-200 rounded-md overflow-hidden">
+          <div
+            className="h-full bg-blue-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        {description ? (
+          <p className="text-sm text-gray-500 italic mt-2">{description}</p>
+        ) : null}
+      </li>
+    );
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white rounded">
-      <h1 className="text-2xl font-bold mb-4">Detail Evaluasi</h1>
-
-      <div className="p-4 border rounded mb-6">
-        <h2 className="text-lg font-semibold mb-2">Grafik Evaluasi Proyek</h2>
-        {dataEvaluasi.length > 0 ? (
-          <Bar data={chartData} options={options} />
-        ) : (
-          <p className="text-gray-500">Belum ada data evaluasi.</p>
-        )}
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-blue-600 hover:underline text-sm"
+        >
+          ← Back to Evaluation
+        </button>
       </div>
 
-      {selectedDetail && (
-        <div className="mt-6 border-t pt-4">
-          <h3 className="text-xl font-semibold mb-2">
-            {selectedDetail.project_title}
-          </h3>
-          <p className="text-gray-500 mb-4">Client: {selectedDetail.client_name}</p>
+      <div className="bg-white rounded-lg p-6 shadow">
+        <h1 className="text-2xl font-bold mb-4">Detail Evaluation</h1>
 
-          <h4 className="font-bold mb-2">Aspek Penilaian:</h4>
-          <ul className="space-y-4">
-            {selectedDetail.results.map((r, idx) => (
-              <li key={r._id} className="border-b pb-2">
-                <div className="flex justify-between font-medium">
-                  <span>
-                    {idx + 1}. {r.aspect_id?.aspect_name || "Aspek tidak tersedia"}
-                  </span>
-                  <span className="font-bold">
-                    {r.selected_criteria?.value || 0}/5
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500 italic">
-                  {r.selected_criteria?.description || "-"}
-                </p>
-              </li>
-            ))}
-          </ul>
+        {/* Grafik semua proyek */}
+        <div className="p-4 border rounded mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">Evaluasi per Proyek</h2>
+            {selectedProjectFromUrl && (
+              <span className="text-sm text-gray-600">
+                Terpilih: <strong>{selectedProjectFromUrl}</strong>
+              </span>
+            )}
+          </div>
+          {allEvaluations.loading ? (
+            <p className="text-gray-500">Memuat data evaluasi…</p>
+          ) : allEvaluations.error ? (
+            <p className="text-red-500">{allEvaluations.error}</p>
+          ) : allEvaluations.data.length ? (
+            <div className="h-72">
+              <Bar data={chartData} options={options} />
+            </div>
+          ) : (
+            <p className="text-gray-500">Belum ada data evaluasi.</p>
+          )}
         </div>
-      )}
+
+        {/* Detail proyek terpilih + Aspek Penilaian (dengan progress bar) */}
+        {loadingDetail ? (
+          <div>Memuat detail proyek…</div>
+        ) : selectedDetail ? (
+          <div className="mt-6">
+            <h3 className="text-xl font-semibold mb-1">
+              {selectedDetail.project_title || selectedDetail.title || "(Tanpa Nama)"}
+            </h3>
+            <p className="text-gray-500 mb-4">
+              Client: {selectedDetail.client_name || "-"} •{" "}
+              Tanggal:{" "}
+              {selectedDetail.created_at
+                ? new Date(selectedDetail.created_at).toLocaleDateString("id-ID")
+                : "-"}
+            </p>
+
+            {/* Deskripsi/overview proyek jika ada (opsional) */}
+            {selectedDetail.project_description ? (
+              <p className="text-gray-700 mb-6">{selectedDetail.project_description}</p>
+            ) : null}
+
+            <h4 className="font-bold mb-3">Assessment Aspect</h4>
+            <ul className="space-y-1">
+              {(selectedDetail.results || []).map((r, idx) => (
+                <AspectRow
+                  key={r._id || idx}
+                  idx={idx + 1}
+                  name={r?.aspect_id?.aspect_name}
+                  value={r?.selected_criteria?.value}
+                  description={r?.selected_criteria?.description}
+                />
+              ))}
+            </ul>
+
+            {/* Catatan tambahan + total skor */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-2">Additional Notes</label>
+                <div className="p-3 border rounded text-sm text-gray-700 bg-gray-50">
+                  {selectedDetail.additional_notes || selectedDetail.comment || "-"}
+                </div>
+              </div>
+              <div className="md:col-span-1">
+                <div className="p-4 border rounded bg-gray-50">
+                  <div className="text-sm text-gray-600">Total Nilai</div>
+                  <div className="text-2xl font-bold">
+                    {score100(selectedDetail)}/100
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : selectedProjectFromUrl ? (
+          <div className="text-gray-500">
+            Detail untuk proyek <strong>{selectedProjectFromUrl}</strong> tidak ditemukan.
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };
 
-export default DetailEvaluasi;
+export default EvaluateDetailed;
