@@ -369,12 +369,12 @@ const handleBarClick = (projectName) => {
                 <option value="tertinggi">Tertinggi</option>
                 <option value="terendah">Terendah</option>
               </select>
-              <Link
+              {/* <Link
                 to="/detail-evaluasi"
                 className="text-sm text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-100"
               >
                 Lihat Semua
-              </Link>
+              </Link> */}
             </div>
           </div>
           <EvaluasiChart

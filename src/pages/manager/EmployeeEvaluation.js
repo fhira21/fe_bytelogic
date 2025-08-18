@@ -19,14 +19,14 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 /* ===================== Helpers ===================== */
 
-// Skor 0–100 (dukung final_score langsung, atau results skala 1..5)
+// Konversi skor ke skala 0–100 (dukung 2 bentuk respons: final_score langsung, atau results 1..5)
 const getFinalScore100 = (item) => {
   if (typeof item?.final_score === "number") {
     return Math.round(item.final_score);
   }
   if (Array.isArray(item?.results) && item.results.length) {
     const total = item.results.reduce(
-      (s, r) => s + (r?.selected_criteria?.value || 0),
+      (s, r) => s + (Number(r?.selected_criteria?.value) || 0),
       0
     );
     return Math.round((total / item.results.length) * 20); // 1..5 → 0..100
@@ -40,10 +40,10 @@ const extractProjectsArray = (detail) => {
   const d = detail.data && typeof detail.data === "object" ? detail.data : detail;
 
   const candidates = [
-    d.detail_evaluasi, // contoh /evaluationmykaryawan
-    d.evaluations,     // contoh /karyawan/evaluasi-detailed/:id
-    d.projects,        // kemungkinan lain
-    d.project_list,    // jaga-jaga
+    d?.detail_evaluasi, // contoh /evaluationmykaryawan
+    d?.evaluations,     // contoh /karyawan/evaluasi-detailed/:id
+    d?.projects,        // kemungkinan lain
+    d?.project_list,    // jaga-jaga
   ];
 
   for (const c of candidates) {
@@ -60,13 +60,81 @@ const normalizeProjectItem = (p) => ({
   date: p?.created_at || p?.date || null,
 });
 
-/* ===================== Detail View ===================== */
+/* ===================== KOMPONEN KECIL ===================== */
 
-const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
-  const projectsForChart = useMemo(() => {
-    const raw = extractProjectsArray(evaluationDetails);
-    return raw.map(normalizeProjectItem);
-  }, [evaluationDetails]);
+const AspectRow = ({ idx, name, value, description }) => {
+  const val = Math.max(0, Math.min(5, Number(value) || 0));
+  const pct = (val / 5) * 100;
+  return (
+    <li className="py-3 border-b">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-medium">
+          {idx}. {name || "Aspek"}
+        </span>
+        <span className="font-semibold">{val}/5</span>
+      </div>
+      <div className="w-full h-3 bg-gray-200 rounded-md overflow-hidden">
+        <div className="h-full bg-blue-500" style={{ width: `${pct}%` }} />
+      </div>
+      {description ? (
+        <p className="text-sm text-gray-500 italic mt-2">{description}</p>
+      ) : null}
+    </li>
+  );
+};
+
+/* ===================== Detail View (INLINE, FIXED) ===================== */
+
+const safeResults = (payload) => {
+  const candidates = [
+    payload?.results,
+    payload?.data?.results,
+    payload?.detail?.results,
+    payload?.detail_evaluasi?.results,
+    payload?.evaluation?.results,
+  ];
+  for (const r of candidates) if (Array.isArray(r)) return r;
+  return [];
+};
+
+const pickTitle = (p) =>
+  (p?.project_title || p?.title || p?.project?.title || "(Tanpa Nama)").trim();
+
+const DetailView = ({
+  employee,
+  onBack,
+  evaluationDetails,
+  loading,
+  employeeIdForDetail,
+}) => {
+  const token = localStorage.getItem("token");
+
+  // Sumber asli untuk chart + versi normalisasi
+  const { sourceProjects, projectsForChart } = useMemo(() => {
+    const fromDetail = extractProjectsArray(evaluationDetails);
+    const src =
+      Array.isArray(fromDetail) && fromDetail.length
+        ? fromDetail
+        : Array.isArray(employee?.evaluasi_projects)
+        ? employee.evaluasi_projects
+        : [];
+    return {
+      sourceProjects: src,
+      projectsForChart: src.map((p) => ({
+        // perluas kandidat id supaya lebih tahan ragam backend
+        id:
+          p?.project_id ||
+          p?.project?._id ||
+          p?._id ||
+          p?.project ||
+          p?.projectId ||
+          undefined,
+        title: pickTitle(p),
+        score: getFinalScore100(p),
+        date: p?.created_at || p?.date || null,
+      })),
+    };
+  }, [evaluationDetails, employee]);
 
   const labels = projectsForChart.map((p) => p.title);
   const values = projectsForChart.map((p) => p.score);
@@ -86,12 +154,105 @@ const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
     ],
   };
 
+  // === state detail proyek (inline) ===
+  const [selectedProjectDetail, setSelectedProjectDetail] = useState(null);
+  const [selectedProjectTitle, setSelectedProjectTitle] = useState("");
+  const [loadingProjectDetail, setLoadingProjectDetail] = useState(false);
+
+  // Klik bar → ambil DETAIL dari sumber data di indeks yang sama dulu (pasti cocok),
+  // baru fallback ke HTTP kalau benar2 perlu.
+  const fetchProjectDetailInline = async (index) => {
+    const meta = projectsForChart[index];
+    const raw = sourceProjects[index]; // <- langsung pakai objek mentah yang jadi sumber chart
+
+    if (!meta) return;
+
+    setSelectedProjectTitle(meta.title);
+    setLoadingProjectDetail(true);
+    setSelectedProjectDetail(null);
+
+    // 1) Langsung dari data lokal (pasti konsisten dengan bar yang dipilih)
+    if (raw) {
+      setSelectedProjectDetail({
+        title: pickTitle(raw),
+        client_name: raw?.client_name || raw?.client?.nama_lengkap || "-",
+        created_at: raw?.created_at || raw?.date || null,
+        results: safeResults(raw),
+        additional_notes: raw?.additional_notes || raw?.comment || "-",
+        final_score: getFinalScore100(raw),
+      });
+      setLoadingProjectDetail(false);
+      return;
+    }
+
+    // 2) Fallback HTTP jika karena suatu alasan 'raw' tidak ada
+    const projectName = meta.title;
+    const projectId = meta.id ? String(meta.id) : null;
+
+    const urls = [
+      `http://be.bytelogic.orenjus.com/api/evaluations/karyawan/detail-by-project/${encodeURIComponent(
+        employeeIdForDetail
+      )}?title=${encodeURIComponent(projectName)}`,
+      `http://be.bytelogic.orenjus.com/api/evaluations/detail-by-project?title=${encodeURIComponent(
+        projectName
+      )}&employeeId=${encodeURIComponent(employeeIdForDetail)}`,
+      projectId
+        ? `http://be.bytelogic.orenjus.com/api/evaluations/detail-by-project?projectId=${encodeURIComponent(
+            projectId
+          )}`
+        : null,
+      `http://be.bytelogic.orenjus.com/api/evaluations/detail-by-project?title=${encodeURIComponent(
+        projectName
+      )}`,
+    ].filter(Boolean);
+
+    let found = null;
+    for (const url of urls) {
+      try {
+        const res = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const payload = res.data?.data || res.data;
+        const resultsArr = safeResults(payload);
+
+        if (
+          payload &&
+          (resultsArr.length ||
+            payload.final_score != null ||
+            pickTitle(payload) !== "(Tanpa Nama)")
+        ) {
+          found = {
+            title: pickTitle(payload),
+            client_name:
+              payload?.client_name || payload?.client?.nama_lengkap || "-",
+            created_at: payload?.created_at || payload?.date || null,
+            results: resultsArr,
+            additional_notes: payload?.additional_notes || payload?.comment || "-",
+            final_score: getFinalScore100(payload),
+          };
+          break;
+        }
+      } catch (_e) {
+        // coba URL berikutnya
+      }
+    }
+
+    setSelectedProjectDetail(found);
+    setLoadingProjectDetail(false);
+  };
+
   const barOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    onClick: (_evt, elements) => {
+      if (elements && elements.length > 0) {
+        fetchProjectDetailInline(elements[0].index);
+      }
+    },
     scales: {
       y: { beginAtZero: true, max: 100, ticks: { stepSize: 10 }, title: { display: true, text: "Nilai Final" } },
       x: {
+        title: { display: true, text: "Nama Proyek" },
         ticks: {
           callback: function (val, index) {
             const label = this.getLabelForValue(index);
@@ -106,20 +267,16 @@ const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
     },
   };
 
+  // header ringkas
   const employeeName = employee?.nama_karyawan || employee?.name || "-";
   const rank = typeof employee?.rank === "number" ? employee.rank : 1;
-
-  // Total project: pakai detail, fallback ke angka list
-  const totalProjectDetail = projectsForChart.length;
-  const totalProjectFallback = Number(employee?.total_project_dinilai || 0);
-  const totalProject = totalProjectDetail > 0 ? totalProjectDetail : totalProjectFallback;
-
-  // Total Point: pakai nilai dari list (agar sama persis)
+  const totalProject =
+    projectsForChart.length || Number(employee?.total_project_dinilai || 0);
   const totalPoint =
     employee?.listTotalPoint != null
       ? Number(employee.listTotalPoint)
-      : totalProjectDetail > 0
-      ? Math.round(values.reduce((a, b) => a + b, 0) / totalProjectDetail)
+      : projectsForChart.length
+      ? Math.round(values.reduce((a, b) => a + b, 0) / projectsForChart.length)
       : Math.round(Number(employee?.rating || 0) * 20);
 
   return (
@@ -131,7 +288,6 @@ const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
 
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Detail Evaluation</h2>
 
-      {/* Summary header */}
       <div className="w-full border-b border-gray-200 pb-3 mb-4 grid grid-cols-4 text-sm text-gray-600">
         <div>
           <div className="text-gray-400">Ranking</div>
@@ -151,16 +307,93 @@ const DetailView = ({ employee, onBack, evaluationDetails, loading }) => {
         </div>
       </div>
 
-      {/* Bar chart per project */}
-      <div className="h-72 w-full">
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-sm text-gray-500">Memuat detail evaluasi…</div>
-        ) : labels.length ? (
-          <Bar data={barData} options={barOptions} />
+      {/* Chart */}
+      <div className="bg-white border rounded-lg p-4 shadow">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xl font-medium">Evaluasi per Proyek</h3>
+          {selectedProjectTitle && (
+            <span className="text-sm text-gray-600">
+              Terpilih: <strong>{selectedProjectTitle}</strong>
+            </span>
+          )}
+        </div>
+        <div className="h-72 w-full">
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-sm text-gray-500">
+              Memuat detail evaluasi…
+            </div>
+          ) : labels.length ? (
+            <Bar
+              data={barData}
+              options={barOptions}
+              /* Pastikan klik bar tertangkap di semua versi react-chartjs-2 */
+              getElementAtEvent={(elements) => {
+                if (elements && elements.length > 0) {
+                  fetchProjectDetailInline(elements[0].index);
+                }
+              }}
+            />
+          ) : (
+            <p className="text-sm text-gray-500">Tidak ada data proyek.</p>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Klik batang bar untuk melihat Aspek Penilaian setiap proyek.
+        </p>
+      </div>
+
+      {/* INLINE panel aspek */}
+      <div className="mt-6">
+        {loadingProjectDetail ? (
+          <div className="p-4 border rounded text-sm text-gray-600">Memuat detail proyek…</div>
+        ) : selectedProjectDetail ? (
+          <div className="bg-white rounded-lg p-6 border">
+            <h3 className="text-xl font-semibold mb-1">{selectedProjectDetail.title}</h3>
+            <p className="text-gray-500 mb-4">
+              Client: {selectedProjectDetail.client_name} • Tanggal:{" "}
+              {selectedProjectDetail.created_at
+                ? new Date(selectedProjectDetail.created_at).toLocaleDateString("id-ID")
+                : "-"}
+            </p>
+
+            <h4 className="font-bold mb-3">Assessment Aspect</h4>
+            <ul className="space-y-1">
+              {safeResults(selectedProjectDetail).map((r, idx) => (
+                <AspectRow
+                  key={r?._id || idx}
+                  idx={idx + 1}
+                  name={r?.aspect_id?.aspect_name}
+                  value={r?.selected_criteria?.value}
+                  description={r?.selected_criteria?.description}
+                />
+              ))}
+            </ul>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-2">Additional Notes</label>
+                <div className="p-3 border rounded text-sm text-gray-700 bg-gray-50">
+                  {selectedProjectDetail.additional_notes}
+                </div>
+              </div>
+              <div className="md:col-span-1">
+                <div className="p-4 border rounded bg-gray-50">
+                  <div className="text-sm text-gray-600">Total Nilai</div>
+                  <div className="text-2xl font-bold">
+                    {selectedProjectDetail.final_score}/100
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : selectedProjectTitle ? (
+          <div className="p-4 border rounded text-sm text-gray-500">
+            Detail untuk proyek <strong>{selectedProjectTitle}</strong> tidak ditemukan.
+          </div>
         ) : (
-          <p className="text-sm text-gray-500">
-            Tidak ada data proyek pada respons detail. Menampilkan ringkasan berdasarkan data list.
-          </p>
+          <div className="p-4 border rounded text-sm text-gray-500">
+            Klik salah satu batang bar di atas untuk melihat detail aspek penilaian.
+          </div>
         )}
       </div>
     </div>
@@ -182,7 +415,10 @@ const EmployeeEvaluation = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
   // Sorting
-  const [sortConfig, setSortConfig] = useState({ key: "totalScore", direction: "descending" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "totalScore",
+    direction: "descending",
+  });
 
   // Detail
   const [viewMode, setViewMode] = useState("list");
@@ -210,17 +446,32 @@ const EmployeeEvaluation = () => {
 
         const formatted = responseData.map((emp) => ({
           _id: emp.employee_id || emp._id,
-          nama_karyawan: emp.nama_karyawan || emp.nama_lengkap || "Nama tidak tersedia",
+          nama_karyawan:
+            emp.nama_karyawan || emp.nama_lengkap || "Nama tidak tersedia",
           total_project_dinilai: emp.total_projects || 0,
-          rata_rata_point_evaluasi: parseFloat(emp.average_final_score) || 0, // skala mengikuti backend
-          evaluasi_projects: emp.evaluations || [],
+          rata_rata_point_evaluasi:
+            parseFloat(emp.average_final_score) || 0, // skala mengikuti backend
+          evaluations: emp.evaluations || [], // utk fallback
         }));
 
-        setEmployees(formatted);
-        setPagination((prev) => ({ ...prev, total: res.data?.total || responseData.length }));
+        // simpan juga detail projek di tiap karyawan utk fallback bar
+        const withProjects = formatted.map((f) => ({
+          ...f,
+          evaluasi_projects: Array.isArray(f.evaluations) ? f.evaluations : [],
+        }));
+
+        setEmployees(withProjects);
+        setPagination((prev) => ({
+          ...prev,
+          total: res.data?.total || responseData.length,
+        }));
       } catch (err) {
         console.error("Fetch Error:", err);
-        setError(err.response?.data?.message || err.message || "Failed to load evaluation data");
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Failed to load evaluation data"
+        );
       } finally {
         setLoading(false);
       }
@@ -232,7 +483,8 @@ const EmployeeEvaluation = () => {
 
   const requestSort = (key) => {
     let direction = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") direction = "descending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending")
+      direction = "descending";
     setSortConfig({ key, direction });
   };
 
@@ -243,19 +495,20 @@ const EmployeeEvaluation = () => {
         id: emp._id,
         name: emp.nama_karyawan,
         projects: Number(emp.total_project_dinilai || 0),
-        rating: emp.rata_rata_point_evaluasi ? Number(emp.rata_rata_point_evaluasi) : 0, // skala mengikuti backend
+        rating: emp.rata_rata_point_evaluasi
+          ? Number(emp.rata_rata_point_evaluasi)
+          : 0, // skala mengikuti backend
       }))
       .filter(
-        (emp) => emp.name && typeof emp.name === "string" && emp.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (emp) =>
+          emp.name &&
+          typeof emp.name === "string" &&
+          emp.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .map((emp) => ({
         ...emp,
-        // ⚠️ Total Point di list — atur sesuai skala backend:
-        // Jika average_final_score sudah 0..100 → pakai rating * projects
-        // Jika 0..5 dan ingin skala 0..100 → pakai (rating * 20) * projects
+        // Total Point di list — mengikuti skala backend (jika 0..100 maka rating * projects sudah benar)
         totalScore: Number((emp.rating * emp.projects).toFixed(2)),
-        // contoh alternatif skala 0..100:
-        // totalScore: Math.round(emp.rating * 20) * emp.projects,
       }));
   }, [employees, searchTerm]);
 
@@ -273,7 +526,7 @@ const EmployeeEvaluation = () => {
     return items;
   }, [filteredEmployees, sortConfig]);
 
-  // klik "View Detail" —> ambil detail, oper totalPoint & rank dari list agar SAMA persis
+  // klik "View Detail" —> ambil detail, oper totalPoint & rank dari list agar SAMA persis, plus evaluasi_projects untuk fallback bar
   const handleViewEmployeeDetail = async (employeeId, listTotalPoint, rankFromList) => {
     const employeeDetail = employees.find((emp) => emp._id === employeeId);
 
@@ -282,6 +535,7 @@ const EmployeeEvaluation = () => {
       listTotalPoint: listTotalPoint != null ? Number(listTotalPoint) : null, // nilai dari list
       rank: rankFromList, // ranking dari list (mengikuti sort + pagination)
       rating: employeeDetail?.rata_rata_point_evaluasi || 0,
+      evaluasi_projects: employeeDetail?.evaluasi_projects || [],
     });
 
     setDetailLoading(true);
@@ -360,7 +614,9 @@ const EmployeeEvaluation = () => {
                       >
                         Employee Name
                         {sortConfig.key === "name" && (
-                          <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                          <span className="ml-1">
+                            {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                          </span>
                         )}
                       </th>
                       <th
@@ -369,7 +625,9 @@ const EmployeeEvaluation = () => {
                       >
                         Total Project
                         {sortConfig.key === "projects" && (
-                          <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                          <span className="ml-1">
+                            {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                          </span>
                         )}
                       </th>
                       <th
@@ -378,16 +636,20 @@ const EmployeeEvaluation = () => {
                       >
                         Total Point
                         {sortConfig.key === "totalScore" && (
-                          <span className="ml-1">{sortConfig.direction === "ascending" ? "↑" : "↓"}</span>
+                          <span className="ml-1">
+                            {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                          </span>
                         )}
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedEmployees.length > 0 ? (
                       sortedEmployees.map((emp, index) => {
-                        // Ranking global (ikut pagination). Jika mau per halaman: pakai `index + 1`.
+                        // Ranking global (ikut pagination). Jika mau hanya per halaman: pakai `index + 1`.
                         const rank =
                           (pagination.page - 1) * pagination.limit + index + 1;
 
@@ -408,7 +670,11 @@ const EmployeeEvaluation = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <button
                                 onClick={() =>
-                                  handleViewEmployeeDetail(emp.id, emp.totalScore, rank)
+                                  handleViewEmployeeDetail(
+                                    emp.id,
+                                    emp.totalScore,
+                                    rank
+                                  )
                                 }
                                 className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors"
                               >
@@ -420,7 +686,10 @@ const EmployeeEvaluation = () => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                        <td
+                          colSpan="5"
+                          className="px-6 py-4 text-center text-sm text-gray-500"
+                        >
                           {employees.length === 0
                             ? "No employee evaluation data available"
                             : "No employees match your search"}
@@ -438,6 +707,7 @@ const EmployeeEvaluation = () => {
             onBack={handleBackToList}
             evaluationDetails={evaluationDetails}
             loading={detailLoading}
+            employeeIdForDetail={selectedEmployee?._id}
           />
         )}
       </main>

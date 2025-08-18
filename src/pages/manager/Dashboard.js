@@ -7,12 +7,12 @@ import {
   Folder,
   ChartBar,
   FileText,
-  User,
-  Users as ClientsIcon,
-  List,
-  TrendingUp,
+  ClipboardList,
+  ClipboardCheck,
+  Clock,
+  UserCheck,
 } from "lucide-react";
-import { Bar, Pie } from "react-chartjs-2";
+import { Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -105,7 +105,7 @@ const DashboardManager = () => {
 
   const ALLOWED_STATUSES = ["Waiting List", "On Progress", "Completed"];
 
-  //useeffect total client
+  // Total client
   useEffect(() => {
     const fetchTotalClients = async () => {
       try {
@@ -134,7 +134,7 @@ const DashboardManager = () => {
     fetchTotalClients();
   }, []);
 
-  //useeffect maanger profile
+  // Manager profile
   useEffect(() => {
     const fetchManagerProfile = async () => {
       try {
@@ -164,7 +164,7 @@ const DashboardManager = () => {
     fetchManagerProfile();
   }, []);
 
-  // Fetch employee status data
+  // Employee status
   useEffect(() => {
     const fetchEmployeeStatus = async () => {
       try {
@@ -190,13 +190,12 @@ const DashboardManager = () => {
     fetchEmployeeStatus();
   }, []);
 
-  // Fetch projects data
+  // Projects
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const token = localStorage.getItem("token");
 
-        // Buat dua request paralel untuk mendapatkan data statistik dan daftar proyek
         const [statusResponse, projectsResponse] = await Promise.all([
           axios.get("http://be.bytelogic.orenjus.com/api/projects/status-summary", {
             headers: { Authorization: `Bearer ${token}` },
@@ -225,7 +224,7 @@ const DashboardManager = () => {
     fetchProjects();
   }, []);
 
-  // Fetch evaluations data
+  // Evaluations
   useEffect(() => {
     const fetchEvaluations = async () => {
       try {
@@ -237,7 +236,6 @@ const DashboardManager = () => {
           }
         );
 
-        // Sort and get top 5 employees
         const sorted = response.data.data
           .sort((a, b) => b.average_final_score - a.average_final_score)
           .slice(0, 5);
@@ -267,7 +265,7 @@ const DashboardManager = () => {
     fetchEvaluations();
   }, []);
 
-  // Fetch reviews data
+  // Reviews
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -300,7 +298,7 @@ const DashboardManager = () => {
     fetchReviews();
   }, []);
 
-  // Component for Top 5 Employees table
+  // Top 5 Employees table component
   const TopEmployeesTable = () => {
     if (evaluations.loading)
       return <div className="p-4 text-center">Loading top employees...</div>;
@@ -401,72 +399,56 @@ const DashboardManager = () => {
 
         <h1 className="text-2xl font-bold mb-6">Dashboard Manager</h1>
 
-        {/* Stats Cards */}
+        {/* Stats Cards – disamakan dengan style dashboard karyawan */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Employee Data Card (non-clickable) */}
-          <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
-          >
-            <div className="p-3 bg-blue-100 rounded-full">
-              <User className="text-blue-600" size={20} />
-            </div>
+          {/* Employee Data */}
+          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+            <UserCheck className="w-8 h-8 text-gray-700" />
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Employee Data</h3>
-              <p className="text-2xl font-bold">
+              <h3 className="text-sm font-medium">Employee Data</h3>
+              <p className="text-medium font-bold">
                 {employeeData.loading ? "..." : employeeData.totalKaryawan}
               </p>
             </div>
           </div>
 
-          {/* Client Data Card (non-clickable) */}
-          <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
-          >
-            <div className="p-3 bg-green-100 rounded-full">
-              <ClientsIcon className="text-green-600" size={20} />
-            </div>
+          {/* Client Data */}
+          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+            <ClipboardList className="w-8 h-8 text-gray-700" />
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Client Data</h3>
-              <p className="text-2xl font-bold">
+              <h3 className="text-sm font-medium">Client Data</h3>
+              <p className="text-medium font-bold">
                 {clientData.loading ? "..." : clientData.totalClients}
               </p>
             </div>
           </div>
 
-          {/* Waiting List Card (non-clickable) */}
-          <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
-          >
-            <div className="p-3 bg-purple-100 rounded-full">
-              <List className="text-purple-600" size={20} />
-            </div>
+          {/* Waiting List */}
+          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+            <Clock className="w-8 h-8 text-gray-700" />
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Waiting List</h3>
-              <p className="text-2xl font-bold">
-                {projects.loading ? "..." : projects.stats.waiting}
+              <h3 className="text-sm font-medium">Waiting List</h3>
+              <p className="text-medium font-bold">
+                {projects.loading ? "..." : `${projects.stats.waiting} Projects`}
               </p>
             </div>
           </div>
 
-          {/* On Progress Card (non-clickable) */}
-          <div
-            className="bg-white rounded-lg p-4 shadow flex items-center gap-4 cursor-default"
-          >
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <TrendingUp className="text-yellow-600" size={20} />
-            </div>
+          {/* On Progress */}
+          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+            <ClipboardCheck className="w-8 h-8 text-gray-700" />
             <div>
-              <h3 className="text-sm font-medium text-gray-500">On Progress</h3>
-              <p className="text-2xl font-bold">
-                {projects.loading ? "..." : projects.stats.progress}
+              <h3 className="text-sm font-medium">On Progress</h3>
+              <p className="text-medium font-bold">
+                {projects.loading ? "..." : `${projects.stats.progress} Projects`}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Employee Performance and Rating Section */}
+        {/* Employee Status & Rating Company */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* === EMPLOYEE STATUS === */}
+          {/* Employee Status */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Employee Status
@@ -522,7 +504,7 @@ const DashboardManager = () => {
             </div>
           </div>
 
-          {/* === RATING COMPANY === */}
+          {/* Rating Company */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Rating Company
@@ -568,7 +550,7 @@ const DashboardManager = () => {
                   </div>
                 </div>
 
-                {/* Rating Breakdown */}
+                {/* Rating Breakdown dengan angka 5..1 di kiri */}
                 <div className="w-full flex-1 space-y-2">
                   {[5, 4, 3, 2, 1].map((rating) => {
                     const count = reviews.ratings[rating] || 0;
@@ -578,18 +560,22 @@ const DashboardManager = () => {
                         : 0;
 
                     return (
-                      <div
-                        key={rating}
-                        className="flex items-center gap-2 text-sm"
-                      >
+                      <div key={rating} className="flex items-center gap-2 text-sm">
+                        {/* Angka rating di kiri */}
+                        <span className="w-4 text-right text-gray-700">{rating}</span>
+                        {/* Ikon bintang */}
                         <span className="w-4 text-yellow-400">★</span>
-                        <div className="flex-1 bg-gray-200 rounded-full h-3 relative overflow-hidden">
+
+                        {/* Bar progress */}
+                        <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
                           <div
                             className="bg-blue-500 h-3 rounded-full"
                             style={{ width: `${percentage}%` }}
-                          ></div>
+                          />
                         </div>
-                        <div className="w-16 text-right text-gray-600">
+
+                        {/* Jumlah & persentase */}
+                        <div className="w-20 text-right text-gray-600">
                           {count} ({percentage}%)
                         </div>
                       </div>
@@ -601,20 +587,16 @@ const DashboardManager = () => {
           </div>
         </div>
 
-        {/* Project Status and Top Employees Section */}
+        {/* Project Status and Top Employees */}
         <div className="flex flex-col lg:flex-row gap-6 mb-6">
-          {/* Project Progress Table - Takes 3/4 width */}
+          {/* Project Progress Table */}
           <div className="lg:w-3/4 bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">
                 Project Progress
               </h3>
               <div className="flex items-center">
-                {" "}
-                {/* Tambahkan flex container di sini */}
                 <div className="relative mr-3">
-                  {" "}
-                  {/* Tambahkan mr-3 untuk margin kanan */}{" "}
                   <select
                     value={projectStatusFilter}
                     onChange={(e) => setProjectStatusFilter(e.target.value)}
@@ -650,7 +632,6 @@ const DashboardManager = () => {
                       navigate(`/data-project?status=${encodeURIComponent(projectStatusFilter)}`);
                     }
                   }}
-
                 >
                   View Detail
                 </button>
@@ -681,9 +662,7 @@ const DashboardManager = () => {
                     </tr>
                   ) : (
                     projects.lists
-                      // 🔒 hanya tampilkan status yang diizinkan
                       .filter(project => ALLOWED_STATUSES.includes(project.status))
-                      // 🔎 filter dropdown: All → tampilkan semua yg diizinkan
                       .filter(project =>
                         projectStatusFilter === "All" || project.status === projectStatusFilter
                       )
@@ -699,20 +678,21 @@ const DashboardManager = () => {
                             <td className="px-6 py-4">
                               {project.deadline
                                 ? new Date(project.deadline).toLocaleDateString("id-ID", {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                })
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                  })
                                 : "-"}
                             </td>
                             <td className="px-6 py-4 capitalize">
                               <span
-                                className={`px-2 py-1 rounded-full text-xs ${displayStatus === "Completed"
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  displayStatus === "Completed"
                                     ? "bg-green-100 text-green-800"
                                     : displayStatus === "On Progress"
-                                      ? "bg-yellow-100 text-yellow-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
                               >
                                 {displayStatus}
                               </span>
@@ -726,7 +706,7 @@ const DashboardManager = () => {
             </div>
           </div>
 
-          {/* Top 5 Employees Table - Takes 1/4 width */}
+          {/* Top 5 Employees */}
           <div className="lg:w-1/4 bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-800">
