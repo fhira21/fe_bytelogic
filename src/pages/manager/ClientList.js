@@ -1,47 +1,41 @@
+// src/pages/client/ClientList.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
 import Sidebar from '../../components/SideBar';
-import {
-  Home,
-  Folder,
-  Briefcase,
-  ChartBar,
-  FileText,
-  Search,
-  X,
-  User
-} from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 const ClientList = () => {
   const navigate = useNavigate();
+
   const [clients, setClients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [editingClient, setEditingClient] = useState(null);
   const [deletingClient, setDeletingClient] = useState(null);
   const [viewingClient, setViewingClient] = useState(null);
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // simpan user id hasil register step 1
+  const [registeredUserId, setRegisteredUserId] = useState(null);
+
   const [formData, setFormData] = useState({
-    user_id: '',
+    // step 1
+    username: '',
+    password: '',
+    confirmPassword: '',
+
+    // step 2 (profil client)
     nama_lengkap: '',
     email: '',
     alamat: '',
     nomor_telepon: '',
-    foto_profile: null,
-  });
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [users, setUsers] = useState([]);
-
-
-  // State for manager profile
-  const [managerProfile, setManagerProfile] = useState({
-    loading: true,
-    error: null,
-    data: null
+    // foto_profile diabaikan (opsional), tidak dikirim bila kosong
   });
 
   useEffect(() => {
@@ -63,9 +57,6 @@ const ClientList = () => {
           },
         });
 
-        console.log("API Response:", response.data);
-
-        // Handle multiple response formats
         let clientsData = [];
         if (Array.isArray(response.data)) {
           clientsData = response.data;
@@ -103,115 +94,10 @@ const ClientList = () => {
     fetchClients();
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/api/users");
-        setUsers(response.data);
-      } catch (error) {
-        console.error("Gagal mengambil user client", error);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
+  /* =========================
+     Helpers & Handlers
+  ========================== */
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-
-
-  const handleEditClient = (client) => {
-    setEditingClient(client);
-    setFormData({
-      nama_lengkap: client.nama_lengkap,
-      email: client.email,
-      alamat: client.alamat,
-      nomor_telepon: client.nomor_telepon,
-    });
-  };
-
-  const handleRegister = async () => {
-    try {
-      if (formData.password !== formData.confirmPassword) {
-        alert("Password and Confirm Password do not match");
-        return;
-      }
-
-      const registerPayload = {
-        username: formData.username,
-        password: formData.password,
-        confirmPassword: formData.confirmPassword,
-        role: "client",
-      };
-
-      const response = await axios.post("http://be.bytelogic.orenjus.com/api/users/register", registerPayload);
-
-      if (response.status === 200 || response.status === 201) {
-        alert("User registered successfully, please select them from dropdown.");
-        setCurrentStep(2); // Pindah ke step pengisian data klien
-      }
-    } catch (error) {
-      console.error("Register error:", error);
-      alert("Failed to register. Please try again.");
-    }
-  };
-
-
-  const handleViewClient = (client) => {
-    setViewingClient(client);
-  };
-
-  const handleDeleteClient = (client) => {
-    setDeletingClient(client);
-  };
-
-  const saveEdit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem("token");
-      await axios.put(`http://be.bytelogic.orenjus.com/api/clients/${editingClient._id}`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // Refresh client list
-      const response = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setClients(response.data.data || response.data);
-      setEditingClient(null);
-    } catch (error) {
-      console.error("Gagal mengupdate client:", error);
-    }
-  };
-
-  const confirmDelete = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`http://be.bytelogic.orenjus.com/api/clients/${deletingClient._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // Refresh client list
-      const response = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setClients(response.data.data || response.data);
-      setDeletingClient(null);
-    } catch (error) {
-      console.error("Gagal menghapus client:", error);
-      setError("Gagal menghapus client. Silakan coba lagi.");
-    }
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -219,7 +105,11 @@ const ClientList = () => {
   const openAddModal = () => {
     setShowAddModal(true);
     setCurrentStep(1);
+    setRegisteredUserId(null);
     setFormData({
+      username: '',
+      password: '',
+      confirmPassword: '',
       nama_lengkap: '',
       email: '',
       alamat: '',
@@ -230,48 +120,194 @@ const ClientList = () => {
   const closeAddModal = () => {
     setShowAddModal(false);
     setCurrentStep(1);
+    setRegisteredUserId(null);
+  };
+
+  const handleEditClient = (client) => {
+    setEditingClient(client);
+    setFormData({
+      username: '', // tidak diedit di sini
+      password: '',
+      confirmPassword: '',
+      nama_lengkap: client.nama_lengkap,
+      email: client.email,
+      alamat: client.alamat,
+      nomor_telepon: client.nomor_telepon,
+    });
   };
 
   const closeEditModal = () => {
     setEditingClient(null);
   };
 
-  const saveAdd = async (e) => {
-    e.preventDefault();
+  const handleViewClient = (client) => setViewingClient(client);
+  const handleDeleteClient = (client) => setDeletingClient(client);
 
+  /* =========================
+     Step 1: Register user (role client)
+  ========================== */
+  const handleRegister = async () => {
     try {
+      if (!formData.username || !formData.password || !formData.confirmPassword) {
+        alert("Mohon isi username, password, dan confirm password");
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        alert("Password and Confirm Password do not match");
+        return;
+      }
+
+      const registerPayload = {
+        username: formData.username,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        passwordConfirmation: formData.confirmPassword, // jaga2
+        role: "client",
+      };
+
+      const response = await axios.post(
+        "http://be.bytelogic.orenjus.com/api/users/register",
+        registerPayload,
+        { headers: { 'Content-Type': 'application/json' }, validateStatus: () => true }
+      );
+
+      if (response.status >= 400) {
+        const msg = response.data?.message || response.data?.error || `Register failed (${response.status})`;
+        throw new Error(msg);
+      }
+
+      // fleksibel ambil user baru dari berbagai kemungkinan field respons
+      const newUser = response.data?.data || response.data?.user || response.data;
+      const newUserId = newUser?._id || newUser?.id;
+      if (!newUserId) throw new Error("User ID tidak ditemukan pada respons register");
+
+      // simpan user id hasil register (dipakai saat create client)
+      setRegisteredUserId(newUserId);
+
+      // AUTO-FILL: nama & email jika tersedia
+      setFormData(prev => ({
+        ...prev,
+        nama_lengkap: newUser.full_name || newUser.nama_lengkap || prev.nama_lengkap,
+        email: newUser.email || prev.email,
+      }));
+
+      alert("User registered successfully. Continue to fill client info.");
+      setCurrentStep(2);
+    } catch (error) {
+      console.error("Register error:", error);
+      alert(error?.message || error?.response?.data?.message || "Failed to register. Please try again.");
+    }
+  };
+
+  /* =========================
+     Step 2: Create client (pakai registeredUserId)
+  ========================== */
+  const saveAdd = async () => {
+    try {
+      if (!registeredUserId) {
+        alert("User belum terdaftar. Selesaikan Step 1 terlebih dahulu.");
+        setCurrentStep(1);
+        return;
+      }
+
       const token = localStorage.getItem("token");
 
-      // Pastikan data yang dikirim hanya yang dibutuhkan backend
       const payload = {
-        user_id: formData.user_id, // dari dropdown
+        user_id: registeredUserId,
         nama_lengkap: formData.nama_lengkap,
         email: formData.email,
         nomor_telepon: formData.nomor_telepon,
         alamat: formData.alamat,
-        foto_profile: formData.foto_profile || "", // kosong jika tidak ada
+        // foto_profile tidak dikirim bila tidak ada
       };
 
       const response = await axios.post(
         "http://be.bytelogic.orenjus.com/api/clients",
         payload,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          validateStatus: () => true,
         }
       );
 
-      setClients((prev) => [...prev, response.data]);
-      closeAddModal();
+      if (response.status >= 200 && response.status < 300) {
+        const created = response.data?.data || response.data;
+        setClients(prev => [...prev, created]);
+        closeAddModal();
+      } else {
+        const msg = response.data?.message || response.data?.error || `HTTP ${response.status}`;
+        alert(`Failed to add client: ${msg}`);
+      }
     } catch (error) {
-      console.error("Error adding new client:", error.response || error);
+      console.error("Error adding new client:", error);
       alert(
         error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
         "Failed to add client. Please check the data and try again."
       );
     }
   };
 
+  /* =========================
+     Edit & Delete Existing
+  ========================== */
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        `http://be.bytelogic.orenjus.com/api/clients/${editingClient._id}`,
+        {
+          nama_lengkap: formData.nama_lengkap,
+          email: formData.email,
+          alamat: formData.alamat,
+          nomor_telepon: formData.nomor_telepon,
+        },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, validateStatus: () => true }
+      );
 
+      if (res.status >= 200 && res.status < 300) {
+        const updated = res.data?.data || res.data;
+        setClients(prev => prev.map(c => (c._id === editingClient._id ? { ...c, ...updated } : c)));
+        setEditingClient(null);
+      } else {
+        const msg = res.data?.message || res.data?.error || `HTTP ${res.status}`;
+        alert(`Gagal mengupdate client: ${msg}`);
+      }
+    } catch (error) {
+      console.error("Gagal mengupdate client:", error);
+      alert(error?.response?.data?.message || "Gagal mengupdate client. Coba lagi.");
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.delete(
+        `http://be.bytelogic.orenjus.com/api/clients/${deletingClient._id}`,
+        { headers: { Authorization: `Bearer ${token}` }, validateStatus: () => true }
+      );
+
+      if (res.status >= 200 && res.status < 300) {
+        setClients(prev => prev.filter(c => c._id !== deletingClient._id));
+        setDeletingClient(null);
+      } else {
+        const msg = res.data?.message || res.data?.error || `HTTP ${res.status}`;
+        alert(`Gagal menghapus client: ${msg}`);
+      }
+    } catch (error) {
+      console.error("Gagal menghapus client:", error);
+      setError("Gagal menghapus client. Silakan coba lagi.");
+    }
+  };
+
+  /* =========================
+     Filter
+  ========================== */
   const filteredClients = clients.filter(client => {
     const term = searchTerm.toLowerCase();
     return (
@@ -282,6 +318,9 @@ const ClientList = () => {
     );
   });
 
+  /* =========================
+     UI States
+  ========================== */
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -410,9 +449,10 @@ const ClientList = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold">
-                  {currentStep === 1 ? 'Add Client' : 'Add Client'}
-                </h3>
+                <h3 className="text-xl font-semibold">Add Client</h3>
+                <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
+                  <X size={24} />
+                </button>
               </div>
 
               {currentStep === 1 ? (
@@ -425,8 +465,8 @@ const ClientList = () => {
                         type="text"
                         name="username"
                         value={formData.username}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                         required
                         placeholder="Create Username"
                       />
@@ -438,8 +478,8 @@ const ClientList = () => {
                         type="password"
                         name="password"
                         value={formData.password}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                         required
                         placeholder="Create Password"
                       />
@@ -451,48 +491,45 @@ const ClientList = () => {
                         type="password"
                         name="confirmPassword"
                         value={formData.confirmPassword}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                         required
                         placeholder="Re-enter Password"
                       />
                     </div>
                   </div>
+
+                  <div className="flex justify-between mt-6 pt-4 border-t">
+                    <button
+                      type="button"
+                      onClick={closeAddModal}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRegister}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div>
                   <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Personal Information</h4>
+                  {/* Username & pilih username TIDAK ditampilkan. user_id diambil dari Step 1 */}
                   <div className="space-y-4">
-                    <div className="mb-4">
-                      <label htmlFor="user_id" className="block text-gray-700 font-bold mb-2">
-                        Pilih Username
-                      </label>
-                      <select
-                        id="user_id"
-                        name="user_id"
-                        value={formData.user_id}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border rounded-md"
-                        required
-                      >
-                        <option value="">-- Pilih Username --</option>
-                        {users.map((user) => (
-                          <option key={user._id} value={user._id}>
-                            {user.username}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Full Name</label>
                       <input
                         type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Date full name"
+                        name="nama_lengkap"
+                        value={formData.nama_lengkap}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                        placeholder="Enter full name"
                       />
                     </div>
 
@@ -502,8 +539,8 @@ const ClientList = () => {
                         type="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                         placeholder="Enter email"
                       />
                     </div>
@@ -512,10 +549,10 @@ const ClientList = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                       <input
                         type="text"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        name="nomor_telepon"
+                        value={formData.nomor_telepon}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                         placeholder="Enter phone number"
                       />
                     </div>
@@ -524,55 +561,33 @@ const ClientList = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                       <input
                         type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        name="alamat"
+                        value={formData.alamat}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                         placeholder="Enter address"
                       />
                     </div>
                   </div>
+
+                  <div className="flex justify-between mt-6 pt-4 border-t">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(1)}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveAdd}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      Create Client
+                    </button>
+                  </div>
                 </div>
               )}
-
-              <div className="flex justify-between mt-6 pt-4 border-t">
-                {currentStep === 1 ? (
-                  <button
-                    type="button"
-                    onClick={closeAddModal}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                  >
-                    Back
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(1)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                  >
-                    Back
-                  </button>
-                )}
-
-                {currentStep === 1 ? (
-                  <button
-                    type="button"
-                    onClick={handleRegister}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Next
-                  </button>
-
-                ) : (
-                  <button
-                    type="button"
-                    onClick={saveAdd}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Create Client
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         )}
@@ -590,29 +605,17 @@ const ClientList = () => {
                   <X size={20} />
                 </button>
               </div>
-              <p className="mb-6">Do You Want To Delete Client {deletingClient.nama_lengkap}?</p>
+              <p className="mb-6">Are you sure you want to delete {deletingClient.nama_lengkap}?</p>
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setDeletingClient(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    axios.delete(`http://be.bytelogic.orenjus.com/api/client/${deletingClient._id}`, {
-                      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-                    })
-                      .then(() => {
-                        setClients(prev => prev.filter(emp => emp._id !== deletingClient._id));
-                        setDeletingClient(null);
-                      })
-                      .catch(error => {
-                        console.error('Error deleting client:', error);
-                        alert('Failed to delete client. Please try again.');
-                      });
-                  }}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  onClick={confirmDelete}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
                 >
                   Delete
                 </button>
@@ -636,8 +639,8 @@ const ClientList = () => {
                       type="text"
                       name="nama_lengkap"
                       value={formData.nama_lengkap}
-                      onChange={handleFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      onChange={handleChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                       required
                     />
                   </div>
@@ -647,8 +650,8 @@ const ClientList = () => {
                       type="email"
                       name="email"
                       value={formData.email}
-                      onChange={handleFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      onChange={handleChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                       required
                     />
                   </div>
@@ -658,8 +661,8 @@ const ClientList = () => {
                       type="text"
                       name="nomor_telepon"
                       value={formData.nomor_telepon}
-                      onChange={handleFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      onChange={handleChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                     />
                   </div>
                   <div>
@@ -668,8 +671,8 @@ const ClientList = () => {
                       type="text"
                       name="alamat"
                       value={formData.alamat}
-                      onChange={handleFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      onChange={handleChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                     />
                   </div>
                 </div>
@@ -683,44 +686,12 @@ const ClientList = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
                     Edit Client
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Confirmation Modal */}
-        {deletingClient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Delete Client</h3>
-                <button
-                  onClick={() => setDeletingClient(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <p className="mb-6">Are you sure you want to delete {deletingClient.nama_lengkap}?</p>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setDeletingClient(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  Delete
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -759,7 +730,7 @@ const ClientList = () => {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setViewingClient(null)}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Close
                 </button>
