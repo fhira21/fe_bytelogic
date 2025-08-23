@@ -10,6 +10,9 @@ const ROLE = 'manager/admin';
 const API_BASE = 'http://be.bytelogic.orenjus.com';
 const currentYear = new Date().getFullYear();
 
+// default row untuk riwayat pendidikan
+const EMPTY_EDU = { jenjang: '', institusi: '', tahun_lulus: '' };
+
 const AdminList = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -40,17 +43,35 @@ const AdminList = () => {
     email: '',
     nomor_telepon: '',
     alamat: '',
-    tanggal_lahir: '',
-    jenis_kelamin: '',          // 'laki-laki' | 'perempuan'
-    status_pernikahan: '',      // 'menikah' | 'belum menikah'
-    posisi: 'manager',          // default sesuai contoh BE
-    riwayat_pendidikan: [],     // [{ jenjang, institusi, tahun_lulus }]
+    tanggal_lahir: '',           // UI: MM/DD/YYYY (string)
+    jenis_kelamin: '',           // 'laki-laki' | 'perempuan'
+    status_pernikahan: '',       // 'menikah' | 'belum menikah'
+    posisi: 'manager',           // default 'manager'
+    riwayat_pendidikan: [{ ...EMPTY_EDU }], // default 1 baris
   });
 
-  // ======= Helpers =======
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // ======= Helpers (format & parsing tanggal) =======
+  const toMMDDYYYY = (val) => {
+    if (!val) return '';
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d)) return '';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  };
+
+  const mmddyyyyToIso = (val) => {
+    if (!val) return val;
+    const m = String(val).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) {
+      const [, mm, dd, yyyy] = m;
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    const d = new Date(val);
+    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+    return val;
   };
 
   const alertFromAxiosError = (err, fallback = 'Terjadi kesalahan') => {
@@ -65,7 +86,7 @@ const AdminList = () => {
 
   const cleanObject = (obj) => {
     const out = {};
-    Object.keys(obj).forEach(k => {
+    Object.keys(obj).forEach((k) => {
       const v = obj[k];
       if (v !== undefined && v !== '') out[k] = v;
     });
@@ -88,13 +109,6 @@ const AdminList = () => {
     return val;
   };
 
-  const toIsoDate = (val) => {
-    if (!val) return val;
-    const d = new Date(val);
-    if (isNaN(d)) return val;
-    return d.toISOString().slice(0, 10);
-  };
-
   const ymd = (val) => {
     if (!val) return '';
     const d = new Date(val);
@@ -114,7 +128,7 @@ const AdminList = () => {
           headers: { Authorization: `Bearer ${tk}` },
         });
         const raw = Array.isArray(res.data) ? res.data : res.data?.data;
-        const list = (raw || []).map(it => ({
+        const list = (raw || []).map((it) => ({
           ...it,
           _id: it._id || it.id,
           tanggal_lahir: it.tanggal_lahir,
@@ -129,7 +143,7 @@ const AdminList = () => {
   }, [navigate]);
 
   // ======= Filtered list =======
-  const filteredManagers = managers.filter(m => {
+  const filteredManagers = managers.filter((m) => {
     const t = searchTerm.toLowerCase();
     return (
       m.nama_lengkap?.toLowerCase().includes(t) ||
@@ -143,24 +157,23 @@ const AdminList = () => {
   // ======= Edit =======
   const openEditModal = (manager) => {
     setEditingManager(manager);
-    setFormData(prev => ({
+    const mapped = (manager.riwayat_pendidikan || []).map((r) => ({
+      jenjang: r.jenjang || '',
+      institusi: r.institusi || '',
+      tahun_lulus: r.tahun_lulus || '',
+    }));
+    setFormData((prev) => ({
       ...prev,
-      // personal
       nama_lengkap: manager.nama_lengkap || '',
       nik: manager.nik || '',
       email: manager.email || '',
       nomor_telepon: manager.nomor_telepon || '',
       alamat: manager.alamat || '',
-      tanggal_lahir: ymd(manager.tanggal_lahir),
+      tanggal_lahir: toMMDDYYYY(manager.tanggal_lahir),
       jenis_kelamin: manager.jenis_kelamin || '',
       status_pernikahan: manager.status_pernikahan || '',
       posisi: manager.posisi || 'manager',
-      riwayat_pendidikan: (manager.riwayat_pendidikan || []).map(r => ({
-        jenjang: r.jenjang || '',
-        institusi: r.institusi || '',
-        tahun_lulus: r.tahun_lulus || '',
-      })),
-      // kosongkan login (tidak diubah saat edit)
+      riwayat_pendidikan: mapped.length ? mapped : [{ ...EMPTY_EDU }],
       username: '',
       password: '',
       confirmPassword: '',
@@ -176,8 +189,6 @@ const AdminList = () => {
       alert('ID admin tidak ditemukan');
       return;
     }
-
-    // Validasi basic sesuai schema
     if (formData.nik && !/^\d{16}$/.test(formData.nik)) {
       alert('NIK harus 16 digit angka');
       return;
@@ -186,13 +197,18 @@ const AdminList = () => {
       alert('Nomor telepon harus 10-15 digit angka');
       return;
     }
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formData.tanggal_lahir || '')) {
+      alert('Tanggal lahir harus berformat MM/DD/YYYY');
+      return;
+    }
+
     const rp = (formData.riwayat_pendidikan || [])
-      .map(r => ({
+      .map((r) => ({
         jenjang: r.jenjang?.trim() || '',
         institusi: r.institusi?.trim() || '',
         tahun_lulus: r.tahun_lulus ? Number(r.tahun_lulus) : '',
       }))
-      .filter(r => r.jenjang || r.institusi || r.tahun_lulus);
+      .filter((r) => r.jenjang || r.institusi || r.tahun_lulus);
 
     for (const r of rp) {
       if (r.tahun_lulus && (r.tahun_lulus < 1900 || r.tahun_lulus > currentYear)) {
@@ -208,10 +224,10 @@ const AdminList = () => {
         email: formData.email,
         nomor_telepon: formData.nomor_telepon,
         alamat: formData.alamat,
-        tanggal_lahir: toIsoDate(formData.tanggal_lahir),
+        tanggal_lahir: mmddyyyyToIso(formData.tanggal_lahir),
         jenis_kelamin: mapGender(formData.jenis_kelamin),
         status_pernikahan: mapMarital(formData.status_pernikahan),
-        posisi: formData.posisi?.toLowerCase() || 'manager',
+        posisi: (formData.posisi || 'manager').toLowerCase(),
         riwayat_pendidikan: rp,
       });
 
@@ -222,7 +238,7 @@ const AdminList = () => {
       );
 
       const updated = res.data?.data || res.data;
-      setManagers(prev => prev.map(m => (m._id === editingManager._id ? { ...m, ...updated } : m)));
+      setManagers((prev) => prev.map((m) => (m._id === editingManager._id ? { ...m, ...updated } : m)));
       closeEditModal();
     } catch (err) {
       console.error('Error updating admin:', err);
@@ -241,7 +257,7 @@ const AdminList = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status >= 200 && res.status < 300) {
-        setManagers(prev => prev.filter(m => m._id !== deletingManager._id));
+        setManagers((prev) => prev.filter((m) => m._id !== deletingManager._id));
         closeDeleteModal();
       } else {
         alert(res.data?.message || 'Gagal menghapus admin');
@@ -266,17 +282,16 @@ const AdminList = () => {
       password: '',
       confirmPassword: '',
       role: ROLE,
-
       nama_lengkap: '',
       nik: '',
       email: '',
       nomor_telepon: '',
       alamat: '',
-      tanggal_lahir: '',
+      tanggal_lahir: '', // UI: MM/DD/YYYY
       jenis_kelamin: '',
       status_pernikahan: '',
       posisi: 'manager',
-      riwayat_pendidikan: [],
+      riwayat_pendidikan: [{ ...EMPTY_EDU }],
     });
   };
 
@@ -298,7 +313,7 @@ const AdminList = () => {
     }
 
     try {
-      const ensuredEmail = `${formData.username}@bytelogic.local`; // fallback bila BE butuh email
+      const ensuredEmail = `${formData.username}@bytelogic.local`;
 
       const payload = {
         username: formData.username,
@@ -309,11 +324,10 @@ const AdminList = () => {
         role: ROLE,
       };
 
-      const res = await axios.post(
-        `${API_BASE}/api/users/register`,
-        payload,
-        { headers: { 'Content-Type': 'application/json' }, validateStatus: () => true }
-      );
+      const res = await axios.post(`${API_BASE}/api/users/register`, payload, {
+        headers: { 'Content-Type': 'application/json' },
+        validateStatus: () => true,
+      });
 
       if (res.status >= 400) {
         const msg = res.data?.message || res.data?.error || `Register failed (${res.status})`;
@@ -327,7 +341,7 @@ const AdminList = () => {
       setRegisteredUserId(newUserId);
 
       // AUTO-FILL ke Step 2 bila ada
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         nama_lengkap: newUser.full_name || newUser.nama_lengkap || prev.nama_lengkap,
         email: newUser.email || prev.email,
@@ -347,7 +361,6 @@ const AdminList = () => {
         alert(`User ID dari Step 1 tidak valid: ${registeredUserId || '(kosong)'}`);
         return;
       }
-      // Validasi sesuai schema
       if (!/^\d{16}$/.test(formData.nik || '')) {
         alert('NIK wajib 16 digit');
         return;
@@ -360,8 +373,8 @@ const AdminList = () => {
         alert('Nomor telepon wajib 10-15 digit angka');
         return;
       }
-      if (!formData.tanggal_lahir) {
-        alert('Tanggal lahir wajib diisi');
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formData.tanggal_lahir || '')) {
+        alert('Tanggal lahir wajib diisi dan berformat MM/DD/YYYY');
         return;
       }
       if (!formData.jenis_kelamin) {
@@ -379,12 +392,12 @@ const AdminList = () => {
 
       // siapkan riwayat pendidikan
       const rp = (formData.riwayat_pendidikan || [])
-        .map(r => ({
+        .map((r) => ({
           jenjang: (r.jenjang || '').trim(),
           institusi: (r.institusi || '').trim(),
           tahun_lulus: r.tahun_lulus ? Number(r.tahun_lulus) : '',
         }))
-        .filter(r => r.jenjang || r.institusi || r.tahun_lulus);
+        .filter((r) => r.jenjang || r.institusi || r.tahun_lulus);
 
       for (const r of rp) {
         if (!r.jenjang || !r.institusi || !r.tahun_lulus) {
@@ -404,10 +417,11 @@ const AdminList = () => {
         email: formData.email,
         nomor_telepon: formData.nomor_telepon,
         alamat: formData.alamat,
-        tanggal_lahir: toIsoDate(formData.tanggal_lahir),
+        tanggal_lahir: mmddyyyyToIso(formData.tanggal_lahir),
         jenis_kelamin: mapGender(formData.jenis_kelamin),
         status_pernikahan: mapMarital(formData.status_pernikahan),
-        posisi: (formData.posisi || 'manager').toLowerCase(),
+        // paksa manager
+        posisi: 'manager',
         riwayat_pendidikan: rp,
       });
 
@@ -422,7 +436,7 @@ const AdminList = () => {
 
       if (res.status >= 200 && res.status < 300) {
         const created = res.data?.data || res.data;
-        setManagers(prev => [...prev, created]);
+        setManagers((prev) => [...prev, created]);
         closeAddModal();
       } else {
         const msg = res.data?.message || res.data?.error || `HTTP ${res.status}`;
@@ -436,19 +450,21 @@ const AdminList = () => {
 
   // ======= Riwayat Pendidikan editor =======
   const addEduRow = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      riwayat_pendidikan: [...(prev.riwayat_pendidikan || []), { jenjang: '', institusi: '', tahun_lulus: '' }],
+      riwayat_pendidikan: [...(prev.riwayat_pendidikan || []), { ...EMPTY_EDU }],
     }));
   };
   const removeEduRow = (idx) => {
-    setFormData(prev => ({
-      ...prev,
-      riwayat_pendidikan: (prev.riwayat_pendidikan || []).filter((_, i) => i !== idx),
-    }));
+    setFormData((prev) => {
+      const arr = [...(prev.riwayat_pendidikan || [])];
+      if (arr.length <= 1) return prev; // jaga minimal 1 baris
+      arr.splice(idx, 1);
+      return { ...prev, riwayat_pendidikan: arr };
+    });
   };
   const changeEduRow = (idx, field, value) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const arr = [...(prev.riwayat_pendidikan || [])];
       arr[idx] = { ...arr[idx], [field]: value };
       return { ...prev, riwayat_pendidikan: arr };
@@ -472,7 +488,7 @@ const AdminList = () => {
               type="text"
               placeholder="Search"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
             />
             <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
@@ -506,60 +522,31 @@ const AdminList = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredManagers.length > 0 ? (
-                  filteredManagers.map(manager => (
+                  filteredManagers.map((manager) => (
                     <tr key={manager._id || manager.email}>
-                      <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-900">
-                        {manager.nama_lengkap ?? '-'}
-                      </td>
-                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.email || '-'}
-                      </td>
-                      <td className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.nomor_telepon || '-'}
-                      </td>
-                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.alamat || '-'}
-                      </td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.tanggal_lahir ? ymd(manager.tanggal_lahir) : '-'}
-                      </td>
-                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.jenis_kelamin || '-'}
-                      </td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.nik || '-'}
-                      </td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.status_pernikahan || '-'}
-                      </td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {manager.posisi || '-'}
-                      </td>
+                      <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-900">{manager.nama_lengkap ?? '-'}</td>
+                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.email || '-'}</td>
+                      <td className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">{manager.nomor_telepon || '-'}</td>
+                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.alamat || '-'}</td>
+                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.tanggal_lahir ? ymd(manager.tanggal_lahir) : '-'}</td>
+                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.jenis_kelamin || '-'}</td>
+                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.nik || '-'}</td>
+                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.status_pernikahan || '-'}</td>
+                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.posisi || '-'}</td>
                       <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-500">
                         {manager.riwayat_pendidikan?.length > 0
-                          ? manager.riwayat_pendidikan
-                              .map(item => `${item.jenjang || ''} - ${item.institusi || ''} - ${item.tahun_lulus || ''}`)
-                              .join(', ')
+                          ? manager.riwayat_pendidikan.map((item) => `${item.jenjang || ''} - ${item.institusi || ''} - ${item.tahun_lulus || ''}`).join(', ')
                           : '-'}
                       </td>
                       <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-1 md:gap-2">
-                          <button
-                            onClick={() => openEditModal(manager)}
-                            className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-yellow-600 transition-colors"
-                          >
+                          <button onClick={() => openEditModal(manager)} className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-yellow-600 transition-colors">
                             <span className="text-sm">Edit</span>
                           </button>
-                          <button
-                            onClick={() => openDeleteModal(manager)}
-                            className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-red-600 transition-colors"
-                          >
+                          <button onClick={() => openDeleteModal(manager)} className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-red-600 transition-colors">
                             <span className="text-sm">Delete</span>
                           </button>
-                          <button
-                            onClick={() => openViewModal(manager)}
-                            className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
-                          >
+                          <button onClick={() => openViewModal(manager)} className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-blue-700 transition-colors">
                             <span className="text-sm">View</span>
                           </button>
                         </div>
@@ -568,9 +555,7 @@ const AdminList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500">
-                      Tidak ada data ditemukan
-                    </td>
+                    <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500">Tidak ada data ditemukan</td>
                   </tr>
                 )}
               </tbody>
@@ -582,14 +567,18 @@ const AdminList = () => {
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
             <div className={`bg-white rounded-lg p-6 w-full ${currentStep === 1 ? 'max-w-md' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto`}>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold">
-                  {currentStep === 1 ? 'Login Information' : 'Personal Information'}
-                </h3>
+              {/* Header selalu "Add Admin" */}
+              <div className="flex justify-between items-center mb-4 md:mb-6">
+                <h3 className="text-2xl font-semibold">Add Admin</h3>
                 <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
                   <X size={24} />
                 </button>
               </div>
+
+              {/* Subjudul dinamis + garis bawah */}
+              <h4 className="text-md font-medium pb-2 border-b border-gray-300 mb-4">
+                {currentStep === 1 ? 'Login Information' : 'Personal Information'}
+              </h4>
 
               {currentStep === 1 ? (
                 <div className="space-y-4">
@@ -599,7 +588,7 @@ const AdminList = () => {
                       type="text"
                       name="username"
                       value={formData.username}
-                      onChange={handleChange}
+                      onChange={(e) => setFormData((p) => ({ ...p, username: e.target.value }))}
                       className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                       placeholder="Create Username"
                       required
@@ -607,26 +596,26 @@ const AdminList = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700">Password</label>
                       <input
                         type="password"
                         name="password"
                         value={formData.password}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Create Password"
                         required
                       />
                     </div>
 
-                    <div>
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
                       <input
                         type="password"
                         name="confirmPassword"
                         value={formData.confirmPassword}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Re-enter Password"
                         required
@@ -634,22 +623,23 @@ const AdminList = () => {
                     </div>
                   </div>
 
-                  {/* Role fixed (hidden) */}
-                  <input type="hidden" name="role" value={ROLE} />
+                  {/* Role fixed (visible disabled + hidden for submit) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Role</label>
+                    <input
+                      type="text"
+                      value="admin"
+                      disabled
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 bg-gray-100 text-gray-600 cursor-not-allowed"
+                    />
+                    <input type="hidden" name="role" value={ROLE} />
+                  </div>
 
                   <div className="flex justify-between mt-6 pt-4 border-t">
-                    <button
-                      type="button"
-                      onClick={closeAddModal}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                    >
+                    <button type="button" onClick={closeAddModal} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
                       Cancel
                     </button>
-                    <button
-                      type="button"
-                      onClick={goNextFromStep1}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
+                    <button type="button" onClick={goNextFromStep1} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                       Next
                     </button>
                   </div>
@@ -663,7 +653,7 @@ const AdminList = () => {
                         type="text"
                         name="nama_lengkap"
                         value={formData.nama_lengkap}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, nama_lengkap: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Enter full name"
                         required
@@ -676,7 +666,7 @@ const AdminList = () => {
                         type="text"
                         name="nik"
                         value={formData.nik}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, nik: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="16 digits"
                         pattern="\d{16}"
@@ -691,7 +681,7 @@ const AdminList = () => {
                         type="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Enter email"
                         required
@@ -704,7 +694,7 @@ const AdminList = () => {
                         type="text"
                         name="nomor_telepon"
                         value={formData.nomor_telepon}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, nomor_telepon: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="10-15 digits"
                         pattern="\d{10,15}"
@@ -716,11 +706,12 @@ const AdminList = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
                       <input
-                        type="date"
+                        type="text"
                         name="tanggal_lahir"
                         value={formData.tanggal_lahir}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, tanggal_lahir: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
+                        placeholder="MM/DD/YYYY"
                         required
                       />
                     </div>
@@ -730,11 +721,17 @@ const AdminList = () => {
                       <select
                         name="jenis_kelamin"
                         value={formData.jenis_kelamin}
-                        onChange={e => handleChange({ target: { name: 'jenis_kelamin', value: mapGender(e.target.value) } })}
-                        className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, jenis_kelamin: mapGender(e.target.value) }))
+                        }
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
+                          formData.jenis_kelamin ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                         required
                       >
-                        <option value="">Select Gender</option>
+                        <option value="" disabled>
+                          Select Gender
+                        </option>
                         <option value="laki-laki">laki-laki</option>
                         <option value="perempuan">perempuan</option>
                       </select>
@@ -745,29 +742,32 @@ const AdminList = () => {
                       <select
                         name="status_pernikahan"
                         value={formData.status_pernikahan}
-                        onChange={e => handleChange({ target: { name: 'status_pernikahan', value: mapMarital(e.target.value) } })}
-                        className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, status_pernikahan: mapMarital(e.target.value) }))
+                        }
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
+                          formData.status_pernikahan ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                         required
                       >
-                        <option value="">Select Marital Status</option>
+                        <option value="" disabled>
+                          Select Marital Status
+                        </option>
                         <option value="belum menikah">belum menikah</option>
                         <option value="menikah">menikah</option>
                       </select>
                     </div>
 
+                    {/* Position fixed to "manager" (disabled + hidden) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Position</label>
-                      <select
-                        name="posisi"
-                        value={formData.posisi}
-                        onChange={handleChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
-                        required
-                      >
-                        <option value="manager">manager</option>
-                        <option value="supervisor">supervisor</option>
-                        <option value="staf">staf</option>
-                      </select>
+                      <input
+                        type="text"
+                        value="manager"
+                        disabled
+                        className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 bg-gray-100 text-gray-600 cursor-not-allowed"
+                      />
+                      <input type="hidden" name="posisi" value="manager" />
                     </div>
 
                     <div className="col-span-2">
@@ -776,7 +776,7 @@ const AdminList = () => {
                         type="text"
                         name="alamat"
                         value={formData.alamat}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, alamat: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Enter address"
                         required
@@ -786,16 +786,7 @@ const AdminList = () => {
 
                   {/* Riwayat Pendidikan */}
                   <div className="border-t pt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-sm font-medium">Riwayat Pendidikan</h5>
-                      <button
-                        type="button"
-                        onClick={addEduRow}
-                        className="px-3 py-1 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
-                      >
-                        + Add Education
-                      </button>
-                    </div>
+                    <h5 className="text-sm font-medium mb-2">Riwayat Pendidikan</h5>
 
                     {(formData.riwayat_pendidikan || []).length === 0 && (
                       <p className="text-sm text-gray-500 mb-3">Belum ada entri pendidikan.</p>
@@ -803,48 +794,52 @@ const AdminList = () => {
 
                     <div className="space-y-3">
                       {(formData.riwayat_pendidikan || []).map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                          <div className="col-span-3">
-                            <label className="block text-xs text-gray-600">Jenjang</label>
+                        <div key={idx} className="grid grid-cols-12 gap-4 items-start">
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-xs text-gray-600 mb-1">Jenjang</label>
                             <input
                               type="text"
                               value={row.jenjang || ''}
                               onChange={(e) => changeEduRow(idx, 'jenjang', e.target.value)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-2"
-                              placeholder="SMA / D3 / S1 / S2"
+                              className="block w-full border border-gray-300 rounded-md py-2 px-3"
+                              placeholder="SMA/SMK/D3/S1/S2/..."
                             />
                           </div>
-                          <div className="col-span-6">
-                            <label className="block text-xs text-gray-600">Institusi</label>
+
+                          <div className="col-span-12 sm:col-span-6">
+                            <label className="block text-xs text-gray-600 mb-1">Institusi</label>
                             <input
                               type="text"
                               value={row.institusi || ''}
                               onChange={(e) => changeEduRow(idx, 'institusi', e.target.value)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-2"
-                              placeholder="Nama institusi"
+                              className="block w-full border border-gray-300 rounded-md py-2 px-3"
+                              placeholder="Nama Universitas / Sekolah"
                             />
                           </div>
-                          <div className="col-span-2">
-                            <label className="block text-xs text-gray-600">Tahun Lulus</label>
-                            <input
-                              type="number"
-                              value={row.tahun_lulus || ''}
-                              min={1900}
-                              max={currentYear}
-                              onChange={(e) => changeEduRow(idx, 'tahun_lulus', e.target.value)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-2"
-                              placeholder="YYYY"
-                            />
-                          </div>
-                          <div className="col-span-1 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => removeEduRow(idx)}
-                              className="px-2 py-2 rounded-md bg-red-100 text-red-700 hover:bg-red-200"
-                              title="Remove this row"
-                            >
-                              <X size={16} />
-                            </button>
+
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-xs text-gray-600 mb-1">Tahun Lulus</label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={row.tahun_lulus || ''}
+                                min={1900}
+                                max={currentYear}
+                                onChange={(e) => changeEduRow(idx, 'tahun_lulus', e.target.value)}
+                                className="block w-full border border-gray-300 rounded-md py-2 px-3 pr-9"
+                                placeholder="YYYY"
+                              />
+                              {(formData.riwayat_pendidikan || []).length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeEduRow(idx)}
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
+                                  title="Remove this row"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -852,18 +847,10 @@ const AdminList = () => {
                   </div>
 
                   <div className="flex justify-between mt-6 pt-4 border-t">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(1)}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                    >
+                    <button type="button" onClick={() => setCurrentStep(1)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
                       Back
                     </button>
-                    <button
-                      type="button"
-                      onClick={createManager}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
+                    <button type="button" onClick={createManager} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                       Create Admin
                     </button>
                   </div>
@@ -885,16 +872,10 @@ const AdminList = () => {
               </div>
               <p className="mb-6">Do you want to delete admin {deletingManager.nama_lengkap}?</p>
               <div className="flex justify-end space-x-3">
-                <button
-                  onClick={closeDeleteModal}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
+                <button onClick={closeDeleteModal} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Cancel
                 </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-                >
+                <button onClick={confirmDelete} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
                   Delete
                 </button>
               </div>
@@ -924,7 +905,7 @@ const AdminList = () => {
                         type="text"
                         name="nama_lengkap"
                         value={formData.nama_lengkap}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, nama_lengkap: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Enter full name"
                         required
@@ -937,7 +918,7 @@ const AdminList = () => {
                         type="text"
                         name="nik"
                         value={formData.nik}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, nik: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="16 digits"
                         pattern="\d{16}"
@@ -952,7 +933,7 @@ const AdminList = () => {
                         type="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Enter email"
                         required
@@ -965,7 +946,7 @@ const AdminList = () => {
                         type="text"
                         name="nomor_telepon"
                         value={formData.nomor_telepon}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, nomor_telepon: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="10-15 digits"
                         pattern="\d{10,15}"
@@ -977,11 +958,12 @@ const AdminList = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
                       <input
-                        type="date"
+                        type="text"
                         name="tanggal_lahir"
                         value={formData.tanggal_lahir}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, tanggal_lahir: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
+                        placeholder="MM/DD/YYYY"
                         required
                       />
                     </div>
@@ -991,11 +973,15 @@ const AdminList = () => {
                       <select
                         name="jenis_kelamin"
                         value={formData.jenis_kelamin}
-                        onChange={e => handleChange({ target: { name: 'jenis_kelamin', value: mapGender(e.target.value) } })}
-                        className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
+                        onChange={(e) => setFormData((p) => ({ ...p, jenis_kelamin: mapGender(e.target.value) }))}
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
+                          formData.jenis_kelamin ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                         required
                       >
-                        <option value="">Select Gender</option>
+                        <option value="" disabled>
+                          Select Gender
+                        </option>
                         <option value="laki-laki">laki-laki</option>
                         <option value="perempuan">perempuan</option>
                       </select>
@@ -1006,11 +992,15 @@ const AdminList = () => {
                       <select
                         name="status_pernikahan"
                         value={formData.status_pernikahan}
-                        onChange={e => handleChange({ target: { name: 'status_pernikahan', value: mapMarital(e.target.value) } })}
-                        className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
+                        onChange={(e) => setFormData((p) => ({ ...p, status_pernikahan: mapMarital(e.target.value) }))}
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
+                          formData.status_pernikahan ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                         required
                       >
-                        <option value="">Select Marital Status</option>
+                        <option value="" disabled>
+                          Select Marital Status
+                        </option>
                         <option value="belum menikah">belum menikah</option>
                         <option value="menikah">menikah</option>
                       </select>
@@ -1021,7 +1011,7 @@ const AdminList = () => {
                       <select
                         name="posisi"
                         value={formData.posisi}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, posisi: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         required
                       >
@@ -1037,7 +1027,7 @@ const AdminList = () => {
                         type="text"
                         name="alamat"
                         value={formData.alamat}
-                        onChange={handleChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, alamat: e.target.value }))}
                         className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
                         placeholder="Enter address"
                         required
@@ -1047,16 +1037,7 @@ const AdminList = () => {
 
                   {/* Riwayat Pendidikan (edit) */}
                   <div className="border-t pt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-sm font-medium">Riwayat Pendidikan</h5>
-                      <button
-                        type="button"
-                        onClick={addEduRow}
-                        className="px-3 py-1 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
-                      >
-                        + Add Education
-                      </button>
-                    </div>
+                    <h5 className="text-sm font-medium mb-2">Riwayat Pendidikan</h5>
 
                     {(formData.riwayat_pendidikan || []).length === 0 && (
                       <p className="text-sm text-gray-500 mb-3">Belum ada entri pendidikan.</p>
@@ -1064,48 +1045,50 @@ const AdminList = () => {
 
                     <div className="space-y-3">
                       {(formData.riwayat_pendidikan || []).map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                          <div className="col-span-3">
-                            <label className="block text-xs text-gray-600">Jenjang</label>
+                        <div key={idx} className="grid grid-cols-12 gap-4 items-start">
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-xs text-gray-600 mb-1">Jenjang</label>
                             <input
                               type="text"
                               value={row.jenjang || ''}
                               onChange={(e) => changeEduRow(idx, 'jenjang', e.target.value)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-2"
-                              placeholder="SMA / D3 / S1 / S2"
+                              className="block w-full border border-gray-300 rounded-md py-2 px-3"
+                              placeholder="SMA/SMK/D3/S1/S2/..."
                             />
                           </div>
-                          <div className="col-span-6">
-                            <label className="block text-xs text-gray-600">Institusi</label>
+                          <div className="col-span-12 sm:col-span-6">
+                            <label className="block text-xs text-gray-600 mb-1">Institusi</label>
                             <input
                               type="text"
                               value={row.institusi || ''}
                               onChange={(e) => changeEduRow(idx, 'institusi', e.target.value)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-2"
+                              className="block w-full border border-gray-300 rounded-md py-2 px-3"
                               placeholder="Nama institusi"
                             />
                           </div>
-                          <div className="col-span-2">
-                            <label className="block text-xs text-gray-600">Tahun Lulus</label>
-                            <input
-                              type="number"
-                              value={row.tahun_lulus || ''}
-                              min={1900}
-                              max={currentYear}
-                              onChange={(e) => changeEduRow(idx, 'tahun_lulus', e.target.value)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-2"
-                              placeholder="YYYY"
-                            />
-                          </div>
-                          <div className="col-span-1 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => removeEduRow(idx)}
-                              className="px-2 py-2 rounded-md bg-red-100 text-red-700 hover:bg-red-200"
-                              title="Remove this row"
-                            >
-                              <X size={16} />
-                            </button>
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-xs text-gray-600 mb-1">Tahun Lulus</label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={row.tahun_lulus || ''}
+                                min={1900}
+                                max={currentYear}
+                                onChange={(e) => changeEduRow(idx, 'tahun_lulus', e.target.value)}
+                                className="block w-full border border-gray-300 rounded-md py-2 px-3 pr-9"
+                                placeholder="YYYY"
+                              />
+                              {(formData.riwayat_pendidikan || []).length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeEduRow(idx)}
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
+                                  title="Remove this row"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1196,7 +1179,6 @@ const AdminList = () => {
             </div>
           </div>
         )}
-
       </main>
     </div>
   );

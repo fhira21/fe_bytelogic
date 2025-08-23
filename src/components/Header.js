@@ -1,60 +1,101 @@
+// src/components/Header.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiBell, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import {
+  FiBell,
+  FiChevronDown,
+  FiChevronUp,
+  FiUser,
+  FiLogOut,
+} from "react-icons/fi";
 import axios from "axios";
 
-// URL fallback gambar profil kosong
+const API_BASE = "http://be.bytelogic.orenjus.com";
 const defaultAvatar = "https://www.w3schools.com/howto/img_avatar.png";
 
-const Header = () => {
+function normalizeRole(raw) {
+  const r = String(raw || "").trim().toLowerCase();
+  if (r.includes("manager")) return "manajer";
+  if (r.includes("client")) return "klien";
+  return r; // "admin", "karyawan", "klien", "manajer"
+}
+
+const isDataUrl = (v) => typeof v === "string" && v.startsWith("data:image");
+
+function resolveAvatarSrc(v, nonce) {
+  if (!v) return defaultAvatar;
+  const s = String(v).trim();
+  if (isDataUrl(s)) return s;
+  if (/^https?:\/\//i.test(s)) {
+    const sep = s.includes("?") ? "&" : "?";
+    return `${s}${sep}t=${nonce}`;
+  }
+  if (s.startsWith("/")) return `${API_BASE}${s}?t=${nonce}`;
+  return defaultAvatar;
+}
+
+function getProfileEndpoint(role) {
+  if (role === "klien") return `${API_BASE}/api/clients/profile`;
+  if (role === "karyawan") return `${API_BASE}/api/karyawan/profile`;
+  if (role === "manajer" || role === "admin") return `${API_BASE}/api/managers/profile`;
+  return null;
+}
+
+export default function Header() {
   const navigate = useNavigate();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [profile, setProfile] = useState(null);
   const [role, setRole] = useState(null);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const userRole = localStorage.getItem("role"); // pastikan role disimpan saat login
+  // data profil (avatarPath = path mentah dari server)
+  const [profile, setProfile] = useState({
+    name: "User",
+    email: "unknown@gmail.com",
+    avatarPath: "",
+  });
 
-        if (!token || !userRole) return;
+  // Nonce untuk bust cache avatar
+  const [avatarNonce, setAvatarNonce] = useState(Date.now());
 
-        setRole(userRole);
+  const fetchProfile = async (forcedNonce) => {
+    try {
+      const token = localStorage.getItem("token");
+      const storedRole = normalizeRole(localStorage.getItem("role"));
+      if (!token || !storedRole) return;
 
-        // Tentukan endpoint berdasarkan role
-        let endpoint = "";
-        if (userRole === "client") {
-          endpoint = "http://be.bytelogic.orenjus.com/api/clients/profile";
-        } else if (userRole === "karyawan") {
-          endpoint = "http://be.bytelogic.orenjus.com/api/karyawan/profile";
-        } else {
-          console.warn("Role tidak dikenali:", userRole);
-          return;
-        }
+      setRole(storedRole);
+      const endpoint = getProfileEndpoint(storedRole);
+      if (!endpoint) return;
 
-        const response = await axios.get(endpoint, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      const response = await axios.get(endpoint, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        const data =
-          userRole === "client"
-            ? response.data.data.client
-            : response.data.data.karyawan;
-
-        setProfile({
-          name: data.nama_lengkap,
-          email: data.email,
-          avatar: data.foto_profile || defaultAvatar,
-        });
-      } catch (error) {
-        console.error("Gagal mengambil data profil:", error);
+      let data;
+      if (storedRole === "klien") {
+        data = response.data?.data?.client || response.data?.data || {};
+      } else if (storedRole === "karyawan") {
+        data = response.data?.data?.karyawan || response.data?.data || {};
+      } else {
+        data = response.data?.data || {};
       }
-    };
 
+      setProfile({
+        name: data.nama_lengkap || data.username || "User",
+        email: data.email || "unknown@gmail.com",
+        avatarPath: data.foto_profile || "",
+      });
+
+      setAvatarNonce(forcedNonce || Date.now());
+    } catch (error) {
+      console.error("Gagal mengambil data profil:", error?.response?.data || error);
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
+    const onUpdated = () => fetchProfile(Date.now());
+    window.addEventListener("profile:updated", onUpdated);
+    return () => window.removeEventListener("profile:updated", onUpdated);
   }, []);
 
   const handleLogout = () => {
@@ -65,8 +106,20 @@ const Header = () => {
 
   const handleEditProfile = () => {
     setIsProfileDropdownOpen(false);
-    navigate("/profile/edit");
+
+    if (role === "karyawan") {
+      navigate("/karyawan/profile");
+    } else if (role === "manajer" || role === "admin") {
+      navigate("/profile");
+    } else if (role === "klien") {
+      navigate("/klien/profile");
+    } else {
+      navigate("/");
+    }
   };
+
+  const isManagerLike = role === "manajer" || role === "admin";
+  const isEmployeeOrClient = role === "karyawan" || role === "klien";
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -77,68 +130,97 @@ const Header = () => {
               Bytelogic
             </span>
           </div>
+
           <div className="flex items-center space-x-4">
             <button className="p-1 text-gray-500 rounded-full hover:bg-gray-100">
               <FiBell size={20} />
             </button>
-            {profile && (
-              <div className="relative ml-3">
-                <div>
-                  <button
-                    type="button"
-                    className="flex items-center text-sm rounded-full focus:outline-none"
-                    onClick={() =>
-                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
-                    }
-                  >
-                    <img
-                      className="h-8 w-8 rounded-full object-cover"
-                      src={profile.avatar}
-                      alt="User avatar"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = defaultAvatar;
-                      }}
-                    />
-                    <div className="ml-2 text-left">
-                      <div className="text-sm font-medium text-gray-800">
-                        {profile.name}
+
+            <div className="relative ml-3">
+              <button
+                type="button"
+                className="flex items-center text-sm rounded-full focus:outline-none"
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+              >
+                {/* avatar di topbar tetap ada */}
+                <img
+                  className="h-8 w-8 rounded-full object-cover"
+                  src={resolveAvatarSrc(profile.avatarPath, avatarNonce)}
+                  alt="User avatar"
+                  onClick={() => setAvatarNonce(Date.now())}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = defaultAvatar;
+                  }}
+                />
+                <div className="ml-2 text-left">
+                  <div className="text-sm font-medium text-gray-800">
+                    {profile.name}
+                  </div>
+                  <div className="text-xs text-gray-500">{profile.email}</div>
+                </div>
+                {isProfileDropdownOpen ? (
+                  <FiChevronUp className="ml-1 h-4 w-4 text-gray-500" />
+                ) : (
+                  <FiChevronDown className="ml-1 h-4 w-4 text-gray-500" />
+                )}
+              </button>
+
+              {isProfileDropdownOpen && (
+                <div className="origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 overflow-hidden">
+                  {/* ===== header di dalam dropdown ===== */}
+                  <div className="px-4 py-3 border-b bg-white">
+                    {isManagerLike ? (
+                      // Manager/Admin: avatar + teks
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={resolveAvatarSrc(profile.avatarPath, avatarNonce)}
+                          alt="avatar"
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-500"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = defaultAvatar;
+                          }}
+                        />
+                        <div className="leading-tight">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {profile.name}
+                          </div>
+                          <div className="text-xs text-gray-500">{profile.email}</div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {profile.email}
-                      </div>
-                    </div>
-                    {isProfileDropdownOpen ? (
-                      <FiChevronUp className="ml-1 h-4 w-4 text-gray-500" />
                     ) : (
-                      <FiChevronDown className="ml-1 h-4 w-4 text-gray-500" />
+                      // Karyawan/Klien: HANYA nama & email (tanpa avatar)
+                      <div className="leading-tight">
+                        <div className="text-sm font-semibold text-gray-900">
+                          {profile.name}
+                        </div>
+                        <div className="text-xs text-gray-500">{profile.email}</div>
+                      </div>
                     )}
+                  </div>
+
+                  {/* Actions */}
+                  <button
+                    onClick={handleEditProfile}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <FiUser className="min-w-4" />
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <FiLogOut className="min-w-4" />
+                    Log Out
                   </button>
                 </div>
-
-                {isProfileDropdownOpen && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-10">
-                    <button
-                      onClick={handleEditProfile}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      Edit Profile
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
     </header>
   );
-};
-
-export default Header;
+}

@@ -178,10 +178,10 @@ const EmployeeList = () => {
       status_Karyawan: normalizeEmploymentStatus(employee.status_Karyawan),
       riwayat_pendidikan: Array.isArray(employee.riwayat_pendidikan) && employee.riwayat_pendidikan.length
         ? employee.riwayat_pendidikan.map(r => ({
-            jenjang: r.jenjang || '',
-            institusi: r.institusi || '',
-            tahun_lulus: r.tahun_lulus || ''
-          }))
+          jenjang: r.jenjang || '',
+          institusi: r.institusi || '',
+          tahun_lulus: r.tahun_lulus || ''
+        }))
         : [{ jenjang: '', institusi: '', tahun_lulus: '' }],
     });
   };
@@ -525,7 +525,7 @@ const EmployeeList = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Password</label>
                         <input
@@ -718,23 +718,14 @@ const EmployeeList = () => {
                   </div>
 
                   {/* Riwayat Pendidikan - Dinamis */}
-                  <div className="border rounded-md p-4 mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="text-sm font-semibold">Riwayat Pendidikan</h5>
-                      <button
-                        type="button"
-                        onClick={addEdu}
-                        className="px-3 py-1.5 text-sm rounded bg-green-600 text-white hover:bg-green-700"
-                      >
-                        + Tambah
-                      </button>
-                    </div>
+                  <div className="border-t pt-4">
+                    <h5 className="text-sm font-medium mb-2">Riwayat Pendidikan</h5>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {formData.riwayat_pendidikan.map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                          <div className="sm:col-span-3">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Jenjang</label>
+                        <div key={idx} className="grid grid-cols-12 gap-4 items-start">
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-xs text-gray-600 mb-1">Jenjang</label>
                             <input
                               type="text"
                               value={row.jenjang}
@@ -744,8 +735,9 @@ const EmployeeList = () => {
                               required
                             />
                           </div>
-                          <div className="sm:col-span-6">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Institusi</label>
+
+                          <div className="col-span-12 sm:col-span-6">
+                            <label className="block text-xs text-gray-600 mb-1">Institusi</label>
                             <input
                               type="text"
                               value={row.institusi}
@@ -755,8 +747,9 @@ const EmployeeList = () => {
                               required
                             />
                           </div>
-                          <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Tahun Lulus</label>
+
+                          <div className="col-span-12 sm:col-span-3">
+                            <label className="block text-xs text-gray-600 mb-1">Tahun Lulus</label>
                             <input
                               type="number"
                               value={row.tahun_lulus}
@@ -767,17 +760,6 @@ const EmployeeList = () => {
                               placeholder="YYYY"
                               required
                             />
-                          </div>
-                          <div className="sm:col-span-1 flex">
-                            <button
-                              type="button"
-                              onClick={() => removeEdu(idx)}
-                              className="ml-auto px-3 py-2 rounded bg-red-500 text-white hover:bg-red-600"
-                              disabled={formData.riwayat_pendidikan.length === 1}
-                              title={formData.riwayat_pendidikan.length === 1 ? 'Minimal 1 baris' : 'Hapus baris'}
-                            >
-                              Hapus
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -1140,3 +1122,4 @@ const EmployeeList = () => {
 };
 
 export default EmployeeList;
+

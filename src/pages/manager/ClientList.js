@@ -6,6 +6,8 @@ import TopbarProfile from '../../components/TopbarProfile';
 import Sidebar from '../../components/SideBar';
 import { Search, X } from 'lucide-react';
 
+const ROLE = 'client';
+
 const ClientList = () => {
   const navigate = useNavigate();
 
@@ -29,6 +31,7 @@ const ClientList = () => {
     username: '',
     password: '',
     confirmPassword: '',
+    role: ROLE,
 
     // step 2 (profil client)
     nama_lengkap: '',
@@ -110,6 +113,7 @@ const ClientList = () => {
       username: '',
       password: '',
       confirmPassword: '',
+      role: ROLE,
       nama_lengkap: '',
       email: '',
       alamat: '',
@@ -129,6 +133,7 @@ const ClientList = () => {
       username: '', // tidak diedit di sini
       password: '',
       confirmPassword: '',
+      role: ROLE,
       nama_lengkap: client.nama_lengkap,
       email: client.email,
       alamat: client.alamat,
@@ -162,7 +167,7 @@ const ClientList = () => {
         password: formData.password,
         confirmPassword: formData.confirmPassword,
         passwordConfirmation: formData.confirmPassword, // jaga2
-        role: "client",
+        role: ROLE,
       };
 
       const response = await axios.post(
@@ -497,6 +502,18 @@ const ClientList = () => {
                         placeholder="Re-enter Password"
                       />
                     </div>
+
+                    {/* Role (otomatis client) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Role</label>
+                      <input
+                        type="text"
+                        value={ROLE}
+                        disabled
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 text-gray-600 cursor-not-allowed"
+                      />
+                      <input type="hidden" name="role" value={ROLE} />
+                    </div>
                   </div>
 
                   <div className="flex justify-between mt-6 pt-4 border-t">
@@ -605,7 +622,7 @@ const ClientList = () => {
                   <X size={20} />
                 </button>
               </div>
-              <p className="mb-6">Are you sure you want to delete {deletingClient.nama_lengkap}?</p>
+              <p className="mb-6">Are you sure you want to delete {deletingClient?.nama_lengkap}?</p>
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setDeletingClient(null)}

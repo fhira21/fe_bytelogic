@@ -1,3 +1,4 @@
+// src/App.js
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -8,12 +9,12 @@ import {
 
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
-// Pages
+// Pages (global)
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Unauthorized from "./pages/Unauthorized";
-import EditProfile from "./pages/manager/EditProfile";
 import Projects from "./pages/Projects";
+import ProjectDetail from "./pages/ProjectDetail";
 
 // Manager/Admin Pages
 import DashboardManager from "./pages/manager/Dashboard";
@@ -23,24 +24,27 @@ import AdminList from "./pages/manager/AdminList";
 import CustomerReviews from "./pages/manager/CustomerReviews";
 import EmployeeEvaluation from "./pages/manager/EmployeeEvaluation";
 import ProjectDataPage from "./pages/manager/DataProject";
+import DataProject from "./pages/manager/DataProject"; // alias ke file yang sama
 import UserProfile from "./pages/manager/UserProfile";
 import ViewProfile from "./pages/manager/ViewProfile";
-
-import DataProject from "./pages/manager/DataProject";
+import EditProfile from "./pages/manager/EditProfile";
 
 // Klien & Karyawan Pages
 import DashboardKlien from "./pages/klien/Dashboard";
-import DashboardKaryawan from "./pages/karyawan/Dashboard";
 import EvaluationPage from "./pages/klien/EvaluationPage";
-import EvaluateDetailed from "./pages/karyawan/EvaluateDetailed";
 import ReviewFormPage from "./pages/klien/ReviewFormPage";
+
+import DashboardKaryawan from "./pages/karyawan/Dashboard";
+import EvaluateDetailed from "./pages/karyawan/EvaluateDetailed";
+import ProjectWaitingList from "./pages/karyawan/ProjectWaitingList";
 import ProjectOnProgress from "./pages/karyawan/ProjectOnProgress";
 import ProjectCompleted from "./pages/karyawan/ProjectCompleted";
+import KaryawanEditProfile from "./pages/karyawan/EditProfile";
+import KlienEditProfile from "./pages/klien/EditProfile";
 
 // Global Components
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ProjectDetail from "./pages/ProjectDetail";
 
 function App() {
   return (
@@ -53,62 +57,151 @@ function App() {
 function MainLayout() {
   const location = useLocation();
 
+  // Navbar hanya muncul di "/" dan "/login"
   const showNavbar = ["/login", "/"].includes(location.pathname);
 
   return (
     <>
       {showNavbar && <Navbar />}
+
       <Routes>
+        {/* ===== Publik ===== */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/projects" element={<Projects />} />
 
+        {/* Proyek publik/detail */}
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/project-details/:id" element={<ProjectDetail />} />
+
+        {/* ===== Manager/Admin ===== */}
         <Route
           path="/dashboard-manager"
           element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
               <DashboardManager />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/data-project"
           element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
               <ProjectDataPage />
             </ProtectedRoute>
           }
         />
         <Route
+          path="/project-data"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <DataProject />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/data-karyawan"
           element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
               <EmployeeList />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/data-admin"
+          path="/employee-list"
           element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <EmployeeList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin-list"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
               <AdminList />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Client List + alias */}
+        <Route
+          path="/client-data"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <ClientList />
             </ProtectedRoute>
           }
         />
         <Route
           path="/data-klien"
           element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
               <ClientList />
             </ProtectedRoute>
           }
         />
 
         <Route
+          path="/customer-reviews"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <CustomerReviews />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employee-evaluation"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <EmployeeEvaluation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user-profile"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/view-profile"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <ViewProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Edit Profile (manager/admin) — dua path valid */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute allowedRoles={["manajer", "admin"]}>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ===== Klien ===== */}
+        <Route
           path="/dashboard-klien"
           element={
-            <ProtectedRoute allowedRoles={["client"]}>
+            <ProtectedRoute allowedRoles={["klien"]}>
               <DashboardKlien />
             </ProtectedRoute>
           }
@@ -116,11 +209,14 @@ function MainLayout() {
         <Route
           path="/evaluate/:projectId"
           element={
-            <ProtectedRoute allowedRoles={["client"]}>
+            <ProtectedRoute allowedRoles={["klien"]}>
               <EvaluationPage />
             </ProtectedRoute>
           }
         />
+        <Route path="/review" element={<ReviewFormPage />} />
+
+        {/* ===== Karyawan ===== */}
         <Route
           path="/dashboard-karyawan"
           element={
@@ -129,6 +225,40 @@ function MainLayout() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/project-waiting-list" element={<ProjectWaitingList />} />
+
+        {/* Lihat Semua: On Progress */}
+        <Route
+          path="/project-onprogress"
+          element={
+            <ProtectedRoute allowedRoles={["karyawan"]}>
+              <ProjectOnProgress />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Lihat Semua: Completed */}
+        <Route
+          path="/project-completed"
+          element={
+            <ProtectedRoute allowedRoles={["karyawan"]}>
+              <ProjectCompleted />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Alias untuk Waiting List (sementara arahkan ke On Progress agar tidak 404/Unauthorized) */}
+        <Route
+          path="/detail-project"
+          element={
+            <ProtectedRoute allowedRoles={["karyawan"]}>
+              <ProjectOnProgress />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Detail/grafik evaluasi */}
         <Route
           path="/detail-evaluasi"
           element={
@@ -138,109 +268,31 @@ function MainLayout() {
           }
         />
 
-        {/* ✅ Route tambahan untuk ProjectDetail */}
-        <Route path="/projects/:id" element={<ProjectDetail />} />
-
-        <Route path="/project-details/:id" element={<ProjectDetail />} />
-
-        <Route path="/review" element={<ReviewFormPage />} />
-
-        <Route path="/project-onprogress" element={<ProjectOnProgress />} />
-
-        <Route path="/project-completed" element={<ProjectCompleted />} />
-
-        {/* ✅ Route tambahan untuk EmployeeList */}
+        {/* Edit Profile khusus Karyawan */}
         <Route
-          path="/employee-list"
+          path="/karyawan/profile"
           element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <EmployeeList />
+            <ProtectedRoute allowedRoles={["karyawan"]}>
+              <KaryawanEditProfile />
             </ProtectedRoute>
           }
         />
 
+        <Route path="/klien/profile"
+          element={<KlienEditProfile />} />
+
+        {/* 404 fallback */}
         <Route
-          path="/dashboard-manager"
+          path="*"
           element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <DashboardManager />
-            </ProtectedRoute>
+            <div className="p-6 text-center">
+              <h1 className="text-2xl font-bold mb-2">404 – Route not found</h1>
+              <p className="text-gray-600">
+                Halaman yang kamu tuju tidak ditemukan. Cek kembali URL-nya.
+              </p>
+            </div>
           }
         />
-
-        <Route
-          path="/client-data"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <ClientList />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin-list"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <AdminList />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/customer-reviews"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <CustomerReviews />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/employee-evaluation"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <EmployeeEvaluation />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/data-project"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <DataProject />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/user-profile"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <UserProfile />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/view-profile"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <ViewProfile />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute allowedRoles={["manager/admin"]}>
-              <EditProfile />
-            </ProtectedRoute>
-          }
-        />
-
-
       </Routes>
     </>
   );

@@ -3,24 +3,32 @@ import axios from "axios";
 import TopbarProfile from '../../components/TopbarProfile';
 import Sidebar from '../../components/SideBar';
 import { useNavigate } from "react-router-dom";
-import {
-  Home,
-  Folder,
-  Briefcase,
-  ChartBar,
-  Search,
-  FileText,
-  User
-} from 'lucide-react';
+import { Search } from 'lucide-react';
+
+const API_BASE = "http://be.bytelogic.orenjus.com";
 
 export default function ProjectDataPage() {
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // View detail (modal)
   const [viewingProject, setViewingProject] = useState(null);
 
-  // === Tambahan: state untuk EDIT modal ===
+  // ====== ADD (baru) ======
+  const [addingProject, setAddingProject] = useState(false);
+  const [addForm, setAddForm] = useState({
+    title: "",
+    description: "",
+    status: "Waiting List",
+    deadline: "",
+    // client_id: ""  // kalau backend butuh, buka field ini
+  });
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  // ====== EDIT (punya kamu) ======
   const [editingProject, setEditingProject] = useState(null);
   const [projectForm, setProjectForm] = useState({
     title: "",
@@ -28,52 +36,46 @@ export default function ProjectDataPage() {
     status: "Waiting List",
     deadline: "",
   });
+  const [editSaving, setEditSaving] = useState(false);
 
   const navigate = useNavigate();
 
-  // State untuk filter
+  // Filter
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fungsi untuk memfilter proyek
   const applyFilters = useCallback(() => {
     let result = [...projects];
 
-    // Filter berdasarkan status
     if (statusFilter !== "all") {
       result = result.filter(project => project.status === statusFilter);
     }
 
-    // Filter berdasarkan pencarian
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(project =>
-        project.title.toLowerCase().includes(term) ||
-        (project.description && project.description.toLowerCase().includes(term)) ||
-        (project.client?.nama_lengkap && project.client.nama_lengkap.toLowerCase().includes(term))
+        (project.title || "").toLowerCase().includes(term) ||
+        (project.description || "").toLowerCase().includes(term) ||
+        (project.client?.nama_lengkap || "").toLowerCase().includes(term)
       );
     }
 
     setFilteredProjects(result);
   }, [projects, statusFilter, searchTerm]);
 
-  // Jalankan filter ketika ada perubahan
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
+  useEffect(() => { applyFilters(); }, [applyFilters]);
 
-  // Fungsi untuk mengambil data proyek
   const fetchProjects = useCallback(async () => {
     try {
+      setLoading(true);
+      setError(null);
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://be.bytelogic.orenjus.com/api/projects", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const response = await axios.get(`${API_BASE}/api/projects`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
-        setProjects(response.data.data);
+        setProjects(Array.isArray(response.data.data) ? response.data.data : []);
       } else {
         setError(response.data.message || "Gagal mengambil data proyek");
       }
@@ -85,65 +87,91 @@ export default function ProjectDataPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+  useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
-  // Navigasi ke halaman tambah proyek
-  const handleAddProject = () => {
-    navigate("/projects/create");
+  // ====== Add Project ======
+  const openAddModal = () => {
+    setAddError("");
+    setAddForm({
+      title: "",
+      description: "",
+      status: "Waiting List",
+      deadline: "",
+      // client_id: ""
+    });
+    setAddingProject(true);
   };
 
-  // === DIUBAH: Edit sekarang buka modal, bukan navigate ===
+  const closeAddModal = () => {
+    setAddingProject(false);
+    setAddError("");
+  };
+
+  const handleAddFormChange = (e) => {
+    const { name, value } = e.target;
+    setAddForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const saveAdd = async (e) => {
+    e.preventDefault();
+    setAddSaving(true);
+    setAddError("");
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // payload minimal (sesuaikan kalau backend butuh field lain seperti client_id / employees)
+      const payload = {
+        title: addForm.title,
+        description: addForm.description,
+        status: addForm.status,
+        deadline: addForm.deadline || null,
+        // client_id: addForm.client_id || undefined,
+      };
+
+      const res = await axios.post(`${API_BASE}/api/projects`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data?.success === false) {
+        throw new Error(res.data?.message || "Gagal membuat proyek");
+      }
+
+      await fetchProjects();
+      setAddingProject(false);
+    } catch (err) {
+      console.error("Gagal menambah proyek:", err);
+      const msg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Gagal menambah proyek";
+      setAddError(msg);
+      alert(msg);
+    } finally {
+      setAddSaving(false);
+    }
+  };
+
+  // ====== Edit Project (punya kamu) ======
   const handleEditProject = (project) => {
     setEditingProject(project);
     setProjectForm({
       title: project.title || "",
       description: project.description || "",
       status: project.status || "Waiting List",
-      // jadikan yyyy-mm-dd untuk input type="date"
       deadline: project.deadline ? new Date(project.deadline).toISOString().slice(0, 10) : "",
     });
   };
 
-  // Fungsi untuk menghapus proyek
-  const handleDeleteProject = async (projectId) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus proyek ini?")) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`http://be.bytelogic.orenjus.com/api/projects/${projectId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      fetchProjects(); // Refresh data
-    } catch (error) {
-      console.error("Gagal menghapus proyek:", error);
-      alert("Gagal menghapus proyek");
-    }
-  };
-
-  // Fungsi untuk melihat detail proyek
-  const handleViewProject = (project) => {
-    setViewingProject(project);
-  };
-
-  // === Handlers untuk EDIT modal ===
   const handleProjectFormChange = (e) => {
     const { name, value } = e.target;
     setProjectForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const closeEditModal = () => {
-    setEditingProject(null);
-  };
+  const closeEditModal = () => setEditingProject(null);
 
   const saveEdit = async (e) => {
     e.preventDefault();
+    setEditSaving(true);
     try {
       const token = localStorage.getItem("token");
-      // siapkan payload sesuai backend
       const payload = {
         title: projectForm.title,
         description: projectForm.description,
@@ -152,45 +180,65 @@ export default function ProjectDataPage() {
       };
 
       await axios.put(
-        `http://be.bytelogic.orenjus.com/api/projects/${editingProject._id}`,
+        `${API_BASE}/api/projects/${editingProject._id}`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Refresh list
       await fetchProjects();
       setEditingProject(null);
     } catch (err) {
       console.error("Gagal mengupdate proyek:", err);
       alert(err?.response?.data?.message || "Gagal mengupdate proyek. Coba lagi.");
+    } finally {
+      setEditSaving(false);
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="text-lg">Memuat data proyek...</div>
-    </div>
-  );
+  // ====== Delete & View ======
+  const handleDeleteProject = async (projectId) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus proyek ini?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_BASE}/api/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchProjects();
+    } catch (error) {
+      console.error("Gagal menghapus proyek:", error);
+      alert(error?.response?.data?.message || "Gagal menghapus proyek");
+    }
+  };
 
-  if (error) return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="text-red-500 text-lg">{error}</div>
-    </div>
-  );
+  const handleViewProject = (project) => setViewingProject(project);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Memuat data proyek...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500 text-lg">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
 
-      {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto bg-gray-50">
         <TopbarProfile />
 
-        {/* Judul Section */}
         <h1 className="text-2xl font-bold mb-6">Project Data</h1>
 
         <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
-          {/* Filter - Paling Kiri */}
+          {/* Filter */}
           <div className="w-full md:w-64 md:ml-auto">
             <select
               id="status-filter"
@@ -204,7 +252,7 @@ export default function ProjectDataPage() {
             </select>
           </div>
 
-          {/* Search - Tengah */}
+          {/* Search */}
           <div className="relative w-full md:w-64 md:ml-auto">
             <input
               type="text"
@@ -216,10 +264,10 @@ export default function ProjectDataPage() {
             <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
           </div>
 
-          {/* Add Project - Paling Kanan */}
+          {/* Add Project */}
           <div className="w-full md:w-auto">
             <button
-              onClick={handleAddProject}
+              onClick={openAddModal} // <-- sebelumnya navigate("/projects/create")
               className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <span>Add Project</span>
@@ -227,18 +275,18 @@ export default function ProjectDataPage() {
           </div>
         </div>
 
-        {/* Projects Table */}
+        {/* Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Project Name</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Description</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Client Name</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Deadline</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Status</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Project Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Description</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Client Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Deadline</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -260,10 +308,11 @@ export default function ProjectDataPage() {
                           : "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${project.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          project.status === 'Completed' ? 'bg-green-100 text-green-800' :
                           project.status === 'On Progress' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          'bg-gray-100 text-gray-800'
+                        }`}>
                           {project.status}
                         </span>
                       </td>
@@ -303,18 +352,13 @@ export default function ProjectDataPage() {
           </div>
         </div>
 
-        {/* View Modal */}
+        {/* ===== View Modal ===== */}
         {viewingProject && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Project Details</h3>
-                <button
-                  onClick={() => setViewingProject(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
+                <button onClick={() => setViewingProject(null)} className="text-gray-500 hover:text-gray-700">✕</button>
               </div>
               <div className="space-y-4">
                 <div>
@@ -332,18 +376,17 @@ export default function ProjectDataPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-500">Deadline</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {viewingProject.deadline
-                      ? new Date(viewingProject.deadline).toLocaleDateString("id-ID")
-                      : "-"}
+                    {viewingProject.deadline ? new Date(viewingProject.deadline).toLocaleDateString("id-ID") : "-"}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500">Status</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    <span className={`px-2 py-1 text-xs rounded-full ${viewingProject.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      viewingProject.status === 'Completed' ? 'bg-green-100 text-green-800' :
                       viewingProject.status === 'On Progress' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      'bg-gray-100 text-gray-800'
+                    }`}>
                       {viewingProject.status}
                     </span>
                   </p>
@@ -352,7 +395,7 @@ export default function ProjectDataPage() {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setViewingProject(null)}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Close
                 </button>
@@ -361,7 +404,101 @@ export default function ProjectDataPage() {
           </div>
         )}
 
-        {/* === EDIT MODAL (baru) === */}
+        {/* ===== ADD MODAL ===== */}
+        {addingProject && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Add Project</h3>
+              </div>
+              {addError && (
+                <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
+                  {addError}
+                </div>
+              )}
+              <form onSubmit={saveAdd}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Project Name</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={addForm.title}
+                      onChange={handleAddFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                      name="description"
+                      value={addForm.description}
+                      onChange={handleAddFormChange}
+                      rows={3}
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <select
+                      name="status"
+                      value={addForm.status}
+                      onChange={handleAddFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option>Waiting List</option>
+                      <option>On Progress</option>
+                      <option>Completed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Deadline</label>
+                    <input
+                      type="date"
+                      name="deadline"
+                      value={addForm.deadline}
+                      onChange={handleAddFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Jika backend mewajibkan client_id, buka field ini:
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Client ID</label>
+                    <input
+                      type="text"
+                      name="client_id"
+                      value={addForm.client_id || ""}
+                      onChange={handleAddFormChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3"
+                    />
+                  </div> */}
+                </div>
+
+                <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={closeAddModal}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    disabled={addSaving}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60"
+                    disabled={addSaving}
+                  >
+                    {addSaving ? "Saving..." : "Create Project"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ===== EDIT MODAL ===== */}
         {editingProject && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -377,7 +514,7 @@ export default function ProjectDataPage() {
                       name="title"
                       value={projectForm.title}
                       onChange={handleProjectFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
@@ -387,8 +524,8 @@ export default function ProjectDataPage() {
                       name="description"
                       value={projectForm.description}
                       onChange={handleProjectFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       rows={3}
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div>
@@ -397,7 +534,7 @@ export default function ProjectDataPage() {
                       name="status"
                       value={projectForm.status}
                       onChange={handleProjectFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option>Waiting List</option>
                       <option>On Progress</option>
@@ -411,7 +548,7 @@ export default function ProjectDataPage() {
                       name="deadline"
                       value={projectForm.deadline}
                       onChange={handleProjectFormChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -420,14 +557,16 @@ export default function ProjectDataPage() {
                     type="button"
                     onClick={closeEditModal}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    disabled={editSaving}
                   >
                     Back
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="px-4 py-2 rounded-md text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 disabled:opacity-60"
+                    disabled={editSaving}
                   >
-                    Edit Project
+                    {editSaving ? "Saving..." : "Edit Project"}
                   </button>
                 </div>
               </form>

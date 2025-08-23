@@ -1,9 +1,9 @@
+// src/pages/karyawan/DashboardKaryawan.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ClipboardList, ClipboardCheck, Clock, UserCheck } from "lucide-react";
 import { Bar } from "react-chartjs-2";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,23 +14,31 @@ import {
   Legend,
 } from "chart.js";
 import Header from "../../components/Header";
+import ProfilePic from "../../assets/images/profile.jpg";
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+const API_BASE = "http://be.bytelogic.orenjus.com";
+const KARYAWAN_PROFILE_URL = `${API_BASE}/api/karyawan/profile`;
+
+function resolveAvatarSrc(v) {
+  if (!v) return ProfilePic;
+  const s = String(v).trim();
+  if (s.startsWith("data:image")) return s;
+  if (/^https?:\/\//i.test(s)) return `${s}${s.includes("?") ? "&" : "?"}t=${Date.now()}`;
+  if (s.startsWith("/")) return `${API_BASE}${s}?t=${Date.now()}`;
+  if (/^[A-Za-z0-9+/=]+$/.test(s) && s.length > 100) return `data:image/jpeg;base64,${s}`;
+  return ProfilePic;
+}
 
 const DashboardKaryawan = () => {
   const navigate = useNavigate();
-  const [user] = useState({
+
+  // user di Header
+  const [user, setUser] = useState({
     name: "Loading...",
     email: "Loading...",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+    avatar: ProfilePic,
   });
 
   const [statusKaryawan, setStatusKaryawan] = useState({
@@ -42,27 +50,16 @@ const DashboardKaryawan = () => {
   const [selectedProjectDetail, setSelectedProjectDetail] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Fungsi untuk menangani klik pada bar chart
-  // Fungsi untuk menangani klik pada bar chart
-const handleBarClick = (projectName) => {
-  if (!projectName) return;
-  navigate(`/detail-evaluasi?project=${encodeURIComponent(projectName)}`);
-};
+  const handleBarClick = (projectName) => {
+    if (!projectName) return;
+    navigate(`/detail-evaluasi?project=${encodeURIComponent(projectName)}`);
+  };
 
   const [projects, setProjects] = useState({
     loading: true,
     error: null,
-    stats: {
-      total: 0,
-      waiting: 0,
-      progress: 0,
-      completed: 0,
-    },
-    lists: {
-      waiting: [],
-      progress: [],
-      completed: [],
-    },
+    stats: { total: 0, waiting: 0, progress: 0, completed: 0 },
+    lists: { waiting: [], progress: [], completed: [] },
   });
 
   const [evaluasiData, setEvaluasiData] = useState({
@@ -72,26 +69,31 @@ const handleBarClick = (projectName) => {
   });
   const [evaluasiFilter, setEvaluasiFilter] = useState("terbaru");
 
+  // === fetch profil karyawan untuk Header + status ===
   useEffect(() => {
-    const fetchStatus = async () => {
+    const fetchProfileAndStatus = async () => {
       try {
-        const response = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/karyawan/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const token = localStorage.getItem("token");
+        const res = await axios.get(KARYAWAN_PROFILE_URL, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const root = res.data?.data || {};
+        const k = root.karyawan || root;
+        const u = root.user || {};
+
+        setUser({
+          name: k?.nama_lengkap || u?.username || "User",
+          email: u?.email || k?.email || "unknown@gmail.com",
+          avatar: resolveAvatarSrc(k?.foto_profile),
+        });
 
         setStatusKaryawan({
           loading: false,
           error: null,
-          data: response.data.data.karyawan.status_Karyawan,
+          data: k?.status_Karyawan ?? "-",
         });
       } catch (error) {
-        console.error("Error fetching employee status:", error);
+        console.error("Error fetching karyawan profile:", error);
         setStatusKaryawan({
           loading: false,
           error: error.response?.data?.message || "Gagal memuat status karyawan",
@@ -100,9 +102,10 @@ const handleBarClick = (projectName) => {
       }
     };
 
-    fetchStatus();
+    fetchProfileAndStatus();
   }, []);
 
+  // === projects ===
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -117,7 +120,6 @@ const handleBarClick = (projectName) => {
         );
 
         const data = response.data.data;
-
         setProjects({
           loading: false,
           error: null,
@@ -138,17 +140,8 @@ const handleBarClick = (projectName) => {
         setProjects({
           loading: false,
           error: error.response?.data?.message || "Gagal memuat data proyek",
-          stats: {
-            total: 0,
-            waiting: 0,
-            progress: 0,
-            completed: 0,
-          },
-          lists: {
-            waiting: [],
-            progress: [],
-            completed: [],
-          },
+          stats: { total: 0, waiting: 0, progress: 0, completed: 0 },
+          lists: { waiting: [], progress: [], completed: [] },
         });
       }
     };
@@ -156,6 +149,7 @@ const handleBarClick = (projectName) => {
     fetchProjects();
   }, []);
 
+  // === evaluations ===
   useEffect(() => {
     const fetchEvaluasi = async () => {
       try {
@@ -169,17 +163,13 @@ const handleBarClick = (projectName) => {
           }
         );
 
-        const hasil = response.data.detail_evaluasi.map((item) => ({
+        const hasil = (response.data?.detail_evaluasi || []).map((item) => ({
           project: item.project_title,
           score: item.final_score,
-          date: item.created_at // Add date for sorting
+          date: item.created_at,
         }));
 
-        setEvaluasiData({
-          loading: false,
-          error: null,
-          data: hasil,
-        });
+        setEvaluasiData({ loading: false, error: null, data: hasil });
       } catch (error) {
         console.error("Gagal ambil data evaluasi:", error);
         setEvaluasiData({
@@ -209,10 +199,7 @@ const handleBarClick = (projectName) => {
           });
 
           return (
-            <div
-              key={project._id}
-              className="px-6 py-4 flex justify-between items-center"
-            >
+            <div key={project._id} className="px-6 py-4 flex justify-between items-center">
               <span className="text-gray-800 truncate" title={project.title}>
                 {project.title}
               </span>
@@ -229,26 +216,32 @@ const handleBarClick = (projectName) => {
     if (error) return <p className="text-red-500">{error}</p>;
     if (!data.length) return <p className="text-gray-500">Tidak ada data evaluasi</p>;
 
-    // Sort data berdasarkan filter
     const sortedData = [...data].sort((a, b) => {
       switch (filter) {
-        case "tertinggi": return b.score - a.score;
-        case "terendah": return a.score - b.score;
-        case "terbaru": return new Date(b.date) - new Date(a.date);
-        case "terlama": return new Date(a.date) - new Date(b.date);
-        default: return 0;
+        case "tertinggi":
+          return b.score - a.score;
+        case "terendah":
+          return a.score - b.score;
+        case "terbaru":
+          return new Date(b.date) - new Date(a.date);
+        case "terlama":
+          return new Date(a.date) - new Date(b.date);
+        default:
+          return 0;
       }
     });
 
     const chartData = {
       labels: sortedData.map((item) => item.project || "Proyek Tanpa Nama"),
-      datasets: [{
-        label: "Nilai Evaluasi",
-        data: sortedData.map((item) => Math.round(item.score)),
-        backgroundColor: "#2196F3",
-        borderRadius: 6,
-        barThickness: 30,
-      }]
+      datasets: [
+        {
+          label: "Nilai Evaluasi",
+          data: sortedData.map((item) => Math.round(item.score)),
+          backgroundColor: "#2196F3",
+          borderRadius: 6,
+          barThickness: 30,
+        },
+      ],
     };
 
     const options = {
@@ -258,9 +251,7 @@ const handleBarClick = (projectName) => {
         if (elements && elements.length > 0) {
           const clickedIndex = elements[0].index;
           const projectName = chartData.labels[clickedIndex];
-          if (projectName && typeof onBarClick === 'function') {
-            onBarClick(projectName);
-          }
+          if (projectName && typeof onBarClick === "function") onBarClick(projectName);
         }
       },
       scales: {
@@ -268,27 +259,27 @@ const handleBarClick = (projectName) => {
           beginAtZero: true,
           max: 100,
           ticks: { stepSize: 10 },
-          title: { display: true, text: "Nilai Final" }
+          title: { display: true, text: "Nilai Final" },
         },
         x: {
           ticks: {
             callback: function (val, index) {
               const label = this.getLabelForValue(index);
               return label.length > 10 ? `${label.substring(0, 10)}...` : label;
-            }
+            },
           },
-          title: { display: true, text: "Nama Proyek" }
-        }
+          title: { display: true, text: "Nama Proyek" },
+        },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
             label: (context) => `Nilai: ${context.raw}`,
-            title: (context) => `${context[0].label}`
-          }
-        }
-      }
+            title: (context) => `${context[0].label}`,
+          },
+        },
+      },
     };
 
     return (
@@ -310,14 +301,12 @@ const handleBarClick = (projectName) => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header menerima { name, email, avatar } */}
       <Header user={user} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          My Work Dashboard
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">My Work Dashboard</h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Total Project */}
           <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
             <ClipboardList className="w-8 h-8 text-gray-700" />
             <div>
@@ -326,7 +315,6 @@ const handleBarClick = (projectName) => {
             </div>
           </div>
 
-          {/* On Progress */}
           <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
             <ClipboardCheck className="w-8 h-8 text-gray-700" />
             <div>
@@ -335,7 +323,6 @@ const handleBarClick = (projectName) => {
             </div>
           </div>
 
-          {/* Waiting List */}
           <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
             <Clock className="w-8 h-8 text-gray-700" />
             <div>
@@ -344,17 +331,17 @@ const handleBarClick = (projectName) => {
             </div>
           </div>
 
-          {/* Status Karyawan */}
           <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
             <UserCheck className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">Status Karyawan</h3>
-              <p className="text-medium font-bold">{statusKaryawan.data} </p>
+              <p className="text-medium font-bold">
+                {statusKaryawan.loading ? "Loading..." : (statusKaryawan.data || "-")}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Bagian Evaluasi Chart */}
         <div className="bg-white text-black rounded-lg p-4 shadow col-span-2 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-medium">Evaluasi Bar</h3>
@@ -369,12 +356,6 @@ const handleBarClick = (projectName) => {
                 <option value="tertinggi">Tertinggi</option>
                 <option value="terendah">Terendah</option>
               </select>
-              {/* <Link
-                to="/detail-evaluasi"
-                className="text-sm text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-100"
-              >
-                Lihat Semua
-              </Link> */}
             </div>
           </div>
           <EvaluasiChart
@@ -386,7 +367,7 @@ const handleBarClick = (projectName) => {
           />
         </div>
 
-        {/* Modal untuk menampilkan detail proyek */}
+        {/* Modal detail jika dibutuhkan */}
         {showDetailModal && selectedProjectDetail && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -420,11 +401,9 @@ const handleBarClick = (projectName) => {
           {/* Waiting List */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-800">
-                Status Project : Waiting List
-              </h3>
+              <h3 className="text-base font-semibold text-gray-800">Status Project : Waiting List</h3>
               <Link
-                to="/detail-project"
+                to="/project-waiting-list"
                 className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
               >
                 Lihat Semua
@@ -435,23 +414,16 @@ const handleBarClick = (projectName) => {
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
-              <ProjectList
-                title="waiting list"
-                items={projects.lists.waiting}
-                loading={projects.loading}
-                error={projects.error}
-              />
+              <ProjectList title="waiting list" items={projects.lists.waiting} loading={projects.loading} error={projects.error} />
             </div>
           </div>
 
           {/* On Progress */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-800">
-                Status Project : On Progress
-              </h3>
+              <h3 className="text-base font-semibold text-gray-800">Status Project : On Progress</h3>
               <Link
-                to="/project-onprogress"
+                to="/detail-project?status=onprogress"
                 className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
               >
                 Lihat Semua
@@ -462,41 +434,27 @@ const handleBarClick = (projectName) => {
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
-              <ProjectList
-                title="on progress"
-                items={projects.lists.progress}
-                loading={projects.loading}
-                error={projects.error}
-                showActions={true}
-              />
+              <ProjectList title="on progress" items={projects.lists.progress} loading={projects.loading} error={projects.error} />
             </div>
           </div>
 
           {/* Completed */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-800">
-                Status Project : Completed
-              </h3>
+              <h3 className="text-base font-semibold text-gray-800">Status Project : Completed</h3>
               <Link
-                to="/project-completed"
+                to="/detail-project?status=completed"
                 className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
               >
                 Lihat Semua
               </Link>
-
             </div>
             <div className="px-6">
               <div className="flex justify-between px-6 py-2 border-b border-gray-200 text-sm text-gray-600 font-semibold mb-2">
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
-              <ProjectList
-                title="completed"
-                items={projects.lists.completed}
-                loading={projects.loading}
-                error={projects.error}
-              />
+              <ProjectList title="completed" items={projects.lists.completed} loading={projects.loading} error={projects.error} />
             </div>
           </div>
         </div>
