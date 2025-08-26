@@ -1,4 +1,3 @@
-// src/pages/karyawan/DashboardKaryawan.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ClipboardList, ClipboardCheck, Clock, UserCheck } from "lucide-react";
@@ -69,7 +68,7 @@ const DashboardKaryawan = () => {
   });
   const [evaluasiFilter, setEvaluasiFilter] = useState("terbaru");
 
-  // === fetch profil karyawan untuk Header + status ===
+  // profil + status
   useEffect(() => {
     const fetchProfileAndStatus = async () => {
       try {
@@ -105,7 +104,7 @@ const DashboardKaryawan = () => {
     fetchProfileAndStatus();
   }, []);
 
-  // === projects ===
+  // projects
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -149,7 +148,7 @@ const DashboardKaryawan = () => {
     fetchProjects();
   }, []);
 
-  // === evaluations ===
+  // evaluations
   useEffect(() => {
     const fetchEvaluasi = async () => {
       try {
@@ -300,14 +299,14 @@ const DashboardKaryawan = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-white">
       {/* Header menerima { name, email, avatar } */}
       <Header user={user} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Work Dashboard</h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+          <div className="bg-white text-black rounded-lg p-4 border border-gray-300 flex items-center space-x-4">
             <ClipboardList className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">Total Project</h3>
@@ -315,7 +314,7 @@ const DashboardKaryawan = () => {
             </div>
           </div>
 
-          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+          <div className="bg-white text-black rounded-lg p-4 border border-gray-300 flex items-center space-x-4">
             <ClipboardCheck className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">On Progress</h3>
@@ -323,7 +322,7 @@ const DashboardKaryawan = () => {
             </div>
           </div>
 
-          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+          <div className="bg-white text-black rounded-lg p-4 border border-gray-300 flex items-center space-x-4">
             <Clock className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">Waiting List</h3>
@@ -331,7 +330,7 @@ const DashboardKaryawan = () => {
             </div>
           </div>
 
-          <div className="bg-white text-black rounded-lg p-4 shadow flex items-center space-x-4">
+          <div className="bg-white text-black rounded-lg p-4 border border-gray-300 flex items-center space-x-4">
             <UserCheck className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">Status Karyawan</h3>
@@ -342,9 +341,9 @@ const DashboardKaryawan = () => {
           </div>
         </div>
 
-        <div className="bg-white text-black rounded-lg p-4 shadow col-span-2 mb-6">
+        <div className="bg-white text-black rounded-lg p-4 border border-gray-300 col-span-2 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-medium">Evaluasi Bar</h3>
+            <h3 className="text-xl font-medium">Project Performance Overview</h3>
             <div className="flex items-center space-x-2">
               <select
                 value={evaluasiFilter}
@@ -399,8 +398,8 @@ const DashboardKaryawan = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Waiting List */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 flex items-center justify-between">
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">            {/* garis cuma di bawah judul */}
+            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
               <h3 className="text-base font-semibold text-gray-800">Status Project : Waiting List</h3>
               <Link
                 to="/project-waiting-list"
@@ -410,7 +409,8 @@ const DashboardKaryawan = () => {
               </Link>
             </div>
             <div className="px-6">
-              <div className="flex justify-between px-6 py-2 border-b border-gray-200 text-sm text-gray-600 font-semibold mb-2">
+              {/* tidak ada border di sini */}
+              <div className="flex justify-between px-6 py-2 text-sm text-gray-600 font-normal mb-2">
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
@@ -419,18 +419,18 @@ const DashboardKaryawan = () => {
           </div>
 
           {/* On Progress */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-800">Status Project : On Progress</h3>
-              <Link
-                to="/detail-project?status=onprogress"
-                className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
-              >
-                Lihat Semua
-              </Link>
-            </div>
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">            
+            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
+            <h3 className="text-base font-semibold text-gray-800">Status Project : On Progress</h3>
+            <Link
+              to="/project-onprogress"
+              className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+            >
+              Lihat Semua
+            </Link>
+          </div>
             <div className="px-6">
-              <div className="flex justify-between px-6 py-2 border-b border-gray-200 text-sm text-gray-600 font-semibold mb-2">
+              <div className="flex justify-between px-6 py-2 text-sm text-gray-600 font-normal mb-2">
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
@@ -439,18 +439,17 @@ const DashboardKaryawan = () => {
           </div>
 
           {/* Completed */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-800">Status Project : Completed</h3>
-              <Link
-                to="/detail-project?status=completed"
-                className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
-              >
-                Lihat Semua
-              </Link>
-            </div>
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
+            <h3 className="text-base font-semibold text-gray-800">Status Project : Completed</h3>
+            <Link
+              to="/project-completed"
+              className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+            >
+              Lihat Semua
+            </Link>
+          </div>
             <div className="px-6">
-              <div className="flex justify-between px-6 py-2 border-b border-gray-200 text-sm text-gray-600 font-semibold mb-2">
+              <div className="flex justify-between px-6 py-2 text-sm text-gray-600 font-normal mb-2">
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>

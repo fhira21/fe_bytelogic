@@ -4,53 +4,47 @@ import { useNavigate } from 'react-router-dom';
 import TopbarProfile from '../../components/TopbarProfile';
 import Sidebar from '../../components/SideBar';
 import axios from 'axios';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const ROLE = 'manager/admin';
 const API_BASE = 'http://be.bytelogic.orenjus.com';
 const currentYear = new Date().getFullYear();
-
-// default row untuk riwayat pendidikan
 const EMPTY_EDU = { jenjang: '', institusi: '', tahun_lulus: '' };
 
 const AdminList = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
-  // ======= State utama =======
   const [managers, setManagers] = useState([]);
   const [editingManager, setEditingManager] = useState(null);
   const [deletingManager, setDeletingManager] = useState(null);
   const [viewingManager, setViewingManager] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // ======= Add (2 step) =======
+  // Add (2 step)
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [registeredUserId, setRegisteredUserId] = useState(null); // hasil dari /users/register
+  const [registeredUserId, setRegisteredUserId] = useState(null);
 
-  // Satu objek untuk menampung semua input
   const [formData, setFormData] = useState({
-    // Step 1 - Login
     username: '',
     password: '',
     confirmPassword: '',
     role: ROLE,
 
-    // Step 2 - Personal (sesuai BE)
     nama_lengkap: '',
     nik: '',
     email: '',
     nomor_telepon: '',
     alamat: '',
-    tanggal_lahir: '',           // UI: MM/DD/YYYY (string)
-    jenis_kelamin: '',           // 'laki-laki' | 'perempuan'
-    status_pernikahan: '',       // 'menikah' | 'belum menikah'
-    posisi: 'manager',           // default 'manager'
-    riwayat_pendidikan: [{ ...EMPTY_EDU }], // default 1 baris
+    tanggal_lahir: '',           // MM/DD/YYYY
+    jenis_kelamin: '',
+    status_pernikahan: '',
+    posisi: 'manager',
+    riwayat_pendidikan: [{ ...EMPTY_EDU }],
   });
 
-  // ======= Helpers (format & parsing tanggal) =======
+  // Helpers
   const toMMDDYYYY = (val) => {
     if (!val) return '';
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return val;
@@ -115,7 +109,7 @@ const AdminList = () => {
     return isNaN(d) ? '' : d.toISOString().slice(0, 10);
   };
 
-  // ======= Fetch data managers =======
+  // Fetch data managers
   useEffect(() => {
     const fetchManagers = async () => {
       try {
@@ -142,7 +136,7 @@ const AdminList = () => {
     fetchManagers();
   }, [navigate]);
 
-  // ======= Filtered list =======
+  // Filtered
   const filteredManagers = managers.filter((m) => {
     const t = searchTerm.toLowerCase();
     return (
@@ -154,7 +148,7 @@ const AdminList = () => {
     );
   });
 
-  // ======= Edit =======
+  // Edit
   const openEditModal = (manager) => {
     setEditingManager(manager);
     const mapped = (manager.riwayat_pendidikan || []).map((r) => ({
@@ -246,7 +240,7 @@ const AdminList = () => {
     }
   };
 
-  // ======= Delete =======
+  // Delete
   const openDeleteModal = (manager) => setDeletingManager(manager);
   const closeDeleteModal = () => setDeletingManager(null);
 
@@ -268,11 +262,11 @@ const AdminList = () => {
     }
   };
 
-  // ======= View =======
+  // View
   const openViewModal = (manager) => setViewingManager(manager);
   const closeViewModal = () => setViewingManager(null);
 
-  // ======= Add (2 langkah) =======
+  // Add (2 langkah)
   const openAddModal = () => {
     setShowAddModal(true);
     setCurrentStep(1);
@@ -287,7 +281,7 @@ const AdminList = () => {
       email: '',
       nomor_telepon: '',
       alamat: '',
-      tanggal_lahir: '', // UI: MM/DD/YYYY
+      tanggal_lahir: '',
       jenis_kelamin: '',
       status_pernikahan: '',
       posisi: 'manager',
@@ -301,7 +295,6 @@ const AdminList = () => {
     setRegisteredUserId(null);
   };
 
-  // Step 1 -> Register user (role fixed 'manager/admin')
   const goNextFromStep1 = async () => {
     if (!formData.username || !formData.password || !formData.confirmPassword) {
       alert('Mohon isi username, password, dan confirm password');
@@ -314,7 +307,6 @@ const AdminList = () => {
 
     try {
       const ensuredEmail = `${formData.username}@bytelogic.local`;
-
       const payload = {
         username: formData.username,
         email: ensuredEmail,
@@ -339,8 +331,6 @@ const AdminList = () => {
       if (!newUserId) throw new Error('User ID tidak ditemukan pada respons register');
 
       setRegisteredUserId(newUserId);
-
-      // AUTO-FILL ke Step 2 bila ada
       setFormData((prev) => ({
         ...prev,
         nama_lengkap: newUser.full_name || newUser.nama_lengkap || prev.nama_lengkap,
@@ -354,7 +344,6 @@ const AdminList = () => {
     }
   };
 
-  // Step 2 -> Create admin profile
   const createManager = async () => {
     try {
       if (!registeredUserId || !/^[0-9a-fA-F]{24}$/.test(registeredUserId)) {
@@ -390,7 +379,6 @@ const AdminList = () => {
         return;
       }
 
-      // siapkan riwayat pendidikan
       const rp = (formData.riwayat_pendidikan || [])
         .map((r) => ({
           jenjang: (r.jenjang || '').trim(),
@@ -420,7 +408,6 @@ const AdminList = () => {
         tanggal_lahir: mmddyyyyToIso(formData.tanggal_lahir),
         jenis_kelamin: mapGender(formData.jenis_kelamin),
         status_pernikahan: mapMarital(formData.status_pernikahan),
-        // paksa manager
         posisi: 'manager',
         riwayat_pendidikan: rp,
       });
@@ -448,7 +435,7 @@ const AdminList = () => {
     }
   };
 
-  // ======= Riwayat Pendidikan editor =======
+  // Riwayat Pendidikan editor
   const addEduRow = () => {
     setFormData((prev) => ({
       ...prev,
@@ -458,7 +445,7 @@ const AdminList = () => {
   const removeEduRow = (idx) => {
     setFormData((prev) => {
       const arr = [...(prev.riwayat_pendidikan || [])];
-      if (arr.length <= 1) return prev; // jaga minimal 1 baris
+      if (arr.length <= 1) return prev;
       arr.splice(idx, 1);
       return { ...prev, riwayat_pendidikan: arr };
     });
@@ -476,78 +463,105 @@ const AdminList = () => {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+      <main className="flex-1 p-6 overflow-auto bg-white">
         <TopbarProfile />
 
         <h1 className="text-2xl font-bold mb-6">Admin Data</h1>
 
         {/* Search + Add */}
         <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
-          <div className="relative w-full md:w-auto">
+          <div className="w-full md:w-auto">
             <input
               type="text"
               placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              className="w-full py-2 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-center"
             />
-            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
           </div>
           <button
             onClick={openAddModal}
-            className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-700 transition-colors w-full md:w-auto"
+            className="flex items-center justify-center gap-2 bg-blue-500 text-white 
+             px-3 py-2 md:px-4 md:py-2 
+             rounded-lg hover:bg-blue-700 transition-colors 
+             w-full md:w-auto min-w-[160px]"
           >
             <span className="text-sm md:text-base">Add Admin</span>
           </button>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full">
+              <thead className="bg-white border-b border-gray-300">
                 <tr>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Full Name</th>
-                  <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Email</th>
-                  <th className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Phone</th>
-                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Address</th>
-                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">DOB</th>
-                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Gender</th>
-                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">NIK</th>
-                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Marital</th>
-                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Position</th>
-                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Education</th>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
+                  {/* kolom pertama mepet kiri */}
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Full Name
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Email
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Phone
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Address
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Gender
+                  </th>
+                  {/* HEADER Action kiri agar rata kanan-kiri keseluruhan tapi header kiri */}
+                  <th
+                    className="pr-4 md:pr-6 py-3 text-left text-sm font-normal text-black tracking-wider w-[1%] whitespace-nowrap"
+                  >
+                    Action
+                  </th>
                 </tr>
+
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+
+              <tbody className="bg-white">
                 {filteredManagers.length > 0 ? (
                   filteredManagers.map((manager) => (
                     <tr key={manager._id || manager.email}>
-                      <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-900">{manager.nama_lengkap ?? '-'}</td>
-                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.email || '-'}</td>
-                      <td className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">{manager.nomor_telepon || '-'}</td>
-                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.alamat || '-'}</td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.tanggal_lahir ? ymd(manager.tanggal_lahir) : '-'}</td>
-                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.jenis_kelamin || '-'}</td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.nik || '-'}</td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.status_pernikahan || '-'}</td>
-                      <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{manager.posisi || '-'}</td>
-                      <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-500">
-                        {manager.riwayat_pendidikan?.length > 0
-                          ? manager.riwayat_pendidikan.map((item) => `${item.jenjang || ''} - ${item.institusi || ''} - ${item.tahun_lulus || ''}`).join(', ')
-                          : '-'}
+                      {/* kolom pertama mepet kiri */}
+                      <td className="pl-4 md:pl-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {manager.nama_lengkap ?? "-"}
                       </td>
-                      <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex gap-1 md:gap-2">
-                          <button onClick={() => openEditModal(manager)} className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-yellow-600 transition-colors">
-                            <span className="text-sm">Edit</span>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.email || "-"}
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.nomor_telepon || "-"}
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {manager.alamat || "-"}
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                        {manager.jenis_kelamin || "-"}
+                      </td>
+                      {/* kolom terakhir right aligned + tombol justify-end */}
+                      <td className="pr-4 md:pr-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                        <div className="inline-flex gap-2 justify-end">
+                          <button
+                            onClick={() => openEditModal(manager)}
+                            className="bg-yellow-500 text-white px-3 py-1.5 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                          >
+                            Edit
                           </button>
-                          <button onClick={() => openDeleteModal(manager)} className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-red-600 transition-colors">
-                            <span className="text-sm">Delete</span>
+                          <button
+                            onClick={() => openDeleteModal(manager)}
+                            className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors text-sm"
+                          >
+                            Delete
                           </button>
-                          <button onClick={() => openViewModal(manager)} className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-blue-700 transition-colors">
-                            <span className="text-sm">View</span>
+                          <button
+                            onClick={() => openViewModal(manager)}
+                            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            View
                           </button>
                         </div>
                       </td>
@@ -555,7 +569,12 @@ const AdminList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500">Tidak ada data ditemukan</td>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-4 text-center text-sm text-gray-500"
+                    >
+                      Tidak ada data ditemukan
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -563,11 +582,10 @@ const AdminList = () => {
           </div>
         </div>
 
-        {/* ===================== ADD MODAL (2 STEP) ===================== */}
+        {/* ADD MODAL (2 STEP) */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
-            <div className={`bg-white rounded-lg p-6 w-full ${currentStep === 1 ? 'max-w-md' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto`}>
-              {/* Header selalu "Add Admin" */}
+            <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4 md:mb-6">
                 <h3 className="text-2xl font-semibold">Add Admin</h3>
                 <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
@@ -575,7 +593,6 @@ const AdminList = () => {
                 </button>
               </div>
 
-              {/* Subjudul dinamis + garis bawah */}
               <h4 className="text-md font-medium pb-2 border-b border-gray-300 mb-4">
                 {currentStep === 1 ? 'Login Information' : 'Personal Information'}
               </h4>
@@ -623,7 +640,6 @@ const AdminList = () => {
                     </div>
                   </div>
 
-                  {/* Role fixed (visible disabled + hidden for submit) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Role</label>
                     <input
@@ -724,9 +740,8 @@ const AdminList = () => {
                         onChange={(e) =>
                           setFormData((p) => ({ ...p, jenis_kelamin: mapGender(e.target.value) }))
                         }
-                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
-                          formData.jenis_kelamin ? 'text-gray-900' : 'text-gray-400'
-                        }`}
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${formData.jenis_kelamin ? 'text-gray-900' : 'text-gray-400'
+                          }`}
                         required
                       >
                         <option value="" disabled>
@@ -745,9 +760,8 @@ const AdminList = () => {
                         onChange={(e) =>
                           setFormData((p) => ({ ...p, status_pernikahan: mapMarital(e.target.value) }))
                         }
-                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
-                          formData.status_pernikahan ? 'text-gray-900' : 'text-gray-400'
-                        }`}
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${formData.status_pernikahan ? 'text-gray-900' : 'text-gray-400'
+                          }`}
                         required
                       >
                         <option value="" disabled>
@@ -758,7 +772,6 @@ const AdminList = () => {
                       </select>
                     </div>
 
-                    {/* Position fixed to "manager" (disabled + hidden) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Position</label>
                       <input
@@ -860,7 +873,7 @@ const AdminList = () => {
           </div>
         )}
 
-        {/* ===================== DELETE MODAL ===================== */}
+        {/* DELETE MODAL */}
         {deletingManager && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -883,7 +896,7 @@ const AdminList = () => {
           </div>
         )}
 
-        {/* ===================== EDIT MODAL ===================== */}
+        {/* EDIT MODAL */}
         {editingManager && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -974,9 +987,8 @@ const AdminList = () => {
                         name="jenis_kelamin"
                         value={formData.jenis_kelamin}
                         onChange={(e) => setFormData((p) => ({ ...p, jenis_kelamin: mapGender(e.target.value) }))}
-                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
-                          formData.jenis_kelamin ? 'text-gray-900' : 'text-gray-400'
-                        }`}
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${formData.jenis_kelamin ? 'text-gray-900' : 'text-gray-400'
+                          }`}
                         required
                       >
                         <option value="" disabled>
@@ -993,9 +1005,8 @@ const AdminList = () => {
                         name="status_pernikahan"
                         value={formData.status_pernikahan}
                         onChange={(e) => setFormData((p) => ({ ...p, status_pernikahan: mapMarital(e.target.value) }))}
-                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${
-                          formData.status_pernikahan ? 'text-gray-900' : 'text-gray-400'
-                        }`}
+                        className={`mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 ${formData.status_pernikahan ? 'text-gray-900' : 'text-gray-400'
+                          }`}
                         required
                       >
                         <option value="" disabled>
@@ -1116,7 +1127,7 @@ const AdminList = () => {
           </div>
         )}
 
-        {/* ===================== VIEW MODAL ===================== */}
+        {/* VIEW MODAL */}
         {viewingManager && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">

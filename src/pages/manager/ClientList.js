@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
 import Sidebar from '../../components/SideBar';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const ROLE = 'client';
 
@@ -358,7 +358,7 @@ const ClientList = () => {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+      <main className="flex-1 p-6 overflow-auto bg-white">
         <TopbarProfile />
 
         {/* Judul Section */}
@@ -366,72 +366,89 @@ const ClientList = () => {
 
         {/* Search and Action Section */}
         <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
-          <div className="relative w-full md:w-auto">
+          <div className="w-full md:w-auto">
             <input
               type="text"
               placeholder="Search"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full py-2 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-center"
             />
-            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
           </div>
           <button
             onClick={openAddModal}
-            className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-700 transition-colors w-full md:w-auto"
-          >
+            className="flex items-center justify-center gap-2 bg-blue-500 text-white 
+             px-3 py-2 md:px-4 md:py-2 
+             rounded-lg hover:bg-blue-700 transition-colors 
+             w-full md:w-auto min-w-[160px]"          >
             <span className="text-sm md:text-base">Add Client</span>
           </button>
         </div>
 
         {/* Table Section */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full">
+              <thead className="bg-white border-b border-gray-300">
                 <tr>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Full Name</th>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Email</th>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Phone Number</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Address</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
+                  {/* kiri mepet */}
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Full Name
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Email
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Phone
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Address
+                  </th>
+                  {/* HEADER */}
+                  <th className="pr-4 md:pr-6 py-3 text-left text-sm font-normal text-black tracking-wider w-[1%] whitespace-nowrap">
+                    Action
+                  </th>
                 </tr>
+
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+
+              <tbody className="bg-white">
                 {filteredClients.length > 0 ? (
                   filteredClients.map(client => (
                     <tr key={client._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {/* kolom pertama */}
+                      <td className="pl-4 md:pl-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {client.nama_lengkap}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {client.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {client.nomor_telepon}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {client.alamat}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex gap-2">
+                      {/* kolom terakhir */}
+                      <td className="pr-4 md:pr-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                        <div className="inline-flex gap-2 justify-end">
                           <button
                             onClick={() => handleEditClient(client)}
-                            className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 rounded-lg hover:bg-yellow-600 transition-colors"
+                            className="bg-yellow-500 text-white px-3 py-1.5 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
                           >
-                            <span className="text-sm">Edit</span>
+                            Edit
                           </button>
                           <button
                             onClick={() => handleDeleteClient(client)}
-                            className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition-colors"
+                            className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors text-sm"
                           >
-                            <span className="text-sm">Delete</span>
+                            Delete
                           </button>
                           <button
                             onClick={() => handleViewClient(client)}
-                            className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm"
                           >
-                            <span className="text-sm">View</span>
+                            View
                           </button>
                         </div>
                       </td>

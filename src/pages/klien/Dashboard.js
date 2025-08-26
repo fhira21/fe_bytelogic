@@ -462,7 +462,7 @@ const DashboardKlien = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-100">
+    <div className="min-h-screen w-full bg-gray-50">
       <Header user={user} />
 
       {/* <main className="flex-grow py-6"> */}
@@ -473,7 +473,7 @@ const DashboardKlien = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Projects Section */}
             <div className="bg-white shadow rounded-lg p-5 w-full">
-              <h2 className="text-xl font-semibold mb-4">Project Progress</h2>
+              <h2 className="text-xl font-semibold mb-4">Progress Project</h2>
 
               {projects.loading ? (
                 <div className="text-center py-8">Memuat proyek...</div>

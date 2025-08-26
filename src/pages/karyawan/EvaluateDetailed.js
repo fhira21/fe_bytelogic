@@ -14,6 +14,17 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+// ===== Util tanggal =====
+function formatDateTimeID(d) {
+  if (!d) return "-";
+  const date = new Date(d);
+  if (isNaN(date)) return "-";
+  return date.toLocaleString("id-ID", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 // ===== Util skor =====
 function avgScore5(results = []) {
   if (!Array.isArray(results) || results.length === 0) return 0;
@@ -37,7 +48,7 @@ const EvaluateDetailed = () => {
   const [allEvaluations, setAllEvaluations] = useState({
     loading: true,
     error: null,
-    data: [], // [{ project_title, results[], client_name, created_at, final_score? }, ...]
+    data: [], // [{ project_title, results[], client_name, tanggal|created_at, final_score? }, ...]
   });
 
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -113,7 +124,7 @@ const EvaluateDetailed = () => {
     };
   }, [selectedProjectFromUrl, allEvaluations.data]);
 
-  // 3) Jika tidak ada ?project=, default ke item pertama setelah list selesai dimuat
+  // 3) Default ke item pertama jika tidak ada ?project=
   useEffect(() => {
     if (selectedProjectFromUrl) return;
     if (!allEvaluations.loading && allEvaluations.data.length > 0) {
@@ -121,7 +132,7 @@ const EvaluateDetailed = () => {
     }
   }, [allEvaluations, selectedProjectFromUrl]);
 
-  // 4) Data grafik (rata-rata per proyek)
+  // 4) Data grafik
   const chartData = useMemo(() => {
     const labels = allEvaluations.data.map((i) => i.project_title || "Tanpa Nama");
     const values = allEvaluations.data.map((i) =>
@@ -154,7 +165,7 @@ const EvaluateDetailed = () => {
         },
         x: {
           ticks: {
-            callback: function (val, index) {
+            callback: function (_val, index) {
               const label = this.getLabelForValue(index);
               return label.length > 14 ? `${label.slice(0, 14)}…` : label;
             },
@@ -207,9 +218,16 @@ const EvaluateDetailed = () => {
     );
   };
 
+  // Ambil tanggal dari beberapa kemungkinan field
+  const selectedDateISO =
+    selectedDetail?.tanggal ||
+    selectedDetail?.created_at ||
+    selectedDetail?.createdAt ||
+    null;
+
   return (
     <div className="max-w-7xl mx-auto p-6">
-      {/* === Tombol Back seperti sebelumnya === */}
+      {/* Back */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => navigate(DASHBOARD_PATH, { replace: true })}
@@ -258,10 +276,7 @@ const EvaluateDetailed = () => {
             </h3>
             <p className="text-gray-500 mb-4">
               Client: {selectedDetail.client_name || "-"} •{" "}
-              Tanggal:{" "}
-              {selectedDetail.created_at
-                ? new Date(selectedDetail.created_at).toLocaleDateString("id-ID")
-                : "-"}
+              Tanggal: {formatDateTimeID(selectedDateISO)}
             </p>
 
             {selectedDetail.project_description ? (

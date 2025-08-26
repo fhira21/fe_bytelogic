@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../../components/SideBar';
 import TopbarProfile from '../../components/TopbarProfile';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTHDATE = new Date().toISOString().slice(0, 10);
@@ -42,8 +42,7 @@ const EmployeeList = () => {
       jenis_kelamin: '',
       status_pernikahan: 'belum menikah',
       alamat: '',
-      status_Karyawan: 'Karyawan Aktif',
-      // foto_profile DIHILANGKAN
+      status_Karyawan: 'Karyawan Aktif', // UI pakai ini; kirim keduanya saat POST/PUT
       riwayat_pendidikan: [{ jenjang: '', institusi: '', tahun_lulus: '' }],
     };
   }
@@ -87,10 +86,11 @@ const EmployeeList = () => {
     return val;
   };
   const normalizeEmploymentStatus = (s) => {
-    // amankan value yang lama ("Aktif"/"Tidak Aktif")
     const t = String(s || '').toLowerCase();
-    if (t === 'aktif') return 'Karyawan Aktif';
-    if (t === 'tidak aktif') return 'Karyawan Tidak Aktif';
+    if (t.includes('magang') && t.includes('tidak')) return 'Magang Tidak Aktif';
+    if (t.includes('magang') && t.includes('aktif')) return 'Magang Aktif';
+    if (t.includes('tidak')) return 'Karyawan Tidak Aktif';
+    if (t.includes('aktif')) return 'Karyawan Aktif';
     return s || 'Karyawan Aktif';
   };
   const toIsoDate = (val) => {
@@ -175,7 +175,10 @@ const EmployeeList = () => {
       jenis_kelamin: employee.jenis_kelamin || '',
       status_pernikahan: employee.status_pernikahan || 'belum menikah',
       alamat: employee.alamat || '',
-      status_Karyawan: normalizeEmploymentStatus(employee.status_Karyawan),
+      // fallback kedua nama field:
+      status_Karyawan: normalizeEmploymentStatus(
+        employee.status_karyawan ?? employee.status_Karyawan
+      ),
       riwayat_pendidikan: Array.isArray(employee.riwayat_pendidikan) && employee.riwayat_pendidikan.length
         ? employee.riwayat_pendidikan.map(r => ({
           jenjang: r.jenjang || '',
@@ -202,6 +205,8 @@ const EmployeeList = () => {
     }
 
     try {
+      const normalizedStatus = normalizeEmploymentStatus(formData.status_Karyawan);
+
       const payload = cleanObject({
         nama_lengkap: formData.nama_lengkap.trim(),
         nik: onlyDigits(formData.nik),
@@ -211,7 +216,9 @@ const EmployeeList = () => {
         jenis_kelamin: mapGenderToEnum(formData.jenis_kelamin),
         status_pernikahan: formData.status_pernikahan,
         alamat: formData.alamat.trim(),
-        status_Karyawan: normalizeEmploymentStatus(formData.status_Karyawan),
+        // kirim dua kunci agar BE mana pun menangkap
+        status_Karyawan: normalizedStatus,
+        status_karyawan: normalizedStatus,
         riwayat_pendidikan: (formData.riwayat_pendidikan || []).map(r => ({
           jenjang: r.jenjang.trim(),
           institusi: r.institusi.trim(),
@@ -226,8 +233,21 @@ const EmployeeList = () => {
       );
 
       if (res.status >= 200 && res.status < 300) {
-        const updated = res.data?.data || res.data;
-        setEmployees(prev => prev.map(emp => (emp._id === editingEmployee._id ? { ...emp, ...updated } : emp)));
+        const updated = res.data?.data || res.data || {};
+        setEmployees(prev =>
+          prev.map(emp => {
+            if (emp._id !== editingEmployee._id) return emp;
+            const newStatus =
+              updated.status_karyawan ?? updated.status_Karyawan ?? normalizedStatus;
+            return {
+              ...emp,
+              ...updated,
+              // paksa sinkron di state:
+              status_karyawan: newStatus,
+              status_Karyawan: newStatus,
+            };
+          })
+        );
         closeEditModal();
       } else {
         const msg = res.data?.message || res.data?.error || `HTTP ${res.status}`;
@@ -274,7 +294,7 @@ const EmployeeList = () => {
         username: formData.username,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-        passwordConfirmation: formData.confirmPassword, // jaga-jaga
+        passwordConfirmation: formData.confirmPassword,
         role: 'karyawan',
       };
 
@@ -293,7 +313,6 @@ const EmployeeList = () => {
       const newUserId = newUser?._id || newUser?.id;
       if (!newUserId) throw new Error('User ID tidak ditemukan pada respons register');
 
-      // autofill nama jika BE mengembalikan
       const autoName =
         newUser?.full_name ||
         newUser?.fullName ||
@@ -315,7 +334,7 @@ const EmployeeList = () => {
     }
   };
 
-  // Step 2: create karyawan (JSON, tanpa foto)
+  // Step 2: create karyawan (JSON)
   const createEmployee = async () => {
     const errs = validateStep2();
     if (errs.length) {
@@ -329,6 +348,8 @@ const EmployeeList = () => {
         return;
       }
 
+      const normalizedStatus = normalizeEmploymentStatus(formData.status_Karyawan);
+
       const payload = cleanObject({
         user_id: registeredUserId,
         nama_lengkap: formData.nama_lengkap.trim(),
@@ -339,7 +360,9 @@ const EmployeeList = () => {
         jenis_kelamin: mapGenderToEnum(formData.jenis_kelamin),
         status_pernikahan: formData.status_pernikahan,
         alamat: formData.alamat.trim(),
-        status_Karyawan: normalizeEmploymentStatus(formData.status_Karyawan),
+        // kirim dua kunci:
+        status_Karyawan: normalizedStatus,
+        status_karyawan: normalizedStatus,
         riwayat_pendidikan: (formData.riwayat_pendidikan || []).map(r => ({
           jenjang: r.jenjang.trim(),
           institusi: r.institusi.trim(),
@@ -347,20 +370,19 @@ const EmployeeList = () => {
         })),
       });
 
-      // DEBUG optional
-      // console.log('[CREATE PAYLOAD]', payload);
-
       const res = await axios.post(
         'http://be.bytelogic.orenjus.com/api/karyawan',
         payload,
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, validateStatus: () => true }
       );
 
-      // console.log('[CREATE RESP]', res.status, res.data);
-
       if (res.status >= 200 && res.status < 300) {
-        const created = res.data?.data || res.data;
-        setEmployees(prev => [...prev, created]);
+        const created = res.data?.data || res.data || {};
+        const newStatus = created.status_karyawan ?? created.status_Karyawan ?? normalizedStatus;
+        setEmployees(prev => [
+          ...prev,
+          { ...created, status_karyawan: newStatus, status_Karyawan: newStatus }
+        ]);
         closeAddModal();
       } else {
         const msg = res.data?.message || res.data?.error || `HTTP ${res.status}`;
@@ -386,97 +408,118 @@ const EmployeeList = () => {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+      <main className="flex-1 p-6 overflow-auto bg-white">
         <TopbarProfile />
 
         <h1 className="text-2xl font-bold mb-6">Employee Data</h1>
 
         {/* Search + Add */}
         <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
-          <div className="relative w-full md:w-auto">
+          <div className="w-full md:w-auto">
             <input
               type="text"
               placeholder="Search"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full py-2 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-center"
             />
-            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
           </div>
           <button
             onClick={openAddModal}
-            className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-700 transition-colors w-full md:w-auto"
+            className="flex items-center justify-center gap-2 bg-blue-500 text-white 
+             px-3 py-2 md:px-4 md:py-2 
+             rounded-lg hover:bg-blue-700 transition-colors 
+             w-full md:w-auto min-w-[160px]"
           >
             <span className="text-sm md:text-base">Add Employee</span>
           </button>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full">
+              <thead className="bg-white border-b border-gray-300">
                 <tr>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Full Name</th>
-                  <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Email</th>
-                  <th className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Phone</th>
-                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Address</th>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Gender</th>
-                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Status</th>
-                  <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">NIK</th>
-                  <th className="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
+                  {/* kolom pertama mepet kiri */}
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Full Name
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Email
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Phone
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Address
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Gender
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Status
+                  </th>
+                  {/* HEADER Action kiri agar rata kanan-kiri keseluruhan tapi header kiri */}
+                  <th
+                    className="pr-4 md:pr-6 py-3 text-left text-sm font-normal text-black tracking-wider w-[1%] whitespace-nowrap"
+                  >
+                    Action
+                  </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+
+              <tbody className="bg-white">
                 {filteredEmployees.length > 0 ? (
                   filteredEmployees.map(employee => {
-                    const status = employee.status_Karyawan || '';
-                    const isAktif = String(status).toLowerCase().includes('aktif');
+                    const statusRaw = employee.status_karyawan ?? employee.status_Karyawan ?? '';
+                    const isAktif = String(statusRaw).toLowerCase().includes('aktif');
                     return (
                       <tr key={employee._id}>
-                        <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-900">
+                        {/* kolom pertama mepet kiri */}
+                        <td className="pl-4 md:pl-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {employee.nama_lengkap || '-'}
                         </td>
-                        <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {employee.email || '-'}
                         </td>
-                        <td className="hidden sm:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="hidden sm:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {employee.nomor_telepon || '-'}
                         </td>
-                        <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="hidden lg:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {employee.alamat || '-'}
                         </td>
-                        <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {employee.jenis_kelamin || '-'}
                         </td>
-                        <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            ${isAktif ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {status || '-'}
+                        <td className="hidden lg:table-cell px-3 md:px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isAktif ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              }`}
+                          >
+                            {statusRaw || '-'}
                           </span>
                         </td>
-                        <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {employee.nik || '-'}
-                        </td>
-                        <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex gap-1 md:gap-2">
+                        {/* kolom terakhir right aligned + tombol justify-end */}
+                        <td className="pr-4 md:pr-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                          <div className="inline-flex gap-2 justify-end">
                             <button
                               onClick={() => openEditModal(employee)}
-                              className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-yellow-600 transition-colors"
+                              className="bg-yellow-500 text-white px-3 py-1.5 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
                             >
-                              <span className="text-sm">Edit</span>
+                              Edit
                             </button>
                             <button
                               onClick={() => setDeletingEmployee(employee)}
-                              className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-red-600 transition-colors"
+                              className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors text-sm"
                             >
-                              <span className="text-sm">Delete</span>
+                              Delete
                             </button>
                             <button
                               onClick={() => openViewModal(employee)}
-                              className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                              className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm"
                             >
-                              <span className="text-sm">View</span>
+                              View
                             </button>
                           </div>
                         </td>
@@ -586,8 +629,6 @@ const EmployeeList = () => {
               ) : (
                 <div className="mb-6">
                   <h4 className="text-md font-medium mb-4 pb-2 border-b-2 border-gray-300">Personal Information</h4>
-
-                  {/* Username disembunyikan di Step 2 (tetap otomatis dari Step 1) */}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div>
@@ -719,7 +760,26 @@ const EmployeeList = () => {
 
                   {/* Riwayat Pendidikan - Dinamis */}
                   <div className="border-t pt-4">
-                    <h5 className="text-sm font-medium mb-2">Riwayat Pendidikan</h5>
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-sm font-medium">Riwayat Pendidikan</h5>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={addEdu}
+                          className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                        >
+                          + Row
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeEdu((formData.riwayat_pendidikan || []).length - 1)}
+                          className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                          disabled={(formData.riwayat_pendidikan || []).length <= 1}
+                        >
+                          − Row
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="space-y-3">
                       {formData.riwayat_pendidikan.map((row, idx) => (
@@ -968,70 +1028,6 @@ const EmployeeList = () => {
                       />
                     </div>
                   </div>
-
-                  {/* Riwayat Pendidikan (Edit) */}
-                  <div className="border rounded-md p-4 mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="text-sm font-semibold">Riwayat Pendidikan</h5>
-                      <button
-                        type="button"
-                        onClick={addEdu}
-                        className="px-3 py-1.5 text-sm rounded bg-green-600 text-white hover:bg-green-700"
-                      >
-                        + Tambah
-                      </button>
-                    </div>
-
-                    <div className="space-y-4">
-                      {formData.riwayat_pendidikan.map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                          <div className="sm:col-span-3">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Jenjang</label>
-                            <input
-                              type="text"
-                              value={row.jenjang}
-                              onChange={e => handleEduChange(idx, 'jenjang', e.target.value)}
-                              className="block w-full border border-gray-300 rounded-md py-2 px-3"
-                              required
-                            />
-                          </div>
-                          <div className="sm:col-span-6">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Institusi</label>
-                            <input
-                              type="text"
-                              value={row.institusi}
-                              onChange={e => handleEduChange(idx, 'institusi', e.target.value)}
-                              className="block w-full border border-gray-300 rounded-md py-2 px-3"
-                              required
-                            />
-                          </div>
-                          <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Tahun Lulus</label>
-                            <input
-                              type="number"
-                              value={row.tahun_lulus}
-                              onChange={e => handleEduChange(idx, 'tahun_lulus', e.target.value)}
-                              min="1900"
-                              max={THIS_YEAR}
-                              className="block w-full border border-gray-300 rounded-md py-2 px-3"
-                              required
-                            />
-                          </div>
-                          <div className="sm:col-span-1 flex">
-                            <button
-                              type="button"
-                              onClick={() => removeEdu(idx)}
-                              className="ml-auto px-3 py-2 rounded bg-red-500 text-white hover:bg-red-600"
-                              disabled={formData.riwayat_pendidikan.length === 1}
-                            >
-                              Hapus
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4 border-t">
@@ -1087,10 +1083,15 @@ const EmployeeList = () => {
                     <div className="flex"><span className="w-1/3 text-gray-500">Address:</span><span className="w-2/3 text-gray-900">{viewingEmployee.alamat || '-'}</span></div>
                     <div className="flex">
                       <span className="w-1/3 text-gray-500">Employment Status:</span>
-                      <span className={`w-2/3 px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${String(viewingEmployee.status_Karyawan || '').toLowerCase().includes('aktif') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {viewingEmployee.status_Karyawan || '-'}
-                      </span>
+                      {(() => {
+                        const statusView = viewingEmployee.status_karyawan ?? viewingEmployee.status_Karyawan;
+                        const aktif = String(statusView || '').toLowerCase().includes('aktif');
+                        return (
+                          <span className={`w-2/3 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${aktif ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {statusView || '-'}
+                          </span>
+                        );
+                      })()}
                     </div>
                     {Array.isArray(viewingEmployee.riwayat_pendidikan) && viewingEmployee.riwayat_pendidikan.length > 0 && (
                       <div className="flex flex-col">
@@ -1122,4 +1123,3 @@ const EmployeeList = () => {
 };
 
 export default EmployeeList;
-

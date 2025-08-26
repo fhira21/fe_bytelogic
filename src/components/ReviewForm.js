@@ -34,8 +34,8 @@ const ReviewForm = ({
         </div>
       </div>
 
-      <div className="mt-12 border-t pt-8">
-        <h2 className="text-xl font-semibold mb-4">Berikan Review Proyek</h2>
+      <div>
+        {/* <h2 className="text-xl font-semibold mb-4">share your thoughts about the company</h2> */}
         <form onSubmit={handleSubmitReview}>
           <div className="flex justify-center mb-4">
             <StarRating
@@ -48,7 +48,6 @@ const ReviewForm = ({
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Komentar</label>
             <textarea
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows="4"
@@ -59,7 +58,7 @@ const ReviewForm = ({
                   comment: e.target.value,
                 }))
               }
-              placeholder="Berikan ulasan untuk proyek?"
+              placeholder="share your thoughts about the company"
             ></textarea>
           </div>
           {review.error && (
@@ -70,13 +69,15 @@ const ReviewForm = ({
               Review berhasil dikirim!
             </div>
           )}
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:opacity-50"
-            disabled={review.submitting}
-          >
-            {review.submitting ? "Mengirim..." : "Kirim Review"}
-          </button>
+          <div className="mt-4 flex justify-start">
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:opacity-50"
+              disabled={review.submitting}
+            >
+              {review.submitting ? "Mengirim..." : "Submit Evaluation"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

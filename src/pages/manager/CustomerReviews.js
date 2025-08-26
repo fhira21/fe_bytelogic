@@ -1,74 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
-import {
-  Home,
-  Folder,
-  Briefcase,
-  ChartBar,
-  FileText,
-  Search,
-  Trash2,
-  Plus,
-  X,
-  Star,
-  User,
-  Edit,
-  Eye
-} from 'lucide-react';
+// src/pages/manager/CustomerReviews.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import TopbarProfile from "../../components/TopbarProfile";
+import Sidebar from "../../components/SideBar";
+import { X, Star } from "lucide-react";
 
 const CustomerReviews = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('role');
+  const token = localStorage.getItem("token");
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newReview, setNewReview] = useState({
-    review: '',
-    rating: 0
-  });
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [managerProfile, setManagerProfile] = useState({
-    loading: true,
-    error: null,
-    data: null
-  });
+  const [searchTerm, setSearchTerm] = useState("");
   const [deletingReview, setDeletingReview] = useState(null);
-  const [editingReview, setEditingReview] = useState(null);
   const [viewingReview, setViewingReview] = useState(null);
+
+  // format tanggal Indonesia
+  const formatDateID = (d) =>
+    new Date(d).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        setError(null);
-
         const response = await axios.get(
-          'http://be.bytelogic.orenjus.com/api/reviews',
+          "http://be.bytelogic.orenjus.com/api/reviews",
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
-        const normalizedReviews = response.data.data.map(review => ({
+        const normalizedReviews = (response.data.data || []).map((review) => ({
           _id: review._id,
-          clientName: review.client_id?.nama_lengkap || 'Unknown Client',
+          clientName: review.client_id?.nama_lengkap || "Unknown Client",
           date: review.createdAt || new Date().toISOString(),
           review: review.review,
-          rating: review.rating
+          rating: review.rating,
         }));
-
         setReviews(normalizedReviews);
-
-      } catch (error) {
-        console.error("Fetch Error:", error);
-        setError(error.response?.data?.message ||
-          error.message ||
-          'Failed to load review data');
+      } catch (err) {
+        setError(
+          err.response?.data?.message || err.message || "Failed to load reviews"
+        );
       } finally {
         setLoading(false);
       }
@@ -77,76 +53,24 @@ const CustomerReviews = () => {
     fetchReviews();
   }, [token]);
 
-  const openAddModal = () => {
-    setNewReview({
-      review: '',
-      rating: 0
-    });
-    setShowAddModal(true);
-  };
-
-  const closeAddModal = () => setShowAddModal(false);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewReview(prev => ({ ...prev, [name]: value }));
-  };
-
-  const addReview = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      const response = await axios.post(
-        'http://be.bytelogic.orenjus.com/api/reviews',
-        {
-          review: newReview.review,
-          rating: newReview.rating
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setReviews(prev => [...prev, {
-        _id: response.data.data._id,
-        clientName: 'You',
-        date: new Date().toISOString(),
-        review: response.data.data.review,
-        rating: response.data.data.rating
-      }]);
-
-      closeAddModal();
-    } catch (error) {
-      console.error("Add Review Error:", error);
-      if (error.response?.status === 403) {
-        setError("Only clients can add reviews");
-      } else {
-        setError(error.response?.data?.message || 'Failed to add review');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const confirmDelete = async () => {
     try {
-      setLoading(true);
       await axios.delete(
         `http://be.bytelogic.orenjus.com/api/reviews/${deletingReview._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setReviews(reviews.filter(r => r._id !== deletingReview._id));
+      setReviews((prev) =>
+        prev.filter((r) => r._id !== deletingReview._id)
+      );
       setDeletingReview(null);
-    } catch (error) {
-      console.error("Delete Review Error:", error);
-      setError(error.response?.data?.message || 'Failed to delete review');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete review");
     }
   };
 
-  const filteredReviews = reviews.filter(review => {
-    const clientName = review.clientName || '';
-    const reviewText = review.review || '';
+  const filteredReviews = reviews.filter((r) => {
+    const clientName = r.clientName || "";
+    const reviewText = r.review || "";
     return (
       clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       reviewText.toLowerCase().includes(searchTerm.toLowerCase())
@@ -157,92 +81,120 @@ const CustomerReviews = () => {
     <div className="flex h-screen">
       <Sidebar />
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+      <main className="flex-1 p-6 overflow-auto bg-white">
         <TopbarProfile />
 
-        {/* Title Section */}
-        <h1 className="text-2xl font-bold mb-6">Customer Reviews</h1>
+        <h1 className="text-2xl font-bold mb-6">Review</h1>
 
-        {loading && (
-          <div className="flex items-center justify-center p-4">
-            <i className="fas fa-spinner fa-spin mr-2"></i> Loading reviews...
-          </div>
-        )}
+        {loading && <p className="p-4">Loading reviews...</p>}
+        {error && <p className="p-4 text-red-500">{error}</p>}
 
-        {error && (
-          <div className="flex items-center justify-center p-4 text-red-500">
-            <i className="fas fa-exclamation-circle mr-2"></i> {error}
-          </div>
-        )}
-
-        {/* Search and Action Section */}
-        <div className="flex flex-col md:flex-row justify-end items-center mb-4 gap-2">
-          <div className="relative w-full md:w-auto">
+        {/* Search */}
+        <div className="flex justify-end mb-4">
+          <div className="w-full md:w-auto">
             <input
               type="text"
               placeholder="Search"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full py-2 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-center"
             />
-            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
           </div>
         </div>
 
-        {/* Table Section */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Table */}
+        <div className="rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full table-fixed">
+              {/* Atur lebar masing-masing kolom */}
+              <colgroup>
+                <col className="w-[220px]" />   {/* Client Name */}
+                <col className="w-[160px]" />   {/* Date */}
+                <col className="w-[420px]" />   {/* Review: dibuat lebih sempit */}
+                <col className="w-[140px]" />   {/* Rating */}
+                <col className="w-[120px]" />   {/* Action */}
+              </colgroup>
+
+              <thead className="bg-white border-b border-gray-300">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Client Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Review</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Rating</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">Action</th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider whitespace-nowrap">
+                    Client Name
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Date
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Review
+                  </th>
+                  <th className="pl-4 md:pl-6 py-3 text-left text-sm font-normal text-black tracking-wider">
+                    Rating
+                  </th>
+                  <th className="pr-4 md:pr-6 py-3 text-left text-sm font-normal text-black tracking-wider w-[1%] whitespace-nowrap">
+                    Action
+                  </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredReviews.length > 0 ? filteredReviews.map((review, index) => (
-                  <tr key={review._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {review.clientName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(review.date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {review.review}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={16}
-                            className={i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
-                          />
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
+
+              <tbody className="bg-white">
+                {filteredReviews.length > 0 ? (
+                  filteredReviews.map((review) => (
+                    <tr key={review._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {review.clientName}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                        {formatDateID(review.date)}
+                      </td>
+
+                      {/* Batasi lebar konten + wrap + clamp */}
+                      <td className="px-6 py-4 text-sm text-gray-900 align-top">
+                        <p
+                          className="max-w-[420px] break-words leading-relaxed"
+                          style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                          title={review.review}
+                        >
+                          {review.review}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              size={16}
+                              className={
+                                i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }
+                            />
+                          ))}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
                         <button
                           onClick={() => setDeletingReview(review)}
-                          className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition-colors"
+                          className="px-3 py-1.5 rounded-md bg-rose-600 text-white hover:bg-rose-700 transition-colors"
                         >
-                          <span className="text-sm">Delete</span>
+                          Delete
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={5} className="px-6 py-6 text-center text-sm text-gray-500">
                       {reviews.length === 0
-                        ? 'No review data available'
-                        : 'No reviews match your search'}
+                        ? "No review data available"
+                        : "No reviews match your search"}
                     </td>
                   </tr>
                 )}
@@ -251,7 +203,7 @@ const CustomerReviews = () => {
           </div>
         </div>
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Modal */}
         {deletingReview && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -264,17 +216,20 @@ const CustomerReviews = () => {
                   <X size={20} />
                 </button>
               </div>
-              <p className="mb-6">Are you sure you want to delete this review from {deletingReview.clientName}?</p>
-              <div className="flex justify-end space-x-3">
+              <p className="mb-6">
+                Are you sure you want to delete this review from{" "}
+                {deletingReview.clientName}?
+              </p>
+              <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeletingReview(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 bg-gray-200 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                 >
                   Delete
                 </button>
@@ -298,34 +253,38 @@ const CustomerReviews = () => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-500">Client Name</label>
-                  <p className="mt-1 text-sm text-gray-900">{viewingReview.clientName}</p>
+                  <label className="block text-sm text-gray-500">Client Name</label>
+                  <p className="text-sm text-gray-900">{viewingReview.clientName}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500">Date</label>
-                  <p className="mt-1 text-sm text-gray-900">{new Date(viewingReview.date).toLocaleDateString()}</p>
+                  <label className="block text-sm text-gray-500">Date</label>
+                  <p className="text-sm text-gray-900">{formatDateID(viewingReview.date)}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500">Rating</label>
+                  <label className="block text-sm text-gray-500">Rating</label>
                   <div className="flex items-center mt-1">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star
                         key={i}
                         size={16}
-                        className={i < viewingReview.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+                        className={
+                          i < viewingReview.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }
                       />
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500">Review</label>
-                  <p className="mt-1 text-sm text-gray-900">{viewingReview.review}</p>
+                  <label className="block text-sm text-gray-500">Review</label>
+                  <p className="text-sm text-gray-900">{viewingReview.review}</p>
                 </div>
               </div>
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setViewingReview(null)}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Close
                 </button>

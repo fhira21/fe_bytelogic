@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiBell,
   FiChevronDown,
   FiChevronUp,
   FiUser,
@@ -132,10 +131,6 @@ export default function Header() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="p-1 text-gray-500 rounded-full hover:bg-gray-100">
-              <FiBell size={20} />
-            </button>
-
             <div className="relative ml-3">
               <button
                 type="button"
