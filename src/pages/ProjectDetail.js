@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// src/pages/ProjectDetail.jsx
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   FaGithub,
   FaFigma,
@@ -10,9 +11,9 @@ import {
   FaChevronLeft,
   FaCircle,
   FaRegCircle,
-  FaInfoCircle
-} from 'react-icons/fa';
-import { FiClock, FiUser } from 'react-icons/fi';
+  FaInfoCircle,
+} from "react-icons/fa";
+import { FiClock, FiUser } from "react-icons/fi";
 
 // Import gambar our project dari homepage
 import OurProject1Image from "../assets/images/ourprojectsatu.png";
@@ -22,30 +23,95 @@ import OurProject4Image from "../assets/images/ourproject4.png";
 import OurProject5Image from "../assets/images/ourproject5.png";
 import OurProject6Image from "../assets/images/ourproject6.png";
 
+const API_BASE = "http://be.bytelogic.orenjus.com";
+
+/* Helpers */
+const toAbsoluteUrl = (u) => {
+  if (!u) return "";
+  if (/^https?:\/\//i.test(u)) return u;
+  if (u.startsWith("/")) return `${API_BASE}${u}`;
+  return `${API_BASE}/${u}`;
+};
+
+const safeDate = (v, fallback = "") => {
+  const d = v ? new Date(v) : null;
+  return d && !isNaN(d) ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : fallback;
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case "Completed":
+      return { bg: "bg-green-100", text: "text-green-800", icon: FaCheckCircle };
+    case "On Progress":
+      return { bg: "bg-yellow-100", text: "text-yellow-800", icon: FiClock };
+    default:
+      return { bg: "bg-gray-100", text: "text-gray-800", icon: FiClock };
+  }
+};
+
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Array gambar our project dari homepage
+  // Array gambar our project dari homepage (fallback)
   const ourProjectImages = [
     OurProject1Image,
     OurProject2Image,
     OurProject3Image,
     OurProject4Image,
     OurProject5Image,
-    OurProject6Image
+    OurProject6Image,
   ];
 
-  // Check authentication status on component mount
+  // Cek auth di mount
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsAuthenticated(!!token);
   }, []);
+
+  // Normalisasi payload proyek (samakan field & siapkan fallback)
+  const formatProjectData = (raw) => {
+    const description =
+      raw?.description ??
+      raw?.desc ??
+      raw?.deskripsi ??
+      raw?.short_description ??
+      "";
+
+    const imgs = Array.isArray(raw?.images) ? raw.images : [];
+    const thumb = raw?.thumbnail ? [raw.thumbnail] : [];
+
+    return {
+      ...raw,
+      // tanggal
+      created_at: raw?.created_at ?? raw?.createdAt ?? raw?.createddate,
+      createdAt: raw?.createdAt ?? raw?.created_at,
+      deadline: safeDate(raw?.deadline, "-"),
+      completiondate: raw?.completiondate ? safeDate(raw.completiondate, "On Progress") : "On Progress",
+      // deskripsi aman
+      description,
+      // gambar absolute + fallback thumbnail
+      images: (imgs.length ? imgs : thumb).map(toAbsoluteUrl),
+      // koleksi default
+      employees: Array.isArray(raw?.employees) ? raw.employees : [],
+      github_commits: Array.isArray(raw?.github_commits) ? raw.github_commits : [],
+      // link
+      github_repo_url: raw?.github_repo_url ?? raw?.githubUrl ?? "",
+      figma: raw?.figma ?? "",
+      // status
+      status: raw?.status || "Waiting List",
+      title: raw?.title || raw?.name || "",
+      framework: raw?.framework || "",
+      client: raw?.client,
+      manager: raw?.manager,
+    };
+  };
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -53,56 +119,60 @@ const ProjectDetail = () => {
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         let response;
 
-        // Jika ada token, coba endpoint private terlebih dahulu
+        // 1) Coba endpoint private jika ada token
         if (token) {
           try {
-            response = await axios.get(`http://be.bytelogic.orenjus.com/api/projects/${id}`, {
-              headers: { Authorization: `Bearer ${token}` }
+            response = await axios.get(`${API_BASE}/api/projects/${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
             });
-            setProject(formatProjectData(response.data));
+            const payload = response?.data?.data ?? response?.data ?? {};
+            setProject(formatProjectData(payload));
             return;
           } catch (privateError) {
-            // Jika unauthorized, lanjut ke endpoint public
-            if (privateError.response?.status !== 401 && privateError.response?.status !== 403) {
+            // Jika bukan 401/403, lempar error
+            if (
+              privateError?.response?.status !== 401 &&
+              privateError?.response?.status !== 403
+            ) {
               throw privateError;
             }
+            // Kalau 401/403, turun ke public
+            localStorage.removeItem("token");
+            setIsAuthenticated(false);
           }
         }
 
-        // Gunakan endpoint public summary untuk guest
-        const publicResponse = await axios.get(`http://be.bytelogic.orenjus.com/api/projects/summary`);
-        const projectFromSummary = publicResponse.data.data.find(p => p._id === id);
+        // 2) Fallback: endpoint public summary untuk guest
+        const publicResponse = await axios.get(`${API_BASE}/api/projects/summary`);
+        const list = Array.isArray(publicResponse?.data?.data) ? publicResponse.data.data : [];
+        const projectFromSummary = list.find((p) => String(p._id) === String(id));
 
         if (!projectFromSummary) {
-          throw new Error('Project not found in public data');
+          throw new Error("Project not found in public data");
         }
 
-        // Format data dengan memastikan gambar utama menggunakan thumbnail jika images kosong
+        // Pastikan ada gambar minimal (pakai thumbnail bila images kosong)
         const formattedProject = formatProjectData({
           ...projectFromSummary,
-          images: projectFromSummary.images?.length > 0 
-            ? projectFromSummary.images 
-            : projectFromSummary.thumbnail 
-              ? [projectFromSummary.thumbnail] 
-              : []
+          images:
+            Array.isArray(projectFromSummary.images) && projectFromSummary.images.length > 0
+              ? projectFromSummary.images
+              : projectFromSummary.thumbnail
+              ? [projectFromSummary.thumbnail]
+              : [],
         });
 
         setProject(formattedProject);
-
       } catch (err) {
         console.error("Failed to fetch project:", err);
-
-        // Handle error spesifik
         if (err.response) {
           switch (err.response.status) {
             case 401:
             case 403:
               setError("Session expired. Please login again.");
-              localStorage.removeItem('token');
-              setIsAuthenticated(false);
               break;
             case 404:
               setError("Project not found");
@@ -120,38 +190,6 @@ const ProjectDetail = () => {
 
     fetchProject();
   }, [id]);
-
-  const formatProjectData = (data) => {
-    return {
-      ...data,
-      deadline: new Date(data.deadline).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }),
-      completiondate: data.completiondate
-        ? new Date(data.completiondate).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-        : 'On Progress',
-      images: data.images || [],
-      employees: data.employees || [],
-      github_commits: data.github_commits || []
-    };
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Completed':
-        return { bg: 'bg-green-100', text: 'text-green-800', icon: FaCheckCircle };
-      case 'On Progress':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: FiClock };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-800', icon: FiClock };
-    }
-  };
 
   const handleImageError = (e) => {
     e.target.onerror = null;
@@ -180,9 +218,10 @@ const ProjectDetail = () => {
             >
               Back
             </button>
-            {(error.includes('Unauthorized') || error.includes('Session expired')) && (
+            {(String(error).includes("Unauthorized") ||
+              String(error).includes("Session expired")) && (
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate("/login")}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 Login
@@ -197,11 +236,12 @@ const ProjectDetail = () => {
   const statusColor = getStatusColor(project.status);
   const StatusIcon = statusColor.icon;
 
-  // Mendapatkan gambar yang akan ditampilkan (utama atau fallback ke ourProjectImages)
-  const displayImages = project.images.length > 0 
-    ? project.images 
-    : project.thumbnail 
-      ? [project.thumbnail] 
+  // Gambar yang dipakai (prioritas: images -> thumbnail -> fallback random)
+  const displayImages =
+    project.images && project.images.length > 0
+      ? project.images
+      : project.thumbnail
+      ? [toAbsoluteUrl(project.thumbnail)]
       : [ourProjectImages[Math.floor(Math.random() * ourProjectImages.length)]];
 
   return (
@@ -238,22 +278,31 @@ const ProjectDetail = () => {
           <div className="p-8 border-b border-gray-200">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">{project.title}</h1>
-                <h2 className="text-xl text-blue-600 mt-2">{project.framework}</h2>
+                <h1 className="text-3xl font-bold text-gray-800">
+                  {project.title}
+                </h1>
+                <h2 className="text-xl text-blue-600 mt-2">
+                  {project.framework}
+                </h2>
               </div>
 
-              <div className={`mt-4 md:mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColor.bg} ${statusColor.text}`}>
+              <div
+                className={`mt-4 md:mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColor.bg} ${statusColor.text}`}
+              >
                 <StatusIcon className="mr-2" />
                 {project.status}
               </div>
             </div>
           </div>
 
-          {/* Project Image Gallery - Menggunakan gambar dari ourProjectImages jika tidak ada gambar proyek */}
+          {/* Project Image Gallery */}
           <div className="px-8 py-6 border-b border-gray-200">
             {displayImages.length > 0 ? (
               <>
-                <div className="relative rounded-lg overflow-hidden bg-gray-100" style={{ height: '400px' }}>
+                <div
+                  className="relative rounded-lg overflow-hidden bg-gray-100"
+                  style={{ height: "400px" }}
+                >
                   <img
                     src={displayImages[activeImageIndex]}
                     alt={`Project ${project.title}`}
@@ -281,7 +330,10 @@ const ProjectDetail = () => {
                 )}
               </>
             ) : (
-              <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height: '300px' }}>
+              <div
+                className="flex items-center justify-center bg-gray-100 rounded-lg"
+                style={{ height: "300px" }}
+              >
                 <p className="text-gray-500">No images available</p>
               </div>
             )}
@@ -292,26 +344,12 @@ const ProjectDetail = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Main Content */}
               <div className="lg:col-span-2">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">Project Description</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  Project Description
+                </h3>
                 <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-                  {project.description || 'No description available'}
+                  {project.description || "No description available"}
                 </p>
-
-                {project.github_commits.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h3>
-                    <div className="space-y-4">
-                      {project.github_commits.slice(0, 3).map((commit, index) => (
-                        <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                          <p className="text-gray-800 font-medium">{commit.message}</p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(commit.date).toLocaleString()} by {commit.author}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Sidebar */}
@@ -326,23 +364,20 @@ const ProjectDetail = () => {
                     <div>
                       <p className="text-sm text-gray-500">Start Date</p>
                       <p className="font-medium">
-                        {new Date(project.created_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        {safeDate(project.created_at || project.createdAt, "-")}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Deadline</p>
                       <p className="font-medium">{project.deadline}</p>
                     </div>
-                    {project.completiondate && project.completiondate !== 'On Progress' && (
-                      <div>
-                        <p className="text-sm text-gray-500">Completed On</p>
-                        <p className="font-medium">{project.completiondate}</p>
-                      </div>
-                    )}
+                    {project.completiondate &&
+                      project.completiondate !== "On Progress" && (
+                        <div>
+                          <p className="text-sm text-gray-500">Completed On</p>
+                          <p className="font-medium">{project.completiondate}</p>
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -356,13 +391,17 @@ const ProjectDetail = () => {
                     <div>
                       <p className="text-sm text-gray-500">Client</p>
                       <p className="font-medium">
-                        {project.client?.nama_lengkap || project.client || 'Not specified'}
+                        {project.client?.nama_lengkap ||
+                          project.client ||
+                          "Not specified"}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Manager</p>
                       <p className="font-medium">
-                        {project.manager?.nama_lengkap || project.manager || 'Not specified'}
+                        {project.manager?.nama_lengkap ||
+                          project.manager ||
+                          "Not specified"}
                       </p>
                     </div>
                     {project.employees.length > 0 && (
@@ -372,7 +411,9 @@ const ProjectDetail = () => {
                           {project.employees.map((employee, index) => (
                             <li key={index} className="flex items-center">
                               <FiUser className="mr-2 text-gray-500" />
-                              {employee?.nama_lengkap || employee || `Team Member ${index + 1}`}
+                              {employee?.nama_lengkap ||
+                                employee ||
+                                `Team Member ${index + 1}`}
                             </li>
                           ))}
                         </ul>
@@ -392,7 +433,11 @@ const ProjectDetail = () => {
                       <div className="flex items-center">
                         <FaFigma className="text-gray-500 mr-2" />
                         <a
-                          href={project.figma.startsWith('http') ? project.figma : `https://${project.figma}`}
+                          href={
+                            project.figma.startsWith("http")
+                              ? project.figma
+                              : `https://${project.figma}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline break-all"
@@ -401,13 +446,19 @@ const ProjectDetail = () => {
                         </a>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500">No Figma link available</p>
+                      <p className="text-sm text-gray-500">
+                        No Figma link available
+                      </p>
                     )}
                     {project.github_repo_url ? (
                       <div className="flex items-center">
                         <FaGithub className="text-gray-500 mr-2" />
                         <a
-                          href={project.github_repo_url.startsWith('http') ? project.github_repo_url : `https://${project.github_repo_url}`}
+                          href={
+                            project.github_repo_url.startsWith("http")
+                              ? project.github_repo_url
+                              : `https://${project.github_repo_url}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline break-all"
@@ -416,7 +467,9 @@ const ProjectDetail = () => {
                         </a>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500">No GitHub repository available</p>
+                      <p className="text-sm text-gray-500">
+                        No GitHub repository available
+                      </p>
                     )}
                   </div>
                 </div>
@@ -429,12 +482,24 @@ const ProjectDetail = () => {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="mb-4 md:mb-0">
                 <p className="text-sm opacity-80">CONNECTING YOUR IDEAS</p>
-                <p className="text-sm opacity-80">INFO REALITY.<strong>Bytelogi.com@2025</strong></p>
+                <p className="text-sm opacity-80">
+                  INFO REALITY.<strong>Bytelogi.com@2025</strong>
+                </p>
               </div>
               <div className="flex flex-col">
                 <p className="text-sm font-medium mb-1">Contact us</p>
-                <a href="tel:+6287702064017" className="text-sm opacity-80 hover:opacity-100">+6287702064017</a>
-                <a href="mailto:hello@bysteige.com" className="text-sm opacity-80 hover:opacity-100">hello@bytelogic.com</a>
+                <a
+                  href="tel:+6287702064017"
+                  className="text-sm opacity-80 hover:opacity-100"
+                >
+                  +6287702064017
+                </a>
+                <a
+                  href="mailto:hello@bysteige.com"
+                  className="text-sm opacity-80 hover:opacity-100"
+                >
+                  hello@bytelogic.com
+                </a>
               </div>
             </div>
           </div>
