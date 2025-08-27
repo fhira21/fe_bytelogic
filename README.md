@@ -32,7 +32,7 @@ This is the frontend repository for the **Employee Evaluation & Project Manageme
 ### Prerequisites
 - Node.js (v16+)
 - npm (v8+)
-- Backend server running (see backend README)
+- Backend server running (see repository in backend https://github.com/fhira21/be_bytelogic.git)
 
 ### Installation
 1. **Clone the repository**
@@ -85,13 +85,6 @@ src/
 - **Evaluation Forms**: Rating input with validation
 - **Progress Bars**: Visual project tracking
 
-## 🌐 API Integration
-The frontend communicates with these main API endpoints:
-- `/api/auth` - Authentication
-- `/api/projects` - Project management
-- `/api/evaluations` - Employee evaluations
-- `/api/karyawan` - Employee data
-
 ## 📝 Available Scripts
 - `npm start`: Runs the app in development mode
 - `npm test`: Launches the test runner
@@ -104,14 +97,6 @@ If you encounter issues:
 2. Check browser console for errors
 3. Ensure environment variables are properly set
 4. Clear browser cache if experiencing stale data
-
-## 🤝 Contributing
-Contributions are welcome! Please follow these steps:
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
 
 ## 📜 License
 This project is licensed under the MIT License.
