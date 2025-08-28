@@ -161,8 +161,8 @@ const ProjectDetail = () => {
             Array.isArray(projectFromSummary.images) && projectFromSummary.images.length > 0
               ? projectFromSummary.images
               : projectFromSummary.thumbnail
-              ? [projectFromSummary.thumbnail]
-              : [],
+                ? [projectFromSummary.thumbnail]
+                : [],
         });
 
         setProject(formattedProject);
@@ -220,13 +220,13 @@ const ProjectDetail = () => {
             </button>
             {(String(error).includes("Unauthorized") ||
               String(error).includes("Session expired")) && (
-              <button
-                onClick={() => navigate("/login")}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Login
-              </button>
-            )}
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Login
+                </button>
+              )}
           </div>
         </div>
       </div>
@@ -241,15 +241,15 @@ const ProjectDetail = () => {
     project.images && project.images.length > 0
       ? project.images
       : project.thumbnail
-      ? [toAbsoluteUrl(project.thumbnail)]
-      : [ourProjectImages[Math.floor(Math.random() * ourProjectImages.length)]];
+        ? [toAbsoluteUrl(project.thumbnail)]
+        : [ourProjectImages[Math.floor(Math.random() * ourProjectImages.length)]];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/#projects")}
           className="flex items-center text-blue-600 hover:text-blue-800 mb-6"
         >
           <FaChevronLeft className="mr-2" />

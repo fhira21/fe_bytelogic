@@ -97,14 +97,23 @@ function Home() {
     };
   }, [showIntro]);
 
-useEffect(() => {
-  if (!showIntro) {
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-    if (!reduce) {
-      window.dispatchEvent(new Event("bytelogic:intro-finished"));
+  useEffect(() => {
+    if (!showIntro) {
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      if (!reduce) {
+        window.dispatchEvent(new Event("bytelogic:intro-finished"));
+      }
+    }
+  }, [showIntro]);
+
+  useEffect(() => {
+  if (window.location.hash) {
+    const el = document.getElementById(window.location.hash.replace("#", ""));
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
-}, [showIntro]);
+}, []);
 
   /* Services scroller */
   const servicesRef = useRef(null);
@@ -456,11 +465,17 @@ useEffect(() => {
           </section>
 
           {/* Our Projects Section (grid) */}
-          <section id="projects" className="scroll-mt-24 w-full bg-white py-8 sm:py-12 px-3 sm:px-6 lg:px-8">
+          <section
+            id="projects"
+            className="scroll-mt-24 w-full bg-white py-8 sm:py-12 px-3 sm:px-6 lg:px-8"
+          >
             <div className="max-w-7xl mx-auto">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2 text-center">Our Projects</h1>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2 text-center">
+                Our Projects
+              </h1>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 sm:mb-12 text-center">
-                Explore our completed projects – each one reflects our dedication to delivering comprehensive digital solutions.
+                Explore our completed projects – each one reflects our dedication to
+                delivering comprehensive digital solutions.
               </p>
 
               {loadingProjects ? (
@@ -470,20 +485,34 @@ useEffect(() => {
               ) : projectsError ? (
                 <div className="text-center py-8">
                   <div className="text-red-500 mb-4">{projectsError}</div>
-                  <button onClick={fetchProjects} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  <button
+                    onClick={fetchProjects}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
                     Try Again
                   </button>
                 </div>
               ) : projects.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 mb-8">
                   {projects.slice(0, 6).map((project, index) => (
-                    <div key={project.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div
+                      key={project.id}
+                      className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow flex flex-col"
+                    >
+                      {/* Gambar */}
                       <div className="overflow-hidden">
                         <div className="w-full aspect-[16/10]">
                           <img
                             src={
                               project.images?.[0] ||
-                              [OurProject1Image, OurProject2Image, OurProject3Image, OurProject4Image, OurProject5Image, OurProject6Image][index] ||
+                              [
+                                OurProject1Image,
+                                OurProject2Image,
+                                OurProject3Image,
+                                OurProject4Image,
+                                OurProject5Image,
+                                OurProject6Image,
+                              ][index] ||
                               OurProject6Image
                             }
                             alt={project.title}
@@ -492,31 +521,26 @@ useEffect(() => {
                           />
                         </div>
                       </div>
-                      <div className="p-6">
+
+                      {/* Konten */}
+                      <div className="p-6 flex-1 flex flex-col">
                         <h3 className="font-bold text-lg mb-2">{project.title}</h3>
                         <p className="text-gray-600 mb-2">
                           <strong>Framework:</strong> {project.framework}
                         </p>
-                        <p className="text-gray-600 line-clamp-3">{project.description}</p>
-                      </div>
-                      <div className="p-4 flex justify-between items-center">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            project.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : project.status === "On Progress"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {project.status}
-                        </span>
-                        <button
-                          onClick={() => handleViewDetail(project.id)}
-                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                        >
-                          View Detail
-                        </button>
+                        <p className="text-gray-600 line-clamp-3 flex-1">
+                          {project.description}
+                        </p>
+
+                        {/* Tombol pojok kanan bawah */}
+                        <div className="mt-auto flex justify-end">
+                          <button
+                            onClick={() => handleViewDetail(project.id)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                          >
+                            View Detail
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
