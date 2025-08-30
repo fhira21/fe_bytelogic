@@ -6,6 +6,7 @@ import Sidebar from '../../components/SideBar';
 import TopbarProfile from '../../components/TopbarProfile';
 import { X } from 'lucide-react';
 
+const API_BASE = 'http://be.bytelogic.orenjus.com';
 const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTHDATE = new Date().toISOString().slice(0, 10);
 
@@ -108,6 +109,28 @@ const EmployeeList = () => {
     return out;
   };
 
+  // username fallback jika backend tidak mengembalikan langsung
+  const deriveUsername = (obj) => {
+    if (obj?.username) return obj.username;
+    if (obj?.user?.username) return obj.user.username;
+    if (obj?.email && obj.email.includes('@')) return obj.email.split('@')[0];
+    return '-';
+  };
+
+  const fetchUserById = async (uid, tk) => {
+    if (!uid) return null;
+    try {
+      const res = await axios.get(`${API_BASE}/api/users/${uid}`, {
+        headers: { Authorization: `Bearer ${tk}` },
+        validateStatus: () => true,
+      });
+      if (res.status >= 200 && res.status < 300) {
+        return res.data?.data || res.data || null;
+      }
+    } catch (_) {}
+    return null;
+  };
+
   const validateStep2 = () => {
     const errors = [];
     if (!formData.nama_lengkap?.trim()) errors.push('Nama lengkap wajib diisi.');
@@ -135,11 +158,18 @@ const EmployeeList = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await axios.get('http://be.bytelogic.orenjus.com/api/karyawan', {
+        const res = await axios.get(`${API_BASE}/api/karyawan`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = Array.isArray(res.data) ? res.data : res.data?.data;
-        setEmployees(data || []);
+        const list = (data || []).map((it) => ({
+          ...it,
+          _id: it._id || it.id,
+          // simpan user_id & username jika ada
+          user_id: it.user_id?._id || it.user_id || it.user?._id || it.user?.id || it.userId,
+          username: it.user?.username || it.username, // kalau BE sudah populate
+        }));
+        setEmployees(list);
       } catch (err) {
         console.error('Error fetching employee data:', err);
         if (err.response?.status === 401) {
@@ -227,7 +257,7 @@ const EmployeeList = () => {
       });
 
       const res = await axios.put(
-        `http://be.bytelogic.orenjus.com/api/karyawan/${editingEmployee._id}`,
+        `${API_BASE}/api/karyawan/${editingEmployee._id}`,
         payload,
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, validateStatus: () => true }
       );
@@ -242,7 +272,6 @@ const EmployeeList = () => {
             return {
               ...emp,
               ...updated,
-              // paksa sinkron di state:
               status_karyawan: newStatus,
               status_Karyawan: newStatus,
             };
@@ -299,7 +328,7 @@ const EmployeeList = () => {
       };
 
       const res = await axios.post(
-        'http://be.bytelogic.orenjus.com/api/users/register',
+        `${API_BASE}/api/users/register`,
         payload,
         { headers: { 'Content-Type': 'application/json' }, validateStatus: () => true }
       );
@@ -371,7 +400,7 @@ const EmployeeList = () => {
       });
 
       const res = await axios.post(
-        'http://be.bytelogic.orenjus.com/api/karyawan',
+        `${API_BASE}/api/karyawan`,
         payload,
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, validateStatus: () => true }
       );
@@ -400,7 +429,26 @@ const EmployeeList = () => {
   };
 
   /* ============== View & Delete ============== */
-  const openViewModal = (employee) => setViewingEmployee(employee);
+  const openViewModal = async (employee) => {
+    // tampilkan dulu dengan fallback, lalu coba ambil username asli via user_id
+    const initial = {
+      ...employee,
+      username: employee.username || deriveUsername(employee),
+    };
+    setViewingEmployee(initial);
+
+    const tk = localStorage.getItem('token');
+    const uid = employee?.user_id;
+    const user = tk && uid ? await fetchUserById(uid, tk) : null;
+
+    if (user?.username || user?.role) {
+      setViewingEmployee(prev => ({
+        ...prev,
+        username: user.username || prev.username || deriveUsername(prev),
+      }));
+    }
+  };
+
   const closeViewModal = () => setViewingEmployee(null);
 
   return (
@@ -869,7 +917,7 @@ const EmployeeList = () => {
                 <button
                   onClick={async () => {
                     try {
-                      await axios.delete(`http://be.bytelogic.orenjus.com/api/karyawan/${deletingEmployee._id}`, {
+                      await axios.delete(`${API_BASE}/api/karyawan/${deletingEmployee._id}`, {
                         headers: { Authorization: `Bearer ${token}` },
                       });
                       setEmployees(prev => prev.filter(emp => emp._id !== deletingEmployee._id));
@@ -1067,7 +1115,7 @@ const EmployeeList = () => {
                   <div className="grid grid-cols-1 gap-4 mb-6">
                     <div className="flex">
                       <span className="w-1/3 text-gray-500">Username:</span>
-                      <span className="w-2/3 text-gray-900">{viewingEmployee.username || '-'}</span>
+                      <span className="w-2/3 text-gray-900">{deriveUsername(viewingEmployee)}</span>
                     </div>
                   </div>
 

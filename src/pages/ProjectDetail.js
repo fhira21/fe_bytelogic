@@ -25,6 +25,9 @@ import OurProject6Image from "../assets/images/ourproject6.png";
 
 const API_BASE = "http://be.bytelogic.orenjus.com";
 
+/** axios publik TANPA Authorization */
+const publicAPI = axios.create({ baseURL: API_BASE });
+
 /* Helpers */
 const toAbsoluteUrl = (u) => {
   if (!u) return "";
@@ -35,7 +38,9 @@ const toAbsoluteUrl = (u) => {
 
 const safeDate = (v, fallback = "") => {
   const d = v ? new Date(v) : null;
-  return d && !isNaN(d) ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : fallback;
+  return d && !isNaN(d)
+    ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    : fallback;
 };
 
 const getStatusColor = (status) => {
@@ -71,18 +76,14 @@ const ProjectDetail = () => {
 
   // Cek auth di mount
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     setIsAuthenticated(!!token);
   }, []);
 
   // Normalisasi payload proyek (samakan field & siapkan fallback)
   const formatProjectData = (raw) => {
     const description =
-      raw?.description ??
-      raw?.desc ??
-      raw?.deskripsi ??
-      raw?.short_description ??
-      "";
+      raw?.description ?? raw?.desc ?? raw?.deskripsi ?? raw?.short_description ?? "";
 
     const imgs = Array.isArray(raw?.images) ? raw.images : [];
     const thumb = raw?.thumbnail ? [raw.thumbnail] : [];
@@ -114,39 +115,52 @@ const ProjectDetail = () => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchProject = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem("token");
-        let response;
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
         // 1) Coba endpoint private jika ada token
         if (token) {
           try {
-            response = await axios.get(`${API_BASE}/api/projects/${id}`, {
+            const response = await axios.get(`${API_BASE}/api/projects/${id}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             const payload = response?.data?.data ?? response?.data ?? {};
-            setProject(formatProjectData(payload));
+            if (!cancelled) {
+              setProject(formatProjectData(payload));
+              setLoading(false);
+            }
             return;
           } catch (privateError) {
-            // Jika bukan 401/403, lempar error
-            if (
-              privateError?.response?.status !== 401 &&
-              privateError?.response?.status !== 403
-            ) {
+            const status = privateError?.response?.status;
+            const msg =
+              privateError?.response?.data?.message?.toLowerCase?.() ||
+              privateError?.message?.toLowerCase?.() ||
+              "";
+
+            // Jika token invalid/expired → bersihkan & lanjut ke fetch publik
+            if (status === 401 || status === 403 || msg.includes("token tidak valid")) {
+              localStorage.removeItem("token");
+              sessionStorage.removeItem("token");
+              // jika ada default Authorization dari interceptor/global, hapus
+              if (axios.defaults.headers?.common?.Authorization) {
+                delete axios.defaults.headers.common.Authorization;
+              }
+              setIsAuthenticated(false);
+              // lanjut ke fetch publik
+            } else {
               throw privateError;
             }
-            // Kalau 401/403, turun ke public
-            localStorage.removeItem("token");
-            setIsAuthenticated(false);
           }
         }
 
-        // 2) Fallback: endpoint public summary untuk guest
-        const publicResponse = await axios.get(`${API_BASE}/api/projects/summary`);
+        // 2) Fallback: endpoint public summary untuk guest (PASTI TANPA Authorization)
+        const publicResponse = await publicAPI.get(`/api/projects/summary`);
         const list = Array.isArray(publicResponse?.data?.data) ? publicResponse.data.data : [];
         const projectFromSummary = list.find((p) => String(p._id) === String(id));
 
@@ -154,41 +168,47 @@ const ProjectDetail = () => {
           throw new Error("Project not found in public data");
         }
 
-        // Pastikan ada gambar minimal (pakai thumbnail bila images kosong)
         const formattedProject = formatProjectData({
           ...projectFromSummary,
           images:
             Array.isArray(projectFromSummary.images) && projectFromSummary.images.length > 0
               ? projectFromSummary.images
               : projectFromSummary.thumbnail
-                ? [projectFromSummary.thumbnail]
-                : [],
+              ? [projectFromSummary.thumbnail]
+              : [],
         });
 
-        setProject(formattedProject);
+        if (!cancelled) {
+          setProject(formattedProject);
+        }
       } catch (err) {
         console.error("Failed to fetch project:", err);
-        if (err.response) {
-          switch (err.response.status) {
-            case 401:
-            case 403:
-              setError("Session expired. Please login again.");
-              break;
-            case 404:
-              setError("Project not found");
-              break;
-            default:
-              setError(err.response.data?.message || "Failed to load project");
+        if (!cancelled) {
+          if (err?.response) {
+            switch (err.response.status) {
+              case 401:
+              case 403:
+                setError("Session expired. Please login again.");
+                break;
+              case 404:
+                setError("Project not found");
+                break;
+              default:
+                setError(err.response.data?.message || "Failed to load project");
+            }
+          } else {
+            setError(err?.message || "Failed to load project");
           }
-        } else {
-          setError(err.message || "Failed to load project");
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchProject();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const handleImageError = (e) => {
@@ -218,15 +238,15 @@ const ProjectDetail = () => {
             >
               Back
             </button>
-            {(String(error).includes("Unauthorized") ||
-              String(error).includes("Session expired")) && (
-                <button
-                  onClick={() => navigate("/login")}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Login
-                </button>
-              )}
+            {(String(error).toLowerCase().includes("unauthorized") ||
+              String(error).toLowerCase().includes("session expired")) && (
+              <button
+                onClick={() => navigate("/login")}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Login
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -241,8 +261,8 @@ const ProjectDetail = () => {
     project.images && project.images.length > 0
       ? project.images
       : project.thumbnail
-        ? [toAbsoluteUrl(project.thumbnail)]
-        : [ourProjectImages[Math.floor(Math.random() * ourProjectImages.length)]];
+      ? [toAbsoluteUrl(project.thumbnail)]
+      : [ourProjectImages[Math.floor(Math.random() * ourProjectImages.length)]];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -391,17 +411,13 @@ const ProjectDetail = () => {
                     <div>
                       <p className="text-sm text-gray-500">Client</p>
                       <p className="font-medium">
-                        {project.client?.nama_lengkap ||
-                          project.client ||
-                          "Not specified"}
+                        {project.client?.nama_lengkap || project.client || "Not specified"}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Manager</p>
                       <p className="font-medium">
-                        {project.manager?.nama_lengkap ||
-                          project.manager ||
-                          "Not specified"}
+                        {project.manager?.nama_lengkap || project.manager || "Not specified"}
                       </p>
                     </div>
                     {project.employees.length > 0 && (
@@ -411,9 +427,7 @@ const ProjectDetail = () => {
                           {project.employees.map((employee, index) => (
                             <li key={index} className="flex items-center">
                               <FiUser className="mr-2 text-gray-500" />
-                              {employee?.nama_lengkap ||
-                                employee ||
-                                `Team Member ${index + 1}`}
+                              {employee?.nama_lengkap || employee || `Team Member ${index + 1}`}
                             </li>
                           ))}
                         </ul>
@@ -433,11 +447,7 @@ const ProjectDetail = () => {
                       <div className="flex items-center">
                         <FaFigma className="text-gray-500 mr-2" />
                         <a
-                          href={
-                            project.figma.startsWith("http")
-                              ? project.figma
-                              : `https://${project.figma}`
-                          }
+                          href={project.figma.startsWith("http") ? project.figma : `https://${project.figma}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline break-all"
@@ -446,9 +456,7 @@ const ProjectDetail = () => {
                         </a>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500">
-                        No Figma link available
-                      </p>
+                      <p className="text-sm text-gray-500">No Figma link available</p>
                     )}
                     {project.github_repo_url ? (
                       <div className="flex items-center">
@@ -467,9 +475,7 @@ const ProjectDetail = () => {
                         </a>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500">
-                        No GitHub repository available
-                      </p>
+                      <p className="text-sm text-gray-500">No GitHub repository available</p>
                     )}
                   </div>
                 </div>
@@ -488,16 +494,10 @@ const ProjectDetail = () => {
               </div>
               <div className="flex flex-col">
                 <p className="text-sm font-medium mb-1">Contact us</p>
-                <a
-                  href="tel:+6287702064017"
-                  className="text-sm opacity-80 hover:opacity-100"
-                >
+                <a href="tel:+6287702064017" className="text-sm opacity-80 hover:opacity-100">
                   +6287702064017
                 </a>
-                <a
-                  href="mailto:hello@bysteige.com"
-                  className="text-sm opacity-80 hover:opacity-100"
-                >
+                <a href="mailto:hello@bysteige.com" className="text-sm opacity-80 hover:opacity-100">
                   hello@bytelogic.com
                 </a>
               </div>

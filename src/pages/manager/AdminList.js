@@ -44,7 +44,7 @@ const AdminList = () => {
     riwayat_pendidikan: [{ ...EMPTY_EDU }],
   });
 
-  // Helpers
+  // ===== Helpers =====
   const toMMDDYYYY = (val) => {
     if (!val) return '';
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return val;
@@ -66,6 +66,12 @@ const AdminList = () => {
     const d = new Date(val);
     if (!isNaN(d)) return d.toISOString().slice(0, 10);
     return val;
+  };
+
+  const ymd = (val) => {
+    if (!val) return '';
+    const d = new Date(val);
+    return isNaN(d) ? '' : d.toISOString().slice(0, 10);
   };
 
   const alertFromAxiosError = (err, fallback = 'Terjadi kesalahan') => {
@@ -103,13 +109,30 @@ const AdminList = () => {
     return val;
   };
 
-  const ymd = (val) => {
-    if (!val) return '';
-    const d = new Date(val);
-    return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+  // Turunkan username dari data yang ada jika backend tidak kirim langsung
+  const deriveUsername = (obj) => {
+    if (obj?.username) return obj.username;
+    if (obj?.user?.username) return obj.user.username;
+    if (obj?.email && obj.email.includes('@')) return obj.email.split('@')[0];
+    return '-';
   };
 
-  // Fetch data managers
+  // Ambil user by id (untuk lazy fetch username asli)
+  const fetchUserById = async (uid, tk) => {
+    if (!uid) return null;
+    try {
+      const res = await axios.get(`${API_BASE}/api/users/${uid}`, {
+        headers: { Authorization: `Bearer ${tk}` },
+        validateStatus: () => true,
+      });
+      if (res.status >= 200 && res.status < 300) {
+        return res.data?.data || res.data || null;
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  // ===== Fetch data managers =====
   useEffect(() => {
     const fetchManagers = async () => {
       try {
@@ -122,9 +145,14 @@ const AdminList = () => {
           headers: { Authorization: `Bearer ${tk}` },
         });
         const raw = Array.isArray(res.data) ? res.data : res.data?.data;
+
+        // Simpan user_id & fallback username bila tersedia
         const list = (raw || []).map((it) => ({
           ...it,
           _id: it._id || it.id,
+          // user_id bisa berupa object (populated) atau string
+          user_id: it.user_id?._id || it.user_id || it.user?._id || it.user?.id || it.userId,
+          username: it.user?.username || it.username, // kalau backend kebetulan kirim
           tanggal_lahir: it.tanggal_lahir,
           riwayat_pendidikan: Array.isArray(it.riwayat_pendidikan) ? it.riwayat_pendidikan : [],
         }));
@@ -136,7 +164,7 @@ const AdminList = () => {
     fetchManagers();
   }, [navigate]);
 
-  // Filtered
+  // ===== Filtered =====
   const filteredManagers = managers.filter((m) => {
     const t = searchTerm.toLowerCase();
     return (
@@ -148,7 +176,7 @@ const AdminList = () => {
     );
   });
 
-  // Edit
+  // ===== Edit =====
   const openEditModal = (manager) => {
     setEditingManager(manager);
     const mapped = (manager.riwayat_pendidikan || []).map((r) => ({
@@ -240,7 +268,7 @@ const AdminList = () => {
     }
   };
 
-  // Delete
+  // ===== Delete =====
   const openDeleteModal = (manager) => setDeletingManager(manager);
   const closeDeleteModal = () => setDeletingManager(null);
 
@@ -262,11 +290,24 @@ const AdminList = () => {
     }
   };
 
-  // View
-  const openViewModal = (manager) => setViewingManager(manager);
+  // ===== View (lazy fetch username asli bila ada user_id) =====
+  const openViewModal = async (manager) => {
+    setViewingManager(manager); // tampilkan dulu
+    if (manager?.username && manager.username !== '-') return;
+
+    const tk = localStorage.getItem('token');
+    const uid = manager?.user_id;
+    const user = tk && uid ? await fetchUserById(uid, tk) : null;
+
+    setViewingManager((prev) => ({
+      ...prev,
+      username: user?.username || deriveUsername(prev),
+      role: user?.role || prev?.role || ROLE,
+    }));
+  };
   const closeViewModal = () => setViewingManager(null);
 
-  // Add (2 langkah)
+  // ===== Add (2 langkah) =====
   const openAddModal = () => {
     setShowAddModal(true);
     setCurrentStep(1);
@@ -435,7 +476,7 @@ const AdminList = () => {
     }
   };
 
-  // Riwayat Pendidikan editor
+  // ===== Riwayat Pendidikan editor =====
   const addEduRow = () => {
     setFormData((prev) => ({
       ...prev,
@@ -1144,7 +1185,9 @@ const AdminList = () => {
                   <div className="grid grid-cols-1 gap-4 mb-6">
                     <div className="flex">
                       <span className="w-1/3">Username:</span>
-                      <span className="w-2/3 text-gray-900">{viewingManager.username || '-'}</span>
+                      <span className="w-2/3 text-gray-900">
+                        {deriveUsername(viewingManager)}
+                      </span>
                     </div>
                     <div className="flex">
                       <span className="w-1/3">User Role:</span>
