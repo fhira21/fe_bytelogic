@@ -30,7 +30,7 @@ const CustomerReviews = () => {
       try {
         setLoading(true);
         const response = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/reviews",
+          "https://be.bytelogic.orenjus.com/api/reviews",
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const normalizedReviews = (response.data.data || []).map((review) => ({
@@ -56,7 +56,7 @@ const CustomerReviews = () => {
   const confirmDelete = async () => {
     try {
       await axios.delete(
-        `http://be.bytelogic.orenjus.com/api/reviews/${deletingReview._id}`,
+        `https://be.bytelogic.orenjus.com/api/reviews/${deletingReview._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setReviews((prev) =>

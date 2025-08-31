@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 
 /* ===== Helpers (samakan dengan halaman lain) ===== */
 const isObjectId = (v) => typeof v === "string" && /^[a-f0-9]{24}$/i.test(v);

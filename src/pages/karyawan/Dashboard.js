@@ -17,7 +17,7 @@ import ProfilePic from "../../assets/images/profile.jpg";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 const KARYAWAN_PROFILE_URL = `${API_BASE}/api/karyawan/profile`;
 
 function resolveAvatarSrc(v) {
@@ -109,7 +109,7 @@ const DashboardKaryawan = () => {
     const fetchProjects = async () => {
       try {
         const response = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/projects/total-project",
+          "https://be.bytelogic.orenjus.com/api/projects/total-project",
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -153,7 +153,7 @@ const DashboardKaryawan = () => {
     const fetchEvaluasi = async () => {
       try {
         const response = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/evaluations/evaluationmykaryawan",
+          "https://be.bytelogic.orenjus.com/api/evaluations/evaluationmykaryawan",
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

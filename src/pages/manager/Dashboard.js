@@ -98,7 +98,7 @@ const DashboardManager = () => {
     const fetchTotalClients = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
+        const res = await axios.get("https://be.bytelogic.orenjus.com/api/clients", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -125,7 +125,7 @@ const DashboardManager = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/managers/profile",
+          "https://be.bytelogic.orenjus.com/api/managers/profile",
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setManagerProfile({ loading: false, data: res.data.data, error: null });
@@ -143,7 +143,7 @@ const DashboardManager = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/karyawan/statuskaryawan",
+          "https://be.bytelogic.orenjus.com/api/karyawan/statuskaryawan",
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -168,10 +168,10 @@ const DashboardManager = () => {
         const token = localStorage.getItem("token");
 
         const [statusRes, listRes] = await Promise.all([
-          axios.get("http://be.bytelogic.orenjus.com/api/projects/status-summary", {
+          axios.get("https://be.bytelogic.orenjus.com/api/projects/status-summary", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get("http://be.bytelogic.orenjus.com/api/projects", {
+          axios.get("https://be.bytelogic.orenjus.com/api/projects", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -201,7 +201,7 @@ const DashboardManager = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/evaluations/karyawan/evaluasi-detailed",
+          "https://be.bytelogic.orenjus.com/api/evaluations/karyawan/evaluasi-detailed",
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -230,7 +230,7 @@ const DashboardManager = () => {
     const fetchReviews = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://be.bytelogic.orenjus.com/api/reviews/stats", {
+        const res = await axios.get("https://be.bytelogic.orenjus.com/api/reviews/stats", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

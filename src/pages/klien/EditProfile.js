@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Header from "../../components/Header";
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 const GET_PROFILE_URL = `${API_BASE}/api/clients/profile`;  // GET profil klien
 const PUT_PROFILE_URL  = `${API_BASE}/api/clients/profile`;  // PUT profil klien (JSON/multipart)
 

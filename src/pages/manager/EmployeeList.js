@@ -6,7 +6,7 @@ import Sidebar from '../../components/Sidebar';
 import TopbarProfile from '../../components/TopbarProfile';
 import { X } from 'lucide-react';
 
-const API_BASE = 'http://be.bytelogic.orenjus.com';
+const API_BASE = 'https://be.bytelogic.orenjus.com';
 const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTHDATE = new Date().toISOString().slice(0, 10);
 

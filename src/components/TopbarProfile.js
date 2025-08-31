@@ -4,7 +4,7 @@ import axios from 'axios';
 import { User } from 'lucide-react';
 import ProfilePic from '../assets/images/profile.jpg';
 
-const API_BASE = 'http://be.bytelogic.orenjus.com';
+const API_BASE = 'https://be.bytelogic.orenjus.com';
 const PROFILE_URL = `${API_BASE}/api/managers/profile`;
 
 function resolveAvatarSrc(foto_profile) {

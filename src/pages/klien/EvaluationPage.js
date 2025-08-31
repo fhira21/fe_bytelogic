@@ -5,7 +5,7 @@ import evaluationAspects from "../../data/evaluationAspect.json";
 import Header from "../../components/Header";
 import axios from "axios";
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 const isObjectId = (v) => typeof v === "string" && /^[a-f0-9]{24}$/i.test(v);
 
 const EvaluasiPage = () => {

@@ -13,7 +13,7 @@ const useManagerProfile = () => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(
-          'http://be.bytelogic.orenjus.com/api/managers/profile',
+          'https://be.bytelogic.orenjus.com/api/managers/profile',
           {
             headers: { Authorization: `Bearer ${token}` },
           }

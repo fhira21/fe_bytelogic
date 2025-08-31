@@ -35,7 +35,7 @@ const ReviewFormPage = () => {
         if (!token) throw new Error("No authentication token found");
 
         const response = await axios.get(
-          "http://be.bytelogic.orenjus.com/api/clients/profile",
+          "https://be.bytelogic.orenjus.com/api/clients/profile",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -91,7 +91,7 @@ const ReviewFormPage = () => {
         // type: "company",
       };
 
-      await axios.post("http://be.bytelogic.orenjus.com/api/reviews", payload, {
+      await axios.post("https://be.bytelogic.orenjus.com/api/reviews", payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

@@ -6,7 +6,7 @@ import axios from 'axios';
 import { X } from 'lucide-react';
 
 const ROLE = 'manager/admin';
-const API_BASE = 'http://be.bytelogic.orenjus.com';
+const API_BASE = 'https://be.bytelogic.orenjus.com';
 const currentYear = new Date().getFullYear();
 const EMPTY_EDU = { jenjang: '', institusi: '', tahun_lulus: '' };
 

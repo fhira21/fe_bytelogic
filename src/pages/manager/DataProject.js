@@ -5,7 +5,7 @@ import TopbarProfile from "../../components/TopbarProfile";
 import Sidebar from "../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 
 /** ===== Utils ===== */
 const looksLikeGithubToken = (t = "") => {

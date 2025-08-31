@@ -23,7 +23,7 @@ import OurProject4Image from "../assets/images/ourproject4.png";
 import OurProject5Image from "../assets/images/ourproject5.png";
 import OurProject6Image from "../assets/images/ourproject6.png";
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 
 /** axios publik TANPA Authorization */
 const publicAPI = axios.create({ baseURL: API_BASE });

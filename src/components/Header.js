@@ -9,7 +9,7 @@ import {
 } from "react-icons/fi";
 import axios from "axios";
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 const defaultAvatar = "https://www.w3schools.com/howto/img_avatar.png";
 
 function normalizeRole(raw) {

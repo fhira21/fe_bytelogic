@@ -15,7 +15,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 
 /* ===================== Utils ===================== */
 function formatDateTimeID(d) {

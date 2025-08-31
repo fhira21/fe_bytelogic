@@ -10,7 +10,7 @@ const DonutChart = () => {
 
   useEffect(() => {
     axios
-      .get('http://be.bytelogic.orenjus.com/api/employee/evaluation-summary', {
+      .get('https://be.bytelogic.orenjus.com/api/employee/evaluation-summary', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },

@@ -6,7 +6,7 @@ import TopbarProfile from '../../components/TopbarProfile';
 import ProfilePic from '../../assets/images/profile.jpg';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE = 'http://be.bytelogic.orenjus.com';
+const API_BASE = 'https://be.bytelogic.orenjus.com';
 const PROFILE_URL = `${API_BASE}/api/managers/profile`;
 
 const isDataUrl = (v) => typeof v === 'string' && v.startsWith('data:image');

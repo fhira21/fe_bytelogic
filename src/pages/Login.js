@@ -24,7 +24,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://be.bytelogic.orenjus.com/api/users/login", formData);
+      const res = await axios.post("https://be.bytelogic.orenjus.com/api/users/login", formData);
       console.log("RESPON DARI BACKEND:", res.data); // 
 
       const { token, role } = res.data;

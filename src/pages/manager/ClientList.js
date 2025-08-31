@@ -53,7 +53,7 @@ const ClientList = () => {
           return;
         }
 
-        const response = await axios.get("http://be.bytelogic.orenjus.com/api/clients", {
+        const response = await axios.get("https://be.bytelogic.orenjus.com/api/clients", {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -171,7 +171,7 @@ const ClientList = () => {
       };
 
       const response = await axios.post(
-        "http://be.bytelogic.orenjus.com/api/users/register",
+        "https://be.bytelogic.orenjus.com/api/users/register",
         registerPayload,
         { headers: { 'Content-Type': 'application/json' }, validateStatus: () => true }
       );
@@ -227,7 +227,7 @@ const ClientList = () => {
       };
 
       const response = await axios.post(
-        "http://be.bytelogic.orenjus.com/api/clients",
+        "https://be.bytelogic.orenjus.com/api/clients",
         payload,
         {
           headers: {
@@ -265,7 +265,7 @@ const ClientList = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.put(
-        `http://be.bytelogic.orenjus.com/api/clients/${editingClient._id}`,
+        `https://be.bytelogic.orenjus.com/api/clients/${editingClient._id}`,
         {
           nama_lengkap: formData.nama_lengkap,
           email: formData.email,
@@ -293,7 +293,7 @@ const ClientList = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.delete(
-        `http://be.bytelogic.orenjus.com/api/clients/${deletingClient._id}`,
+        `https://be.bytelogic.orenjus.com/api/clients/${deletingClient._id}`,
         { headers: { Authorization: `Bearer ${token}` }, validateStatus: () => true }
       );
 

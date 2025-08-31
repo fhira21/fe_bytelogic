@@ -18,7 +18,7 @@ import TopbarProfile from "../../components/TopbarProfile";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTitle, Tooltip, Legend);
 
-const API_BASE = "http://be.bytelogic.orenjus.com";
+const API_BASE = "https://be.bytelogic.orenjus.com";
 
 /* ===================== Helpers ===================== */
 
