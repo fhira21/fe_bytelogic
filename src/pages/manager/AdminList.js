@@ -1,8 +1,7 @@
-// src/pages/admin/AdminList.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import axios from 'axios';
 import { X } from 'lucide-react';
 

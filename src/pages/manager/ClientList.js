@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopbarProfile from '../../components/TopbarProfile';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import { X } from 'lucide-react';
 
 const ROLE = 'client';

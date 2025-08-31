@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import TopbarProfile from "../../components/TopbarProfile";
-import Sidebar from "../../components/SideBar";
+import Sidebar from "../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE = "http://be.bytelogic.orenjus.com";

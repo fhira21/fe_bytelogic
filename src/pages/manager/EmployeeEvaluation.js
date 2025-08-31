@@ -13,7 +13,7 @@ import {
   Legend,
 } from "chart.js";
 
-import Sidebar from "../../components/SideBar";
+import Sidebar from "../../components/Sidebar";
 import TopbarProfile from "../../components/TopbarProfile";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTitle, Tooltip, Legend);

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import TopbarProfile from '../../components/TopbarProfile';
 import { X } from 'lucide-react';
 

@@ -1,7 +1,7 @@
 // src/pages/manager/EditProfile.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import Sidebar from '../../components/SideBar';
+import Sidebar from '../../components/Sidebar';
 import TopbarProfile from '../../components/TopbarProfile';
 import ProfilePic from '../../assets/images/profile.jpg';
 import { useNavigate } from 'react-router-dom';
