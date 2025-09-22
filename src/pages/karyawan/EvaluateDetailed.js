@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
+import evaluationAspects from "../../data/evaluationAspect.json";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,7 +14,14 @@ import {
 } from "chart.js";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const API_BASE = "https://be.bytelogic.orenjus.com";
 
@@ -22,7 +30,10 @@ function formatDateTimeID(d) {
   if (!d) return "-";
   const date = new Date(d);
   if (isNaN(date)) return "-";
-  return date.toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" });
+  return date.toLocaleString("id-ID", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
 }
 function avgScore5(results = []) {
   if (!Array.isArray(results) || results.length === 0) return 0;
@@ -33,7 +44,8 @@ function avgScore5(results = []) {
   return total / results.length;
 }
 function score100(detail) {
-  if (typeof detail?.final_score === "number") return Math.round(detail.final_score);
+  if (typeof detail?.final_score === "number")
+    return Math.round(detail.final_score);
   return Math.round(avgScore5(detail?.results) * 20);
 }
 function normalizeDetail(d = {}) {
@@ -55,20 +67,25 @@ function normalizeDetail(d = {}) {
 
   // tanggal untuk tampilan
   const tanggal =
-    d.tanggal || d.created_at || d.createdAt || d.evaluation_date || d.date || null;
+    d.tanggal ||
+    d.created_at ||
+    d.createdAt ||
+    d.evaluation_date ||
+    d.date ||
+    null;
 
   return {
     ...d,
     comments,
     tanggal,
     project_title: d.project_title || d.title || d?.project?.title || "",
-    client_name: d.client_name || d?.client?.nama_lengkap || d?.client_name || "",
-    results:
-      Array.isArray(d.results)
-        ? d.results
-        : Array.isArray(d?.data?.results)
-          ? d.data.results
-          : [],
+    client_name:
+      d.client_name || d?.client?.nama_lengkap || d?.client_name || "",
+    results: Array.isArray(d.results)
+      ? d.results
+      : Array.isArray(d?.data?.results)
+      ? d.data.results
+      : [],
   };
 }
 
@@ -95,7 +112,11 @@ const EvaluateDetailed = () => {
       try {
         const res = await axios.get(
           `${API_BASE}/api/evaluations/evaluationmykaryawan`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
         );
 
         const list = Array.isArray(res.data?.detail_evaluasi)
@@ -135,7 +156,9 @@ const EvaluateDetailed = () => {
   // helper: ambil item di list berdasarkan title (untuk prefill cepat)
   const findLocalByTitle = (title) =>
     allEvaluations.data.find(
-      (i) => (i.project_title || "").toLowerCase() === String(title || "").toLowerCase()
+      (i) =>
+        (i.project_title || "").toLowerCase() ===
+        String(title || "").toLowerCase()
     );
 
   // 2) Jika ada ?project=... → prefill lokal lalu FETCH detail lengkap by evaluation_id
@@ -154,7 +177,11 @@ const EvaluateDetailed = () => {
         setLoadingDetail(true);
         const res = await axios.get(
           `${API_BASE}/api/evaluations/${local.evaluation_id}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
         );
         if (!alive) return;
 
@@ -190,7 +217,11 @@ const EvaluateDetailed = () => {
         setLoadingDetail(true);
         const res = await axios.get(
           `${API_BASE}/api/evaluations/${first.evaluation_id}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
         );
         const detail = normalizeDetail(res.data || {});
         setSelectedDetail((prev) => normalizeDetail({ ...prev, ...detail }));
@@ -204,9 +235,13 @@ const EvaluateDetailed = () => {
 
   // 4) Data grafik
   const chartData = useMemo(() => {
-    const labels = allEvaluations.data.map((i) => i.project_title || "Tanpa Nama");
+    const labels = allEvaluations.data.map(
+      (i) => i.project_title || "Tanpa Nama"
+    );
     const values = allEvaluations.data.map((i) =>
-      typeof i.final_score === "number" ? Math.round(i.final_score) : Math.round(avgScore5(i.results) * 20)
+      typeof i.final_score === "number"
+        ? Math.round(i.final_score)
+        : Math.round(avgScore5(i.results) * 20)
     );
     return {
       labels,
@@ -227,7 +262,12 @@ const EvaluateDetailed = () => {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { beginAtZero: true, max: 100, ticks: { stepSize: 10 }, title: { display: true, text: "Skor" } },
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: { stepSize: 10 },
+          title: { display: true, text: "Skor" },
+        },
         x: {
           ticks: {
             callback: function (_val, index) {
@@ -255,7 +295,9 @@ const EvaluateDetailed = () => {
         if (!local) return;
 
         // set URL agar konsisten
-        navigate(`/detail-evaluasi?project=${encodeURIComponent(local.project_title)}`);
+        navigate(
+          `/detail-evaluasi?project=${encodeURIComponent(local.project_title)}`
+        );
 
         // prefill dulu dari lokal
         setSelectedDetail(normalizeDetail(local));
@@ -266,7 +308,11 @@ const EvaluateDetailed = () => {
           setLoadingDetail(true);
           const res = await axios.get(
             `${API_BASE}/api/evaluations/${local.evaluation_id}`,
-            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
           );
           const detail = normalizeDetail(res.data || {});
           setSelectedDetail((prev) => normalizeDetail({ ...prev, ...detail }));
@@ -300,6 +346,10 @@ const EvaluateDetailed = () => {
         ) : null}
       </li>
     );
+  };
+
+  const getAspectName = (idx) => {
+    return evaluationAspects[idx]?.aspect_name || "Aspek tidak tersedia";
   };
 
   const dateISO =
@@ -353,15 +403,17 @@ const EvaluateDetailed = () => {
         ) : selectedDetail ? (
           <div className="mt-6">
             <h3 className="text-xl font-semibold mb-1">
-              {selectedDetail.project_title || "(Tanpa Nama)"}
+              {selectedProjectFromUrl || "(Tanpa Nama)"}
             </h3>
             <p className="text-gray-500 mb-4">
-              Client: {selectedDetail.client_name || "-"} •{" "}
+              Client: {selectedDetail?.client_name || "fhira triana maulani sidang"}•
               Tanggal: {formatDateTimeID(dateISO)}
             </p>
 
             {selectedDetail.project_description ? (
-              <p className="text-gray-700 mb-6">{selectedDetail.project_description}</p>
+              <p className="text-gray-700 mb-6">
+                {selectedDetail.project_description}
+              </p>
             ) : null}
 
             <h4 className="font-bold mb-3">Assessment Aspect</h4>
@@ -370,8 +422,8 @@ const EvaluateDetailed = () => {
                 <AspectRow
                   key={r._id || idx}
                   idx={idx + 1}
-                  name={r?.aspect_id?.aspect_name}
-                  value={r?.selected_criteria?.value}
+                  name={getAspectName(idx)}
+                  value={r?.selected_criteria?.value || r?.score}
                   description={r?.selected_criteria?.description}
                 />
               ))}
@@ -384,7 +436,8 @@ const EvaluateDetailed = () => {
                   Additional Notes
                 </label>
                 <div className="p-3 border rounded text-sm text-gray-700 bg-gray-50 whitespace-pre-wrap">
-                  {selectedDetail?.comments && String(selectedDetail.comments).trim() !== ""
+                  {selectedDetail?.comments &&
+                  String(selectedDetail.comments).trim() !== ""
                     ? selectedDetail.comments
                     : "-"}
                 </div>
