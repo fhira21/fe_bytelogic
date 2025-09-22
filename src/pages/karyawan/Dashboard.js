@@ -15,7 +15,14 @@ import {
 import Header from "../../components/Header";
 import ProfilePic from "../../assets/images/profile.jpg";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const API_BASE = "https://be.bytelogic.orenjus.com";
 const KARYAWAN_PROFILE_URL = `${API_BASE}/api/karyawan/profile`;
@@ -24,9 +31,11 @@ function resolveAvatarSrc(v) {
   if (!v) return ProfilePic;
   const s = String(v).trim();
   if (s.startsWith("data:image")) return s;
-  if (/^https?:\/\//i.test(s)) return `${s}${s.includes("?") ? "&" : "?"}t=${Date.now()}`;
+  if (/^https?:\/\//i.test(s))
+    return `${s}${s.includes("?") ? "&" : "?"}t=${Date.now()}`;
   if (s.startsWith("/")) return `${API_BASE}${s}?t=${Date.now()}`;
-  if (/^[A-Za-z0-9+/=]+$/.test(s) && s.length > 100) return `data:image/jpeg;base64,${s}`;
+  if (/^[A-Za-z0-9+/=]+$/.test(s) && s.length > 100)
+    return `data:image/jpeg;base64,${s}`;
   return ProfilePic;
 }
 
@@ -95,7 +104,8 @@ const DashboardKaryawan = () => {
         console.error("Error fetching karyawan profile:", error);
         setStatusKaryawan({
           loading: false,
-          error: error.response?.data?.message || "Gagal memuat status karyawan",
+          error:
+            error.response?.data?.message || "Gagal memuat status karyawan",
           data: null,
         });
       }
@@ -163,10 +173,13 @@ const DashboardKaryawan = () => {
         );
 
         const hasil = (response.data?.detail_evaluasi || []).map((item) => ({
-          project: item.project_title,
-          score: item.final_score,
-          date: item.created_at,
-        }));
+        project: item.project_title,
+        score: item.final_score,
+        date: item.tanggal || item.created_at || null,
+      }));
+
+      console.log("Raw Evaluasi Data:", response.data?.detail_evaluasi);
+      console.log("Mapped Evaluasi Data:", hasil);
 
         setEvaluasiData({ loading: false, error: null, data: hasil });
       } catch (error) {
@@ -183,7 +196,8 @@ const DashboardKaryawan = () => {
   }, []);
 
   const ProjectList = ({ title, items, loading, error }) => {
-    if (loading) return <div className="p-4 text-center">Memuat {title}...</div>;
+    if (loading)
+      return <div className="p-4 text-center">Memuat {title}...</div>;
     if (error) return <div className="p-4 text-red-500">{error}</div>;
     if (items.length === 0)
       return <div className="p-4 text-gray-500">Tidak ada {title}</div>;
@@ -191,14 +205,20 @@ const DashboardKaryawan = () => {
     return (
       <div className="divide-y divide-gray-200">
         {items.map((project) => {
-          const formattedDate = new Date(project.created_at).toLocaleDateString("id-ID", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
+          const formattedDate = new Date(project.created_at).toLocaleDateString(
+            "id-ID",
+            {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }
+          );
 
           return (
-            <div key={project._id} className="px-6 py-4 flex justify-between items-center">
+            <div
+              key={project._id}
+              className="px-6 py-4 flex justify-between items-center"
+            >
               <span className="text-gray-800 truncate" title={project.title}>
                 {project.title}
               </span>
@@ -213,7 +233,8 @@ const DashboardKaryawan = () => {
   const EvaluasiChart = ({ data, loading, error, filter, onBarClick }) => {
     if (loading) return <p>Memuat data evaluasi...</p>;
     if (error) return <p className="text-red-500">{error}</p>;
-    if (!data.length) return <p className="text-gray-500">Tidak ada data evaluasi</p>;
+    if (!data.length)
+      return <p className="text-gray-500">Tidak ada data evaluasi</p>;
 
     const sortedData = [...data].sort((a, b) => {
       switch (filter) {
@@ -222,9 +243,9 @@ const DashboardKaryawan = () => {
         case "terendah":
           return a.score - b.score;
         case "terbaru":
-          return new Date(b.date) - new Date(a.date);
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
         case "terlama":
-          return new Date(a.date) - new Date(b.date);
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
         default:
           return 0;
       }
@@ -250,7 +271,8 @@ const DashboardKaryawan = () => {
         if (elements && elements.length > 0) {
           const clickedIndex = elements[0].index;
           const projectName = chartData.labels[clickedIndex];
-          if (projectName && typeof onBarClick === "function") onBarClick(projectName);
+          if (projectName && typeof onBarClick === "function")
+            onBarClick(projectName);
         }
       },
       scales: {
@@ -303,14 +325,18 @@ const DashboardKaryawan = () => {
       {/* Header menerima { name, email, avatar } */}
       <Header user={user} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">My Work Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+          My Work Dashboard
+        </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white text-black rounded-lg p-4 border border-gray-300 flex items-center space-x-4">
             <ClipboardList className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">Total Project</h3>
-              <p className="text-medium font-bold">{projects.stats.total} Projects </p>
+              <p className="text-medium font-bold">
+                {projects.stats.total} Projects{" "}
+              </p>
             </div>
           </div>
 
@@ -318,7 +344,9 @@ const DashboardKaryawan = () => {
             <ClipboardCheck className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">On Progress</h3>
-              <p className="text-medium font-bold">{projects.stats.progress} Projects</p>
+              <p className="text-medium font-bold">
+                {projects.stats.progress} Projects
+              </p>
             </div>
           </div>
 
@@ -326,7 +354,9 @@ const DashboardKaryawan = () => {
             <Clock className="w-8 h-8 text-gray-700" />
             <div>
               <h3 className="text-sm font-medium">Waiting List</h3>
-              <p className="text-medium font-bold">{projects.stats.waiting} Projects</p>
+              <p className="text-medium font-bold">
+                {projects.stats.waiting} Projects
+              </p>
             </div>
           </div>
 
@@ -335,7 +365,9 @@ const DashboardKaryawan = () => {
             <div>
               <h3 className="text-sm font-medium">Status Karyawan</h3>
               <p className="text-medium font-bold">
-                {statusKaryawan.loading ? "Loading..." : (statusKaryawan.data || "-")}
+                {statusKaryawan.loading
+                  ? "Loading..."
+                  : statusKaryawan.data || "-"}
               </p>
             </div>
           </div>
@@ -343,7 +375,9 @@ const DashboardKaryawan = () => {
 
         <div className="bg-white text-black rounded-lg p-4 border border-gray-300 col-span-2 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-medium">Project Performance Overview</h3>
+            <h3 className="text-xl font-medium">
+              Project Performance Overview
+            </h3>
             <div className="flex items-center space-x-2">
               <select
                 value={evaluasiFilter}
@@ -380,9 +414,20 @@ const DashboardKaryawan = () => {
                 </button>
               </div>
               <div className="space-y-3">
-                <p><span className="font-semibold">Nama Proyek:</span> {selectedProjectDetail.title || '-'}</p>
-                <p><span className="font-semibold">Nilai:</span> {selectedProjectDetail.final_score || '-'}</p>
-                <p><span className="font-semibold">Tanggal:</span> {new Date(selectedProjectDetail.created_at).toLocaleDateString('id-ID') || '-'}</p>
+                <p>
+                  <span className="font-semibold">Nama Proyek:</span>{" "}
+                  {selectedProjectDetail.title || "-"}
+                </p>
+                <p>
+                  <span className="font-semibold">Nilai:</span>{" "}
+                  {selectedProjectDetail.final_score || "-"}
+                </p>
+                <p>
+                  <span className="font-semibold">Tanggal:</span>{" "}
+                  {new Date(
+                    selectedProjectDetail.created_at
+                  ).toLocaleDateString("id-ID") || "-"}
+                </p>
               </div>
               <div className="mt-4 flex justify-end">
                 <button
@@ -398,9 +443,13 @@ const DashboardKaryawan = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Waiting List */}
-          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">            {/* garis cuma di bawah judul */}
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+            {" "}
+            {/* garis cuma di bawah judul */}
             <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
-              <h3 className="text-base font-semibold text-gray-800">Status Project : Waiting List</h3>
+              <h3 className="text-base font-semibold text-gray-800">
+                Status Project : Waiting List
+              </h3>
               <Link
                 to="/project-waiting-list"
                 className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
@@ -414,46 +463,67 @@ const DashboardKaryawan = () => {
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
-              <ProjectList title="waiting list" items={projects.lists.waiting} loading={projects.loading} error={projects.error} />
+              <ProjectList
+                title="waiting list"
+                items={projects.lists.waiting}
+                loading={projects.loading}
+                error={projects.error}
+              />
             </div>
           </div>
 
           {/* On Progress */}
-          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">            
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
             <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
-            <h3 className="text-base font-semibold text-gray-800">Status Project : On Progress</h3>
-            <Link
-              to="/project-onprogress"
-              className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
-            >
-              Lihat Semua
-            </Link>
-          </div>
+              <h3 className="text-base font-semibold text-gray-800">
+                Status Project : On Progress
+              </h3>
+              <Link
+                to="/project-onprogress"
+                className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Lihat Semua
+              </Link>
+            </div>
             <div className="px-6">
               <div className="flex justify-between px-6 py-2 text-sm text-gray-600 font-normal mb-2">
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
-              <ProjectList title="on progress" items={projects.lists.progress} loading={projects.loading} error={projects.error} />
+              <ProjectList
+                title="on progress"
+                items={projects.lists.progress}
+                loading={projects.loading}
+                error={projects.error}
+              />
             </div>
           </div>
 
           {/* Completed */}
-          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
-            <h3 className="text-base font-semibold text-gray-800">Status Project : Completed</h3>
-            <Link
-              to="/project-completed"
-              className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
-            >
-              Lihat Semua
-            </Link>
-          </div>
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+            {" "}
+            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
+              <h3 className="text-base font-semibold text-gray-800">
+                Status Project : Completed
+              </h3>
+              <Link
+                to="/project-completed"
+                className="text-sm text-gray-500 border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Lihat Semua
+              </Link>
+            </div>
             <div className="px-6">
               <div className="flex justify-between px-6 py-2 text-sm text-gray-600 font-normal mb-2">
                 <span>Nama Project</span>
                 <span>Tanggal</span>
               </div>
-              <ProjectList title="completed" items={projects.lists.completed} loading={projects.loading} error={projects.error} />
+              <ProjectList
+                title="completed"
+                items={projects.lists.completed}
+                loading={projects.loading}
+                error={projects.error}
+              />
             </div>
           </div>
         </div>
